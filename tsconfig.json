@@ -1,0 +1,12 @@
+{
+  "extends": "./.nuxt/tsconfig.json",
+  "include": [
+    "./**/*",
+    "./.config/nuxt.*",
+    "./.nuxt/nuxt.d.ts",
+    "./node_modules/runtime",
+    "./node_modules/dist/runtime",
+    ".",
+    "./Shared/**/*"
+  ]
+}

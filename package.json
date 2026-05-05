@@ -1,0 +1,27 @@
+{
+  "name": "lumora-admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/repair-vue-tsc-fixture.mjs && nuxt dev",
+    "build": "node scripts/repair-vue-tsc-fixture.mjs && nuxt build",
+    "preview": "node scripts/repair-vue-tsc-fixture.mjs && nuxt preview",
+    "prepare": "node scripts/repair-vue-tsc-fixture.mjs && nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@phosphor-icons/vue": "^2.2.1",
+    "nuxt": "^3.17.4",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.4.0",
+    "autoprefixer": "^10.4.20",
+    "playwright": "^1.59.1",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vue-tsc": "^2.2.8"
+  }
+}
