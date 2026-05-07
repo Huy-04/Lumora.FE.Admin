@@ -6,12 +6,6 @@ interface ApiRequestOptions extends NitroFetchOptions<NitroFetchRequest> {
   skipAuthRefresh?: boolean;
 }
 
-// Module-level promise to deduplicate concurrent refresh attempts across
-// all useApiClient() instances.  Without this, each composable call creates
-// its own closure and fires a separate refresh, but the backend uses token
-// rotation, so the second refresh would try the (now-revoked) old token.
-let refreshPromise: Promise<boolean> | null = null;
-
 const logApiDebug = (message: string, payload?: unknown) => {
   if (import.meta.dev) {
     console.debug(message, payload);
@@ -26,7 +20,7 @@ const logApiError = (message: string, payload?: unknown) => {
 
 export const useApiClient = () => {
   const requestFetch = import.meta.server ? useRequestFetch() : $fetch;
-  const identity = useDeviceIdentity();
+  const authRefresh = useAuthRefresh();
   const sessionHint = useSessionHint();
   const session = useState<CurrentUserResponse | null>("auth:session", () => null);
   const status = useState<"idle" | "loading" | "authenticated" | "guest">("auth:status", () => "idle");
@@ -42,7 +36,7 @@ export const useApiClient = () => {
     const status = problem?.status ?? (error as { response?: { status?: number } } | null)?.response?.status;
     const hasRestoreHint = Boolean(authIndicator.value || sessionHint.hasHint.value);
 
-    if (options?.skipAuthRefresh || status !== 401 || !hasRestoreHint) {
+    if (import.meta.server || options?.skipAuthRefresh || status !== 401 || !hasRestoreHint) {
       return false;
     }
 
@@ -53,40 +47,6 @@ export const useApiClient = () => {
       && !requestPath.startsWith("/Authentication/verify-password-reset-otp")
       && !requestPath.startsWith("/Authentication/complete-password-reset")
       && !requestPath.startsWith("/Authentication/refresh-access-token");
-  };
-
-  const refreshAccessToken = async () => {
-    if (refreshPromise) {
-      return refreshPromise;
-    }
-
-    if (!authIndicator.value && !sessionHint.hasHint.value) {
-      return false;
-    }
-
-    refreshPromise = (async () => {
-      try {
-        await requestFetch("/Authentication/refresh-access-token", {
-          baseURL: "/api",
-          credentials: "include",
-          method: "POST",
-          headers: {
-            "X-Device-Id": identity.deviceId.value,
-          },
-        });
-
-        sessionHint.markAuthenticated();
-        return true;
-      } catch {
-        authIndicator.value = null;
-        sessionHint.clear();
-        return false;
-      } finally {
-        refreshPromise = null;
-      }
-    })();
-
-    return refreshPromise;
   };
 
   const shouldHandleAuthFailureAsExpired = (path: NitroFetchRequest, error: unknown) => {
@@ -154,7 +114,7 @@ export const useApiClient = () => {
     } catch (error) {
       logApiError("[ApiClient] Request failed:", { path, error });
 
-      if (shouldAttemptRefresh(path, options, error) && await refreshAccessToken()) {
+      if (shouldAttemptRefresh(path, options, error) && await authRefresh.refresh()) {
         logApiDebug("[ApiClient] Retrying after token refresh...");
         return await requestFetch<T>(path, {
           baseURL: "/api",

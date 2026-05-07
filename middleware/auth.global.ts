@@ -35,7 +35,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return;
       }
 
-      const authenticated = await session.restore(false);
+      if (import.meta.server) {
+        return;
+      }
+
+      const authenticated = await session.restore(false, {
+        allowRefresh: true,
+      });
       if (authenticated) {
         return navigateTo(resolveRedirectTarget(to.query.redirect));
       }
@@ -51,7 +57,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return loginRedirect();
   }
 
-  const authenticated = await session.restore();
+  if (import.meta.server) {
+    return;
+  }
+
+  const authenticated = await session.restore(false, {
+    allowRefresh: true,
+  });
   if (!authenticated) {
     return loginRedirect();
   }

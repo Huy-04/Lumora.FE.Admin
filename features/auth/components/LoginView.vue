@@ -9,17 +9,11 @@ const { form, pending, errorMessage, sessionExpiredMessage, emailError, password
 </script>
 
 <template>
-  <section class="auth-form-section">
-    <header class="grid gap-3">
-      <p class="hairline-kicker">Sign in</p>
-      <h2 class="text-[2rem] font-medium tracking-tight text-ink">
-        Sign in to Lumora Admin
-      </h2>
-      <p class="text-sm leading-relaxed text-smoke">
-        Use your work email and password.
-      </p>
-    </header>
-
+  <AuthFormCard
+    eyebrow="Sign in"
+    title="Sign in to Lumora Admin"
+    description="Use your work email and password."
+  >
     <form class="auth-form-grid" @submit.prevent="submit">
       <AppInput
         v-model="form.email"
@@ -52,5 +46,5 @@ const { form, pending, errorMessage, sessionExpiredMessage, emailError, password
       </AppNotice>
       <AppButton :loading="pending" block type="submit">Sign in</AppButton>
     </form>
-  </section>
+  </AuthFormCard>
 </template>

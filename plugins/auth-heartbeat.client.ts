@@ -1,26 +1,5 @@
-import { getProblemDetails } from "~/Shared/api/apiErrors";
-
 const ACCESS_TOKEN_IDLE_WINDOW_MS = 55 * 60 * 1000;
 const HEARTBEAT_POLL_MS = 60 * 1000;
-
-const getProblemStatus = (error: unknown): number | null => {
-  const problem = getProblemDetails(error);
-  const candidate = error as {
-    status?: number;
-    statusCode?: number;
-    response?: {
-      status?: number;
-      statusCode?: number;
-    };
-  } | null;
-
-  return problem?.status
-    ?? candidate?.status
-    ?? candidate?.statusCode
-    ?? candidate?.response?.status
-    ?? candidate?.response?.statusCode
-    ?? null;
-};
 
 export default defineNuxtPlugin(() => {
   const installed = useState<boolean>("auth:heartbeat-installed", () => false);
@@ -31,16 +10,13 @@ export default defineNuxtPlugin(() => {
   installed.value = true;
 
   const session = useAuthSession();
-  const authApi = useAuthApi();
-  const identity = useDeviceIdentity();
+  const authRefresh = useAuthRefresh();
   const sessionHint = useSessionHint();
   const authIndicator = useCookie<string | null>("auth", {
     sameSite: "lax",
     default: () => null,
   });
   const lastRefreshAt = useState<number>("auth:heartbeat-last-refresh-at", () => 0);
-
-  let refreshPromise: Promise<void> | null = null;
 
   const hasRestoreHint = () => Boolean(authIndicator.value || sessionHint.hasHint.value);
 
@@ -87,26 +63,15 @@ export default defineNuxtPlugin(() => {
       return;
     }
 
-    if (refreshPromise) {
-      return refreshPromise;
+    const refreshed = await authRefresh.refresh();
+    if (refreshed) {
+      lastRefreshAt.value = Date.now();
+      return;
     }
 
-    refreshPromise = (async () => {
-      try {
-        await authApi.refreshAccessToken(identity.deviceId.value);
-        sessionHint.markAuthenticated();
-        lastRefreshAt.value = Date.now();
-      } catch (error) {
-        const status = getProblemStatus(error);
-        if (status === 401 || status === 403) {
-          await expireSession();
-        }
-      } finally {
-        refreshPromise = null;
-      }
-    })();
-
-    return refreshPromise;
+    if (!hasRestoreHint()) {
+      await expireSession();
+    }
   };
 
   const onForeground = () => {

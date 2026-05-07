@@ -52,7 +52,6 @@ const submitPassword = async () => {
     <AppPanel
       eyebrow="Sessions"
       title="Session activity"
-      description="Review active device sessions and revoke access you no longer trust."
     >
       <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div class="soft-card p-4">

@@ -9,17 +9,11 @@ const { form, pending, successMessage, errorMessage, emailError, submit } = prop
 </script>
 
 <template>
-  <section class="auth-form-section">
-    <header class="grid gap-3">
-      <p class="hairline-kicker">Password reset</p>
-      <h2 class="text-[2rem] font-medium tracking-tight text-ink">
-        Forgot password
-      </h2>
-      <p class="text-sm leading-relaxed text-smoke">
-        Enter your email to get a reset code.
-      </p>
-    </header>
-
+  <AuthFormCard
+    eyebrow="Password reset"
+    title="Forgot password"
+    description="Enter your email to get a reset code."
+  >
     <form class="auth-form-grid" @submit.prevent="submit">
       <AppInput
         v-model="form.email"
@@ -46,5 +40,5 @@ const { form, pending, successMessage, errorMessage, emailError, submit } = prop
         <NuxtLink class="text-sm font-medium text-smoke hover:text-ink transition-colors" to="/auth/login">Back to login</NuxtLink>
       </div>
     </form>
-  </section>
+  </AuthFormCard>
 </template>

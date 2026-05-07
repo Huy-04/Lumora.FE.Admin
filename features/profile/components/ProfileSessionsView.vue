@@ -21,16 +21,6 @@ const { confirmMode, confirmTitle, confirmDetail, actionPending, executeConfirm,
       @cancel="closeConfirm"
     />
 
-    <section class="detail-header">
-      <h1 class="detail-title">Session activity</h1>
-      <p class="detail-copy">
-        Review every device that can refresh access for this account and remove any session you no longer trust.
-      </p>
-      <div class="detail-tabs">
-        <NuxtLink class="detail-nav-link" to="/profile">Back to profile</NuxtLink>
-      </div>
-    </section>
-
     <ProfileSessionsSummaryPanels
       :pending="pending"
       :error="error"

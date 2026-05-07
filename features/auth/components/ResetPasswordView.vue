@@ -6,32 +6,30 @@ const props = defineProps<{
 }>();
 
 const { form, step, pending, resendPending, successMessage, errorMessage, emailError, resetCodeError, passwordError, passwordRules, resendHelper, resendRemainingSeconds, resendLabel, requestCode, verifyCode, completeReset, resend } = props.page;
+
+const title = computed(() =>
+  step.value === "request"
+    ? "Reset your password"
+    : step.value === "verify"
+      ? "Verify the reset code"
+      : step.value === "complete"
+        ? "Choose a new password"
+        : "Password updated",
+);
+
+const description = computed(() =>
+  step.value === "request"
+    ? "Enter the email linked to your account and we'll send a reset code."
+    : step.value === "verify"
+      ? "Enter the code that was sent to your email inbox."
+      : step.value === "complete"
+        ? "Code confirmed. Set your new password below."
+        : "Your password has been updated successfully.",
+);
 </script>
 
 <template>
-  <section class="auth-form-section">
-    <header class="grid gap-3">
-      <p class="hairline-kicker">Password reset</p>
-      <h2 class="text-[2rem] font-medium tracking-tight text-ink">
-        {{ step === "request"
-          ? "Reset your password"
-          : step === "verify"
-            ? "Verify the reset code"
-            : step === "complete"
-              ? "Choose a new password"
-              : "Password updated" }}
-      </h2>
-      <p class="text-sm leading-relaxed text-smoke">
-        {{ step === "request"
-          ? "Enter the email linked to your account and we'll send a reset code."
-          : step === "verify"
-            ? "Enter the code that was sent to your email inbox."
-            : step === "complete"
-              ? "Code confirmed. Set your new password below."
-              : "Your password has been updated successfully." }}
-      </p>
-    </header>
-
+  <AuthFormCard eyebrow="Password reset" :title="title" :description="description">
     <!-- ── Step 1: Request ── -->
     <template v-if="step === 'request'">
       <form class="auth-form-grid" @submit.prevent="requestCode">
@@ -89,6 +87,8 @@ const { form, step, pending, resendPending, successMessage, errorMessage, emailE
             {{ resendLabel }}
           </AppButton>
         </div>
+
+        <NuxtLink class="secondary-link w-full" to="/auth/login">Back to login</NuxtLink>
       </form>
     </template>
 
@@ -125,5 +125,5 @@ const { form, step, pending, resendPending, successMessage, errorMessage, emailE
 
       <NuxtLink class="secondary-link justify-self-start" to="/auth/login">Back to login</NuxtLink>
     </template>
-  </section>
+  </AuthFormCard>
 </template>

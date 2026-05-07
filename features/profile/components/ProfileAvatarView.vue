@@ -10,16 +10,6 @@ const { pending, error, presetAvatars, hasAvatar, previewUrl, displayName, avata
 
 <template>
   <div class="page-shell">
-    <section class="detail-header">
-      <h1 class="detail-title">Profile photo</h1>
-      <p class="detail-copy">
-        Pick a preset or use a custom image URL in a layout that gives the avatar editor enough room to breathe.
-      </p>
-      <div class="detail-tabs">
-        <NuxtLink class="detail-nav-link" to="/profile">Back to profile</NuxtLink>
-      </div>
-    </section>
-
     <section v-if="pending" class="grid gap-6 lg:grid-cols-[260px_1fr]">
       <div class="soft-card h-[360px] animate-pulse" />
       <div class="soft-card h-[420px] animate-pulse" />
@@ -33,7 +23,6 @@ const { pending, error, presetAvatars, hasAvatar, previewUrl, displayName, avata
       <AppPanel
         eyebrow="Preview"
         title="Current avatar"
-        description="Your profile picture as it appears across the workspace."
       >
         <div class="grid gap-5">
           <div class="rounded-[32px] border border-line/70 bg-panel px-6 py-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:bg-panel/80">
@@ -60,7 +49,6 @@ const { pending, error, presetAvatars, hasAvatar, previewUrl, displayName, avata
       <AppPanel
         eyebrow="Editor"
         title="Choose a new avatar"
-        description="Presets are the fastest option. A custom image URL works too when you need a specific brand or portrait."
       >
         <form class="grid gap-6" @submit.prevent="submitAvatar">
           <div class="grid gap-4 md:grid-cols-2">
@@ -114,9 +102,11 @@ const { pending, error, presetAvatars, hasAvatar, previewUrl, displayName, avata
             {{ saveError }}
           </AppNotice>
 
-          <div class="panel-action-row">
+          <div class="panel-action-row flex flex-wrap items-center gap-3">
             <AppButton :loading="savePending" type="submit">Save avatar</AppButton>
-            <NuxtLink class="secondary-link" to="/profile">Back to profile</NuxtLink>
+            <NuxtLink class="app-button app-button-secondary sm:ml-auto" to="/profile">
+              Back to profile
+            </NuxtLink>
           </div>
         </form>
       </AppPanel>

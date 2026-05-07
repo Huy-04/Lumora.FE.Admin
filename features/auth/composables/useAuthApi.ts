@@ -48,6 +48,7 @@ export const useAuthApi = () => {
     refreshAccessToken: (deviceId: string) =>
       api.request<LoginResponse>("/Authentication/refresh-access-token", {
         method: "POST",
+        skipAuthRefresh: true,
         headers: {
           "X-Device-Id": deviceId,
         },

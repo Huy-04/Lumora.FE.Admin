@@ -34,13 +34,6 @@ const toggleSidebar = () => {
       <main class="layout-main">
         <slot />
       </main>
-
-      <footer class="layout-footer">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p class="font-medium text-ink">Lumora Admin</p>
-          <p>Authentication, catalog, and commerce operations.</p>
-        </div>
-      </footer>
     </div>
   </div>
 </template>

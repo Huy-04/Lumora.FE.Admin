@@ -6,52 +6,34 @@ const props = defineProps<{
 }>();
 
 const { data, pending, error, profileTabs, activeTab, selectTab, handleUpdated } = props.page;
+
+const selectProfileTab = (tab: string) => {
+  selectTab(tab as typeof activeTab.value);
+};
 </script>
 
 <template>
-  <div class="detail-shell">
-    <AppNotice v-if="error" tone="danger" title="Unable to load profile">
-      {{ getProblemMessage(error, "The current profile could not be loaded.") }}
-    </AppNotice>
+  <AppDetailPage
+    :title="data?.fullName ?? ''"
+    :tabs="profileTabs"
+    :active-tab="activeTab"
+    :pending="pending"
+    :error="error ? getProblemMessage(error, 'The current profile could not be loaded.') : null"
+    error-title="Unable to load profile"
+    @select-tab="selectProfileTab"
+  >
+    <template v-if="data">
+      <ProfileOverviewTab
+        v-if="activeTab === 'profile'"
+        :user="data"
+        @updated="handleUpdated"
+      />
 
-    <template v-else>
-      <section v-if="!pending && data" class="detail-header">
-        <h1 class="detail-title">{{ data.fullName }}</h1>
-        <p class="detail-copy">
-          {{ data.email }}<span v-if="data.userName"> / {{ data.userName }}</span>
-        </p>
-        <div class="detail-tabs">
-          <button
-            v-for="tab in profileTabs"
-            :key="tab.value"
-            type="button"
-            class="detail-tab"
-            :class="{ 'detail-tab-active': activeTab === tab.value }"
-            @click="selectTab(tab.value)"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-      </section>
-
-      <section v-if="pending" class="detail-stack">
-        <div class="soft-card h-72 animate-pulse" />
-        <div class="soft-card h-48 animate-pulse" />
-      </section>
-
-      <section v-else class="detail-stack">
-        <ProfileOverviewTab
-          v-if="activeTab === 'profile' && data"
-          :user="data"
-          @updated="handleUpdated"
-        />
-
-        <ProfileSecurityTab
-          v-if="activeTab === 'security' && data"
-          :user="data"
-          @updated="handleUpdated"
-        />
-      </section>
+      <ProfileSecurityTab
+        v-if="activeTab === 'security'"
+        :user="data"
+        @updated="handleUpdated"
+      />
     </template>
-  </div>
+  </AppDetailPage>
 </template>

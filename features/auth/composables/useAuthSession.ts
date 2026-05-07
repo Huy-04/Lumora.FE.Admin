@@ -28,6 +28,7 @@ export const useAuthSession = (): SessionState => {
   const restorePromise = useState<Promise<boolean> | null>("auth:restore-promise", () => null);
 
   const authApi = useAuthApi();
+  const authRefresh = useAuthRefresh();
   const identity = useDeviceIdentity();
   const sessionHint = useSessionHint();
 
@@ -63,14 +64,30 @@ export const useAuthSession = (): SessionState => {
     lastError.value = null;
 
     restorePromise.value = (async () => {
+      const allowRefresh = options?.allowRefresh !== false && import.meta.client;
+
       try {
         session.value = await authApi.getMe({
-          skipAuthRefresh: options?.allowRefresh === false,
+          skipAuthRefresh: true,
         });
         status.value = "authenticated";
         sessionHint.markAuthenticated();
         return true;
       } catch {
+        if (allowRefresh && await authRefresh.refresh()) {
+          try {
+            session.value = await authApi.getMe({
+              skipAuthRefresh: true,
+            });
+            status.value = "authenticated";
+            sessionHint.markAuthenticated();
+            return true;
+          } catch {
+            clear();
+            return false;
+          }
+        }
+
         clear();
         return false;
       } finally {
