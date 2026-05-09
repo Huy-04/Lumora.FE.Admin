@@ -7,7 +7,6 @@ export const useSessionsIndexPage = async () => {
   const canRevokeSessions = computed(() => authz.can(ADMIN_PERMISSION.refreshTokenRemoveAll));
 
   const actionPending = ref<"" | "revoke" | "revoke-device" | "revoke-user">("");
-  const actionSuccess = ref("");
   const actionError = ref("");
 
   const { data, pending, error, refresh } = await useAsyncData("sessions-index", async () => {
@@ -54,14 +53,12 @@ export const useSessionsIndexPage = async () => {
     if (!session || !mode) return;
 
     closeSessionConfirm();
-    actionSuccess.value = "";
     actionError.value = "";
 
     if (mode === "revoke") {
       actionPending.value = "revoke";
       try {
         await sessionsApi.revokeUserDevice({ userId: session.userId, deviceId: session.deviceId });
-        actionSuccess.value = "Session revoked.";
         await refresh();
       } catch (err) {
         actionError.value = getProblemMessage(err, "Unable to revoke the selected device session.");
@@ -74,7 +71,6 @@ export const useSessionsIndexPage = async () => {
       actionPending.value = "revoke-user";
       try {
         await sessionsApi.revokeAllUserTokens(session.userId);
-        actionSuccess.value = "All sessions for the selected user were revoked.";
         await refresh();
       } catch (err) {
         actionError.value = getProblemMessage(err, "Unable to revoke the selected user sessions.");
@@ -114,7 +110,6 @@ export const useSessionsIndexPage = async () => {
   return {
     actionError,
     actionPending,
-    actionSuccess,
     canRevokeSessions,
     closeSessionConfirm,
     confirmDetail,

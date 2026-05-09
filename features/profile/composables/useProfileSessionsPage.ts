@@ -37,7 +37,6 @@ export const useProfileSessionsPage = async () => {
   const confirmMode = ref<ConfirmMode>(null);
   const confirmSession = ref<SessionResponse | null>(null);
   const actionPending = ref<"" | "current" | "device" | "others" | "all">("");
-  const actionSuccess = ref("");
   const actionError = ref("");
 
   const sessions = computed(() => data.value ?? []);
@@ -99,7 +98,6 @@ export const useProfileSessionsPage = async () => {
   };
 
   const clearActionState = () => {
-    actionSuccess.value = "";
     actionError.value = "";
   };
 
@@ -123,7 +121,6 @@ export const useProfileSessionsPage = async () => {
     actionPending.value = "device";
     try {
       await sessionsApi.revokeUserDevice({ userId: currentUser.value.id, deviceId: sessionEntry.deviceId });
-      actionSuccess.value = "The selected device session was revoked.";
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to revoke the selected device session.");
@@ -143,7 +140,6 @@ export const useProfileSessionsPage = async () => {
         otherSessions.value.map((entry) =>
           sessionsApi.revokeUserDevice({ userId: currentUser.value!.id, deviceId: entry.deviceId })),
       );
-      actionSuccess.value = "All other devices were revoked.";
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to revoke one or more other device sessions.");
@@ -209,7 +205,6 @@ export const useProfileSessionsPage = async () => {
     otherSessions,
     canRevokeOwnSessions,
     openConfirm,
-    actionSuccess,
     actionError,
   };
 };

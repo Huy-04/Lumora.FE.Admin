@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
 import type { PermissionResponse } from "~/features/permissions/types";
 
 defineProps<{
@@ -10,8 +11,7 @@ const { formatDateTime } = useAuthPresentation();
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Permission details" description="Contract definition used by backend policy checks.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Permission details">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Permission name</dt>
           <dd class="text-sm font-medium text-ink">{{ permission.permissionName }}</dd>
@@ -38,16 +38,14 @@ const { formatDateTime } = useAuthPresentation();
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Description</dt>
-          <dd class="text-sm text-smoke">{{ permission.description || "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ permission.description || "-" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Audit trail" description="Administrative authorship and timestamps.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Audit trail">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created at</dt>
-          <dd class="text-sm text-smoke">{{ permission.createdAt ? formatDateTime(permission.createdAt) : "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ permission.createdAt ? formatDateTime(permission.createdAt) : "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created by</dt>
@@ -55,13 +53,12 @@ const { formatDateTime } = useAuthPresentation();
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Updated at</dt>
-          <dd class="text-sm text-smoke">{{ permission.updatedAt ? formatDateTime(permission.updatedAt) : "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ permission.updatedAt ? formatDateTime(permission.updatedAt) : "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Updated by</dt>
           <dd class="text-sm text-smoke">{{ permission.updatedBy || "System" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
   </div>
 </template>

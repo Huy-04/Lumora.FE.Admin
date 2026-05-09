@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
 import type {
   RoleResponse,
   RolePermissionResponse,
@@ -14,8 +15,7 @@ const { formatDateTime } = useAuthPresentation();
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Role details" description="Identity and metadata for this access role.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Role details">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Role name</dt>
           <dd class="text-sm font-medium text-ink">{{ role.roleName }}</dd>
@@ -26,20 +26,18 @@ const { formatDateTime } = useAuthPresentation();
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Description</dt>
-          <dd class="text-sm text-smoke">{{ role.description || "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ role.description || "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Permissions</dt>
           <dd class="text-sm font-medium text-ink">{{ permissions.length }} attached</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Audit trail" description="Administrative authorship and timestamps.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Audit trail">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created at</dt>
-          <dd class="text-sm text-smoke">{{ role.createdAt ? formatDateTime(role.createdAt) : "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ role.createdAt ? formatDateTime(role.createdAt) : "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created by</dt>
@@ -47,13 +45,12 @@ const { formatDateTime } = useAuthPresentation();
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Updated at</dt>
-          <dd class="text-sm text-smoke">{{ role.updatedAt ? formatDateTime(role.updatedAt) : "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ role.updatedAt ? formatDateTime(role.updatedAt) : "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Updated by</dt>
           <dd class="text-sm text-smoke">{{ role.updatedBy || "System" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
   </div>
 </template>

@@ -2,14 +2,17 @@ export const useWarehouseDetailPage = async () => {
   const route = useRoute();
   const inventoryApi = useInventoryAdminApi();
   const authz = useAdminAuthorization();
+
+  type WarehouseTab = "overview" | "edit" | "ghn-store" | "status";
+
   const warehouseId = computed(() => String(route.params.id ?? ""));
 
   const canUpdateWarehouse = computed(() => authz.can(ADMIN_PERMISSION.warehouseUpdateAll));
 
   const actionPending = ref("");
   const actionError = ref("");
-  const actionSuccess = ref("");
   const ghnShopId = ref("");
+  const activeTab = ref<WarehouseTab>("overview");
 
   const { data, pending, error, refresh } = await useAsyncData(
     () => `warehouse:${warehouseId.value}`,
@@ -18,13 +21,26 @@ export const useWarehouseDetailPage = async () => {
 
   const warehouse = computed(() => data.value ?? null);
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This warehouse is not available right now."));
+  const warehouseTabs = computed<Array<{ label: string; value: WarehouseTab }>>(() => [
+    { label: "Overview", value: "overview" },
+    { label: "Edit", value: "edit" },
+    { label: "GHN store", value: "ghn-store" },
+    { label: "Status", value: "status" },
+  ]);
+  const normalizeTab = (value: unknown): WarehouseTab => {
+    const resolved = value === "address" || value === "edit" || value === "operations"
+      ? "edit"
+      : value === "ghn-store"
+        ? "ghn-store"
+        : value === "status"
+          ? "status"
+          : "overview";
+    return warehouseTabs.value.some((tab) => tab.value === resolved) ? resolved : "overview";
+  };
 
   const form = reactive({
     name: "",
-    province: "",
-    district: "",
-    ward: "",
-    street: "",
+    address: "",
     phoneNational: "",
   });
 
@@ -34,21 +50,16 @@ export const useWarehouseDetailPage = async () => {
     }
 
     form.name = warehouse.value.name;
-    form.province = warehouse.value.province;
-    form.district = warehouse.value.district;
-    form.ward = warehouse.value.ward;
-    form.street = warehouse.value.street;
+    form.address = warehouse.value.address;
     form.phoneNational = warehouse.value.phoneNational;
   });
 
   const updateWarehouse = async () => {
     actionPending.value = "update";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       data.value = await inventoryApi.updateWarehouse(warehouseId.value, { ...form });
-      actionSuccess.value = "Warehouse updated.";
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to update warehouse.");
     } finally {
@@ -63,13 +74,11 @@ export const useWarehouseDetailPage = async () => {
 
     actionPending.value = "toggle";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       data.value = warehouse.value.status === "Active"
         ? await inventoryApi.deactivateWarehouse(warehouseId.value)
         : await inventoryApi.activateWarehouse(warehouseId.value);
-      actionSuccess.value = "Warehouse status updated.";
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to update warehouse status.");
     } finally {
@@ -78,18 +87,18 @@ export const useWarehouseDetailPage = async () => {
   };
 
   const syncGhnStore = async () => {
-    if (!ghnShopId.value.trim()) {
+    const normalizedGhnShopId = String(ghnShopId.value).trim();
+
+    if (!normalizedGhnShopId) {
       actionError.value = "GHN shop id is required.";
       return;
     }
 
     actionPending.value = "sync-ghn";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
-      data.value = await inventoryApi.syncWarehouseGhnStore(warehouseId.value, { ghnShopId: Number(ghnShopId.value) });
-      actionSuccess.value = "GHN store snapshot synced.";
+      data.value = await inventoryApi.syncWarehouseGhnStore(warehouseId.value, { ghnShopId: Number(normalizedGhnShopId) });
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to sync GHN store.");
     } finally {
@@ -97,10 +106,34 @@ export const useWarehouseDetailPage = async () => {
     }
   };
 
+  watch(
+    () => route.query.tab,
+    (value) => {
+      activeTab.value = normalizeTab(value);
+    },
+    { immediate: true },
+  );
+
+  watchEffect(() => {
+    activeTab.value = normalizeTab(activeTab.value);
+  });
+
+  const selectTab = async (tab: WarehouseTab) => {
+    activeTab.value = normalizeTab(tab);
+
+    await navigateTo(
+      {
+        path: `/warehouses/${warehouseId.value}`,
+        query: { tab: activeTab.value },
+      },
+      { replace: true },
+    );
+  };
+
   return {
     actionError,
     actionPending,
-    actionSuccess,
+    activeTab,
     canUpdateWarehouse,
     error,
     form,
@@ -108,10 +141,13 @@ export const useWarehouseDetailPage = async () => {
     loadErrorMessage,
     pending,
     refresh,
+    selectTab,
     syncGhnStore,
     toggleWarehouse,
     updateWarehouse,
     warehouse,
+    warehouseId,
+    warehouseTabs,
   };
 };
 

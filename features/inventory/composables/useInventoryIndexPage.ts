@@ -10,7 +10,6 @@ export const useInventoryIndexPage = async () => {
 
   const actionPending = ref("");
   const actionError = ref("");
-  const actionSuccess = ref("");
   const createInventoryOpen = ref(false);
   const inventoryPage = ref(1);
   const inventoryPageSize = ref("20");
@@ -70,13 +69,11 @@ export const useInventoryIndexPage = async () => {
 
     actionPending.value = "create-inventory";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
-      const created = await inventoryApi.createInventory({
+      await inventoryApi.createInventory({
         productVariantId: inventoryForm.productVariantId.trim(),
       });
-      actionSuccess.value = `Inventory created for SKU ${created.sku}.`;
       inventoryForm.productVariantId = "";
       createInventoryOpen.value = false;
       await refresh();
@@ -112,7 +109,6 @@ export const useInventoryIndexPage = async () => {
   return {
     actionError,
     actionPending,
-    actionSuccess,
     canCreateInventory,
     canReadInventory,
     createInventory,

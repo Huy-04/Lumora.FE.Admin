@@ -8,7 +8,7 @@ const props = defineProps<{
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Image details" description="Review storefront image metadata, placement order, and whether this item is the primary storefront product image.">
+    <AppPanel eyebrow="Image details">
       <div class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         <div class="soft-card flex items-center justify-center p-4">
           <img

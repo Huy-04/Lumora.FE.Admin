@@ -1,16 +1,28 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { ProductGalleryCreatePage } from "~/features/products/composables/useProductGalleryCreatePage";
 
 const props = defineProps<{
   page: ProductGalleryCreatePage;
 }>();
 
-const { productError, productPending, product, productId, assets, totalPages, pagedAssets, pageSummary, selectedAsset, currentPage, canUpdateProduct, form, errorMessage, pending, canCreateImage, selectAsset, isAssetSelected, submit } = props.page;
+const { productError, productPending, product, productId, assets, canUpdateProduct, form, errorMessage, pending, canCreateImage, selectAsset, submit } = props.page;
+
+useScopedPageBreadcrumbs(() =>
+  product.value?.product
+      ? [
+          { label: "Products", to: "/products" },
+          { label: product.value.product.name, to: `/products/${productId.value}` },
+          { label: "Gallery", to: `/products/${productId.value}?tab=gallery` },
+          { label: "Add image" },
+        ]
+    : [],
+);
 </script>
 
 <template>
   <div class="page-shell">
-    <section class="max-w-4xl">
+    <section class="max-w-6xl">
       <AppNotice v-if="productError" tone="danger" title="Unable to load product">
         {{ getProblemMessage(productError, "The parent product could not be loaded.") }}
       </AppNotice>
@@ -18,10 +30,6 @@ const { productError, productPending, product, productId, assets, totalPages, pa
       <AppPanel
         v-else
         eyebrow="Add image"
-        title="Add image"
-        :description="product?.product
-          ? `Attach a gallery image to ${product.product.name} by selecting from this product's asset library. Image order can be rearranged later from the gallery tab.`
-          : 'Attach a new gallery image to this product.'"
       >
         <template v-if="productPending">
           <div class="grid gap-4">
@@ -39,8 +47,6 @@ const { productError, productPending, product, productId, assets, totalPages, pa
             Restore this product before adding new gallery images.
           </AppNotice>
 
-          <AppInput :model-value="product?.product.name ?? productId" label="Product" readonly />
-
           <AppNotice v-if="!assets.length" tone="warning" title="No product assets">
             Upload at least one asset from the Assets tab before adding gallery images.
             <NuxtLink class="secondary-link ml-2" :to="`/products/${productId}?tab=assets`">
@@ -48,71 +54,24 @@ const { productError, productPending, product, productId, assets, totalPages, pa
             </NuxtLink>
           </AppNotice>
 
-          <div class="grid gap-6">
-            <div class="grid gap-4 rounded-[24px] border border-line/70 bg-surface px-4 py-4 md:grid-cols-[120px_minmax(0,1fr)] md:items-center">
-              <div class="h-24 w-24 overflow-hidden rounded-[20px] border border-line bg-pearl">
-                <img
-                  v-if="selectedAsset"
-                  :src="selectedAsset.img"
-                  alt="Selected product asset"
-                  class="h-full w-full object-cover"
-                >
-                <div v-else class="grid h-full w-full place-items-center text-xs font-medium text-smoke">
-                  No asset
-                </div>
-              </div>
-              <div class="min-w-0">
-                <p class="text-sm font-semibold text-ink">
-                  {{ selectedAsset ? "Asset selected" : "No asset selected" }}
-                </p>
-                <p class="mt-1 text-sm leading-6 text-smoke">
-                  {{ selectedAsset ? "Choose another asset below, or create the gallery image with this selection." : "Select one product asset below to add it to the gallery." }}
-                </p>
-                <p v-if="selectedAsset" class="mt-2 break-all text-xs text-smoke">
-                  {{ selectedAsset.storagePath }}
-                </p>
-              </div>
-            </div>
+          <div v-if="assets.length" class="grid gap-5">
+            <ProductAssetPickerPanel
+              :assets="assets"
+              :selected-asset-id="form.assetId"
+              preview-fallback="None"
+              preview-selected-text="Gallery image preview"
+              preview-empty-text="Select an asset below"
+              :library-subject="product?.product.name ?? productId"
+              asset-alt="Product asset"
+              @select="selectAsset"
+            />
+          </div>
 
-            <div v-if="assets.length" class="grid gap-4">
-              <div class="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-line/70 bg-surface px-4 py-3 text-sm text-smoke">
-                <p>{{ pageSummary }}</p>
-                <div v-if="totalPages > 1" class="flex items-center gap-3">
-                  <AppButton
-                    type="button"
-                    variant="ghost"
-                    :disabled="currentPage <= 1"
-                    @click="currentPage -= 1"
-                  >
-                    Previous
-                  </AppButton>
-                  <span>Page {{ currentPage }} / {{ totalPages }}</span>
-                  <AppButton
-                    type="button"
-                    variant="ghost"
-                    :disabled="currentPage >= totalPages"
-                    @click="currentPage += 1"
-                  >
-                    Next
-                  </AppButton>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-                <button
-                  v-for="asset in pagedAssets"
-                  :key="asset.id"
-                  type="button"
-                  class="tactile overflow-hidden rounded-[28px] border p-2 text-left transition duration-300 ease-out"
-                  :class="isAssetSelected(asset)
-                    ? 'border-ink bg-panel shadow-[0_18px_35px_-24px_rgba(15,23,42,0.24)] dark:bg-panel/80'
-                    : 'border-line bg-surface hover:border-ink/35 hover:bg-panel/70 dark:bg-surface/80'"
-                  @click="selectAsset(asset)"
-                >
-                  <div class="aspect-square overflow-hidden rounded-[24px] border border-line bg-pearl">
-                    <img :src="asset.img" alt="Product asset" class="h-full w-full object-cover">
-                  </div>
-                </button>
+          <div v-else class="grid gap-4">
+            <div class="border-y border-line/70 py-4">
+              <div class="grid gap-1">
+                <p class="meta-label">Product</p>
+                <p class="table-title">{{ product?.product.name ?? productId }}</p>
               </div>
             </div>
           </div>
@@ -125,13 +84,10 @@ const { productError, productPending, product, productId, assets, totalPages, pa
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="panel-action-row">
+          <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
             <AppButton :loading="pending" type="submit" :disabled="!canCreateImage">
               Create image
             </AppButton>
-            <NuxtLink class="secondary-link" :to="`/products/${productId}?tab=gallery`">
-              Back to gallery
-            </NuxtLink>
           </div>
         </form>
       </AppPanel>

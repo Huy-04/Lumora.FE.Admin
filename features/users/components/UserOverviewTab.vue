@@ -57,7 +57,7 @@ const phoneRegion = computed(() => {
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Identity" description="Core profile information.">
+    <AppPanel eyebrow="Identity">
       <dl class="divide-y divide-line/60">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Full name</dt>
@@ -65,7 +65,7 @@ const phoneRegion = computed(() => {
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Username</dt>
-          <dd class="text-sm font-medium text-ink">{{ user.userName || "—" }}</dd>
+          <dd class="text-sm font-medium text-ink">{{ user.userName || "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">User ID</dt>
@@ -77,7 +77,7 @@ const phoneRegion = computed(() => {
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Phone</dt>
-          <dd class="text-sm text-smoke">{{ user.phone ? `(${phoneRegion}) ${user.phone}` : "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ user.phone ? `(${phoneRegion}) ${user.phone}` : "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Gender</dt>
@@ -90,7 +90,7 @@ const phoneRegion = computed(() => {
       </dl>
     </AppPanel>
 
-    <AppPanel title="Account status" description="Current state of the account and verification.">
+    <AppPanel eyebrow="Account status">
       <dl class="divide-y divide-line/60">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">User status</dt>
@@ -107,11 +107,11 @@ const phoneRegion = computed(() => {
       </dl>
     </AppPanel>
 
-    <AppPanel title="Audit trail" description="Administrative authorship and timestamps.">
+    <AppPanel eyebrow="Audit trail">
       <dl class="divide-y divide-line/60">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created at</dt>
-          <dd class="text-sm text-smoke">{{ user.createdAt ? formatDateTime(user.createdAt) : "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ user.createdAt ? formatDateTime(user.createdAt) : "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created by</dt>
@@ -119,7 +119,7 @@ const phoneRegion = computed(() => {
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Updated at</dt>
-          <dd class="text-sm text-smoke">{{ user.updatedAt ? formatDateTime(user.updatedAt) : "—" }}</dd>
+          <dd class="text-sm text-smoke">{{ user.updatedAt ? formatDateTime(user.updatedAt) : "-" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Updated by</dt>

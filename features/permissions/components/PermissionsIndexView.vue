@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { PermissionsIndexPage } from "~/features/permissions/composables/usePermissionsIndexPage";
 
 defineProps<{
@@ -16,8 +15,6 @@ defineProps<{
     :pending="page.pending.value"
     :error="page.error.value ? 'Error loading data' : null"
     :error-detail="page.error.value ? getProblemMessage(page.error.value, 'The permission list is unavailable.') : ''"
-    :action-success="page.actionSuccess.value"
-    action-success-title="Permission removed"
     :action-error="page.actionError.value"
     action-error-title="Permission action failed"
     :items-length="page.filteredPermissions.value.length"
@@ -53,15 +50,8 @@ defineProps<{
       <AppButton variant="primary" @click="page.applyFilters">
         Search
       </AppButton>
-      <AppButton
-        v-if="page.moduleFilter.value || page.operationFilter.value || page.scopeFilter.value || page.search.value"
-        variant="secondary"
-        @click="page.clearFilters"
-      >
-        Clear
-      </AppButton>
-      <AppButton aria-label="Reload permissions" class="toolbar-refresh-button" icon-only variant="secondary" @click="page.refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="page.clearFilters">
+        Refresh
       </AppButton>
       <NuxtLink v-if="page.canCreatePermission.value" class="primary-link" to="/permissions/create">
         Create permission

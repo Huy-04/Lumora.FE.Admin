@@ -1,15 +1,34 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { ProductGalleryDetailPage } from "~/features/products/composables/useProductGalleryDetailPage";
 
 const props = defineProps<{
   page: ProductGalleryDetailPage;
 }>();
 
-const { error, pending, productId, image, galleryTabs, activeTab, selectTab, refresh } = props.page;
+const { error, pending, productId, imageId, image, assets, galleryTabs, activeTab, selectTab, refresh } = props.page;
 
 const selectGalleryTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
 };
+
+const activeTabLabel = computed(() =>
+  galleryTabs.value.find((tab) => tab.value === activeTab.value)?.label ?? "Overview",
+);
+
+useScopedPageBreadcrumbs(() => {
+  const productName = props.page.data.value?.product?.name ?? "";
+
+  return image.value && productName
+      ? [
+          { label: "Products", to: "/products" },
+          { label: productName, to: `/products/${productId.value}` },
+          { label: "Gallery", to: `/products/${productId.value}?tab=gallery` },
+          { label: "Gallery image", to: `/products/${productId.value}/gallery/${imageId.value}` },
+          { label: activeTabLabel.value },
+        ]
+    : [];
+});
 </script>
 
 <template>
@@ -35,6 +54,7 @@ const selectGalleryTab = (tab: string) => {
         v-else
         :product-id="productId"
         :image="image"
+        :assets="assets"
         @refresh="refresh"
       />
     </template>

@@ -150,7 +150,7 @@ const submitUpdate = async () => {
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Edit user" description="Update identity fields, verification states, and account status for this user.">
+    <AppPanel eyebrow="Edit user">
       <form class="form-stack" @submit.prevent="submitUpdate">
         <div class="grid gap-4 md:grid-cols-2">
           <AppInput v-model="updateForm.fullName" label="Full name" />
@@ -177,7 +177,7 @@ const submitUpdate = async () => {
 
         <AppInput v-model="updateForm.img" label="Avatar URL" />
 
-        <div class="panel-action-row">
+        <div class="flex justify-end border-t border-line pt-5">
           <AppButton :loading="actionPending" type="submit">Save changes</AppButton>
         </div>
 

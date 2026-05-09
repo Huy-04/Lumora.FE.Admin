@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { InventoryIndexPageState } from "~/features/inventory/composables/useInventoryIndexPage";
 
 const props = defineProps<{
@@ -9,7 +8,6 @@ const props = defineProps<{
 const {
   actionError,
   actionPending,
-  actionSuccess,
   canCreateInventory,
   createInventory,
   createInventoryOpen,
@@ -35,14 +33,12 @@ const {
 <template>
   <AppIndexPage
     eyebrow="Inventory workspace"
-    search-label="Manage Inventory"
+    search-label="Inventory"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="inventories"
     :pending="pending"
     :error="error ? 'Error loading data' : null"
     :error-detail="error ? loadErrorMessage : ''"
-    :action-success="actionSuccess"
-    action-success-title="Inventory updated"
     :action-error="actionError"
     action-error-title="Inventory action failed"
     :items-length="inventories.length"
@@ -61,8 +57,8 @@ const {
       <AppButton v-if="canCreateInventory" variant="primary" @click="createInventoryOpen = !createInventoryOpen">
         Create inventory
       </AppButton>
-      <AppButton aria-label="Reload inventory" class="toolbar-refresh-button" icon-only variant="secondary" @click="refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="refresh">
+        Refresh
       </AppButton>
     </template>
 
@@ -95,7 +91,6 @@ const {
           <tr v-for="inventory in inventories" :key="inventory.id">
             <td>
               <p class="table-title">{{ inventory.sku }}</p>
-              <p class="table-copy">{{ inventory.productVariantId }}</p>
             </td>
             <td>{{ inventory.totalQuantity }}</td>
             <td>{{ inventory.totalReservedQuantity }}</td>

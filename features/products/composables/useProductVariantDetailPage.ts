@@ -6,7 +6,7 @@ export const useProductVariantDetailPage = async () => {
   const inventoryApi = useInventoryAdminApi();
   const authz = useAdminAuthorization();
 
-  type VariantTab = "overview" | "edit";
+  type VariantTab = "overview" | "edit" | "inventory";
 
   const productId = computed(() => route.params.productId as string);
   const variantId = computed(() => route.params.variantId as string);
@@ -15,7 +15,6 @@ export const useProductVariantDetailPage = async () => {
   const canCreateInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryCreateAll));
   const inventoryActionPending = ref("");
   const inventoryActionError = ref("");
-  const inventoryActionSuccess = ref("");
 
   const { data, pending, error, refresh } = await useAsyncData(
     () => `product-variant-detail:${productId.value}:${variantId.value}`,
@@ -43,10 +42,11 @@ export const useProductVariantDetailPage = async () => {
   const variantTabs = computed<Array<{ label: string; value: VariantTab }>>(() => [
     { label: "Overview", value: "overview" },
     ...(canEditVariant.value ? [{ label: "Edit", value: "edit" as const }] : []),
+    ...(canReadInventory.value || canCreateInventory.value ? [{ label: "Inventory", value: "inventory" as const }] : []),
   ]);
 
   const normalizeTab = (value: unknown): VariantTab => {
-    const resolved = value === "edit" ? "edit" : "overview";
+    const resolved = value === "edit" || value === "inventory" ? value : "overview";
     return variantTabs.value.some((tab) => tab.value === resolved) ? resolved : "overview";
   };
 
@@ -83,7 +83,6 @@ export const useProductVariantDetailPage = async () => {
 
     inventoryActionPending.value = "open";
     inventoryActionError.value = "";
-    inventoryActionSuccess.value = "";
 
     try {
       const inventory = await inventoryApi.getInventoryByProductVariantId(variantId.value);
@@ -102,13 +101,11 @@ export const useProductVariantDetailPage = async () => {
 
     inventoryActionPending.value = "create";
     inventoryActionError.value = "";
-    inventoryActionSuccess.value = "";
 
     try {
       const inventory = await inventoryApi.createInventory({
         productVariantId: variantId.value,
       });
-      inventoryActionSuccess.value = "Inventory created for this variant.";
       await navigateTo(`/inventory/${inventory.id}`);
     } catch (requestError) {
       inventoryActionError.value = getProblemMessage(requestError, "Unable to create inventory for this variant.");
@@ -131,7 +128,6 @@ export const useProductVariantDetailPage = async () => {
     createInventory,
     inventoryActionError,
     inventoryActionPending,
-    inventoryActionSuccess,
     openInventory,
     selectTab,
     refresh,

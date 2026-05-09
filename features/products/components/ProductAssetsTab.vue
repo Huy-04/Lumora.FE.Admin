@@ -19,9 +19,14 @@ const confirmAssetIds = ref<string[]>([]);
 const selectedAssetIds = ref<string[]>([]);
 const actionPending = ref<"" | "upload" | "remove">("");
 const actionError = ref("");
-const actionSuccess = ref("");
 const currentPage = ref(1);
 const assetsPerPage = 8;
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
 
 const confirmAssets = computed(() =>
   props.assets.filter((asset) => confirmAssetIds.value.includes(asset.id)),
@@ -112,6 +117,10 @@ const queueBatchRemove = () => {
   confirmAssetIds.value = [...selectedAssetIds.value];
 };
 
+const openFilePicker = () => {
+  fileInput.value?.click();
+};
+
 const handleFileChange = (event: Event) => {
   try {
     const input = event.target as HTMLInputElement;
@@ -121,7 +130,6 @@ const handleFileChange = (event: Event) => {
       selectedFiles.value = Array.from(files);
     }
     actionError.value = "";
-    actionSuccess.value = "";
   } catch {
     actionError.value = "Failed to process selected files.";
   }
@@ -141,16 +149,16 @@ const uploadAsset = async () => {
 
   actionPending.value = "upload";
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
-    await productApi.uploadProductAssets(props.productId, selectedFiles.value);
-    const uploadedCount = selectedFiles.value.length;
+    if (selectedFiles.value.length === 1) {
+      await productApi.uploadProductAsset(props.productId, selectedFiles.value[0]);
+    } else {
+      await productApi.uploadProductAssets(props.productId, selectedFiles.value);
+    }
+
     clearUploadSelection();
     currentPage.value = 1;
-    actionSuccess.value = uploadedCount === 1
-      ? "Asset uploaded."
-      : `${uploadedCount} assets uploaded.`;
     emit("refresh");
   } catch (requestError) {
     actionError.value = getProblemMessage(requestError, "Unable to upload the selected product assets.");
@@ -166,15 +174,12 @@ const removeAsset = async () => {
 
   actionPending.value = "remove";
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     if (confirmAssetIds.value.length === 1) {
       await productApi.removeProductAsset(props.productId, confirmAssetIds.value[0]);
-      actionSuccess.value = "Asset removed.";
     } else {
       await productApi.removeProductAssets(props.productId, confirmAssetIds.value);
-      actionSuccess.value = `${confirmAssetIds.value.length} assets removed.`;
     }
 
     selectedAssetIds.value = selectedAssetIds.value.filter((id) => !confirmAssetIds.value.includes(id));
@@ -212,8 +217,17 @@ watch(
       @confirm="removeAsset"
       @cancel="confirmAssetIds = []"
     />
+    <AppConfirm
+      :open="actionErrorOpen"
+      title="Asset action failed"
+      :detail="actionError"
+      cancel-label="Close"
+      tone="danger"
+      hide-confirm
+      @cancel="closeActionError"
+    />
 
-    <AppPanel title="Product assets" description="Upload and manage the reusable image pool for this product. Product cover and gallery images should be selected from this library.">
+    <AppPanel eyebrow="Product assets">
       <div class="form-stack">
         <AppNotice v-if="!canUpdate" tone="warning" title="Read-only access">
           Product update permission is required to upload or remove assets.
@@ -221,33 +235,11 @@ watch(
 
         <ClientOnly>
         <div v-if="canUpdate" class="grid gap-4 rounded-[28px] border border-line/70 bg-panel px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-panel/80">
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="space-y-1">
-              <p class="app-label">Upload images</p>
-              <p class="text-sm text-smoke">
-                Choose one or many images, then upload them to the reusable product asset library.
-              </p>
-            </div>
-            <div class="flex flex-wrap items-center gap-3">
-              <label class="secondary-link cursor-pointer">
-                Choose images
-                <input
-                  ref="fileInput"
-                  class="sr-only"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  @change="handleFileChange"
-                >
-              </label>
-              <AppButton
-                :loading="actionPending === 'upload'"
-                :disabled="!selectedFiles.length"
-                @click="uploadAsset"
-              >
-                Upload {{ uploadSelectionCount > 1 ? `${uploadSelectionCount} assets` : "asset" }}
-              </AppButton>
-            </div>
+          <div class="space-y-1">
+            <p class="app-label">Upload images</p>
+            <p class="text-sm text-smoke">
+              Choose one or many images, then upload them to the reusable product asset library.
+            </p>
           </div>
 
           <div class="rounded-[24px] border border-line/70 bg-surface px-4 py-3">
@@ -269,29 +261,40 @@ watch(
             </div>
           </div>
 
-          <div v-if="selectedFiles.length" class="flex flex-wrap items-center gap-3">
+          <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
             <button
+              v-if="selectedFiles.length"
               type="button"
               class="secondary-link"
               @click="clearUploadSelection"
             >
               Clear selection
             </button>
+            <input
+              ref="fileInput"
+              class="sr-only"
+              type="file"
+              accept="image/*"
+              multiple
+              @change="handleFileChange"
+            >
+            <AppButton type="button" variant="secondary" @click="openFilePicker">
+              Choose images
+            </AppButton>
+            <AppButton
+              :loading="actionPending === 'upload'"
+              :disabled="!selectedFiles.length"
+              @click="uploadAsset"
+            >
+              Upload {{ uploadSelectionCount > 1 ? `${uploadSelectionCount} assets` : "asset" }}
+            </AppButton>
           </div>
         </div>
         </ClientOnly>
 
-        <AppNotice v-if="actionSuccess" tone="success" title="Assets updated">
-          {{ actionSuccess }}
-        </AppNotice>
-
-        <AppNotice v-if="actionError" tone="danger" title="Asset action failed">
-          {{ actionError }}
-        </AppNotice>
-
         <div v-if="assets.length" class="grid gap-4">
           <div class="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-line/70 bg-surface px-4 py-3 text-sm text-smoke">
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="space-y-1">
               <p>{{ pageSummary }}</p>
               <span v-if="selectedCount">{{ selectedCount }} selected</span>
             </div>

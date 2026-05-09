@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { UserDetailPage } from "~/features/users/composables/useUserDetailPage";
 
 const props = defineProps<{
@@ -10,6 +11,21 @@ const { userId, userTabs, activeTab, data, pending, error, refresh, selectTab } 
 const selectUserTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
 };
+
+const activeTabLabel = computed(() =>
+  userTabs.value.find((tab) => tab.value === activeTab.value)?.label ?? "Overview",
+);
+
+useScopedPageBreadcrumbs(() => {
+  const userName = data.value?.user?.fullName ?? "";
+  return userName
+    ? [
+        { label: "Users", to: "/users" },
+        { label: userName, to: `/users/${userId.value}` },
+        { label: activeTabLabel.value },
+      ]
+    : [];
+});
 </script>
 
 <template>

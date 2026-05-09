@@ -2,7 +2,7 @@
 defineProps<{
   label: string;
   value: string;
-  detail: string;
+  detail?: string;
 }>();
 </script>
 
@@ -12,6 +12,6 @@ defineProps<{
       {{ label }}
     </p>
     <h3 class="app-stat-value">{{ value }}</h3>
-    <p class="app-stat-copy">{{ detail }}</p>
+    <p v-if="detail" class="app-stat-copy">{{ detail }}</p>
   </article>
 </template>

@@ -30,7 +30,6 @@ export const useProductVariantImagePage = async () => {
 
   const draftProductAssetId = ref("");
   const savePending = ref(false);
-  const saveSuccess = ref("");
   const saveError = ref("");
   const currentPage = ref(1);
   const assetsPerPage = 8;
@@ -82,19 +81,16 @@ export const useProductVariantImagePage = async () => {
 
   const selectAsset = (asset: ProductAssetResponse) => {
     draftProductAssetId.value = asset.id;
-    saveSuccess.value = "";
     saveError.value = "";
   };
 
   const removeImage = () => {
     draftProductAssetId.value = "";
-    saveSuccess.value = "";
     saveError.value = "";
   };
 
   const resetDraft = () => {
     draftProductAssetId.value = variant.value?.productAssetId || "";
-    saveSuccess.value = "";
     saveError.value = "";
   };
 
@@ -106,7 +102,6 @@ export const useProductVariantImagePage = async () => {
     }
 
     savePending.value = true;
-    saveSuccess.value = "";
     saveError.value = "";
 
     try {
@@ -114,11 +109,14 @@ export const useProductVariantImagePage = async () => {
         sku: variant.value.sku,
         name: variant.value.name,
         price: variant.value.price,
+        weight: variant.value.weight,
+        length: variant.value.length,
+        width: variant.value.width,
+        height: variant.value.height,
         compareAtPrice: variant.value.compareAtPrice ?? null,
         productAssetId: draftProductAssetId.value || null,
       });
 
-      saveSuccess.value = "Variant image updated.";
       await refresh();
     } catch (requestError) {
       saveError.value = getProblemMessage(requestError, "Unable to save the variant image.");
@@ -145,7 +143,6 @@ export const useProductVariantImagePage = async () => {
     selectAsset,
     removeImage,
     resetDraft,
-    saveSuccess,
     saveError,
     savePending,
   };

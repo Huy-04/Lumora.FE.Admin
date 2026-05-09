@@ -8,16 +8,12 @@ export const useWarehouseIndexPage = async () => {
 
   const actionPending = ref("");
   const actionError = ref("");
-  const actionSuccess = ref("");
   const createWarehouseOpen = ref(false);
 
   const warehouseForm = reactive({
     code: "1",
     name: "",
-    province: "",
-    district: "",
-    ward: "",
-    street: "",
+    address: "",
     phoneNational: "",
   });
 
@@ -43,19 +39,14 @@ export const useWarehouseIndexPage = async () => {
   const createWarehouse = async () => {
     actionPending.value = "create-warehouse";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       await inventoryApi.createWarehouse({
         ...warehouseForm,
         code: Number(warehouseForm.code),
       });
-      actionSuccess.value = "Warehouse created.";
       warehouseForm.name = "";
-      warehouseForm.province = "";
-      warehouseForm.district = "";
-      warehouseForm.ward = "";
-      warehouseForm.street = "";
+      warehouseForm.address = "";
       warehouseForm.phoneNational = "";
       createWarehouseOpen.value = false;
       await refresh();
@@ -69,7 +60,6 @@ export const useWarehouseIndexPage = async () => {
   return {
     actionError,
     actionPending,
-    actionSuccess,
     canCreateWarehouse,
     canReadWarehouse,
     createWarehouse,

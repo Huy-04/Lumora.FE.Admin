@@ -1,7 +1,7 @@
 export const useInventoryOptions = () => {
   const stockStatusOptions = [
-    { label: "Available", value: "0" },
-    { label: "Unavailable", value: "1" },
+    { label: "Active", value: "0" },
+    { label: "OutOfStock", value: "1" },
     { label: "Locked", value: "2" },
   ];
 

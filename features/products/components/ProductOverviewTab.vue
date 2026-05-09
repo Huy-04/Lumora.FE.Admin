@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
 import type {
   ProductAttributeResponse,
   ProductGalleryResponse,
@@ -26,16 +27,19 @@ const activeVariants = computed(() => props.variants.filter((variant) => variant
 const primaryImage = computed(() => props.gallery?.images.find((image) => image.isPrimary) ?? null);
 const actionPending = ref<"" | "restore">("");
 const actionError = ref("");
-const actionSuccess = ref("");
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
 
 const restoreProduct = async () => {
   actionPending.value = "restore";
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     await productApi.restoreProduct(props.product.id);
-    actionSuccess.value = "Product restored.";
     emit("refresh");
   } catch (requestError) {
     actionError.value = getProblemMessage(requestError, "Unable to restore the product.");
@@ -47,19 +51,20 @@ const restoreProduct = async () => {
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
+    <AppConfirm
+      :open="actionErrorOpen"
+      title="Product action failed"
+      :detail="actionError"
+      cancel-label="Close"
+      tone="danger"
+      hide-confirm
+      @cancel="closeActionError"
+    />
+
     <AppPanel
       v-if="product.isDeleted && canRestore"
-      title="Record state"
-      description="Bring this record back when it should return to the active product workflow."
+      eyebrow="Record state"
     >
-      <AppNotice v-if="actionSuccess" tone="success" title="Product updated">
-        {{ actionSuccess }}
-      </AppNotice>
-
-      <AppNotice v-if="actionError" tone="danger" title="Product action failed">
-        {{ actionError }}
-      </AppNotice>
-
       <div class="panel-action-row">
         <AppButton
           v-if="canRestore"
@@ -71,8 +76,7 @@ const restoreProduct = async () => {
       </div>
     </AppPanel>
 
-    <AppPanel title="Product details" description="Commercial identity, category placement, merchandising state, and storefront-facing copy.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Product details">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Name</dt>
           <dd class="text-sm font-medium text-ink">{{ product.name }}</dd>
@@ -157,11 +161,9 @@ const restoreProduct = async () => {
           <dt class="meta-label w-40 shrink-0">Shelf life note</dt>
           <dd class="text-sm text-smoke">{{ product.content?.shelfLifeNote || "Not set" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Merchandising snapshot" description="Operational counts from each child aggregate that shape storefront readiness.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Merchandising snapshot">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Variants</dt>
           <dd class="text-sm font-medium text-ink">{{ variants.length }} total / {{ activeVariants }} active</dd>
@@ -182,11 +184,9 @@ const restoreProduct = async () => {
           <dt class="meta-label w-40 shrink-0">Skin concerns</dt>
           <dd class="text-sm text-smoke">{{ attributes?.skinConcerns.length ?? 0 }} assigned</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Search metadata" description="Metadata fields surfaced to search engines and richer storefront previews.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Search metadata">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">SEO title</dt>
           <dd class="text-sm text-smoke">{{ product.seoTitle || "Not set" }}</dd>
@@ -195,11 +195,9 @@ const restoreProduct = async () => {
           <dt class="meta-label w-40 shrink-0">SEO description</dt>
           <dd class="text-sm text-smoke">{{ product.seoDescription || "Not set" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Audit trail" description="Administrative authorship and timestamps for the current aggregate root.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Audit trail">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created at</dt>
           <dd class="text-sm text-smoke">{{ formatDateTime(product.createdAt) }}</dd>
@@ -216,7 +214,6 @@ const restoreProduct = async () => {
           <dt class="meta-label w-40 shrink-0">Updated by</dt>
           <dd class="text-sm text-smoke">{{ product.updatedBy || "System" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
   </div>
 </template>

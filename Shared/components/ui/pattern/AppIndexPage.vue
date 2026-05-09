@@ -17,9 +17,6 @@ defineProps<{
   errorTitle?: string;
   errorDetail?: string;
   
-  actionSuccess?: string | null;
-  actionSuccessTitle?: string;
-  
   actionError?: string | null;
   actionErrorTitle?: string;
   
@@ -71,7 +68,7 @@ const resolvePageSizeValue = (
               <slot name="search-input" />
             </div>
             
-            <div v-if="$slots.actions" class="flex items-center gap-3 shrink-0">
+            <div v-if="$slots.actions" class="flex flex-wrap items-end gap-3 shrink-0">
               <slot name="actions" />
             </div>
           </div>
@@ -86,10 +83,6 @@ const resolvePageSizeValue = (
       <slot name="notices">
         <AppNotice v-if="error" tone="danger" :title="errorTitle || 'Unable to load data'">
           {{ errorDetail || error }}
-        </AppNotice>
-
-        <AppNotice v-if="actionSuccess" tone="success" :title="actionSuccessTitle || 'Action successful'">
-          {{ actionSuccess }}
         </AppNotice>
 
         <AppNotice v-if="actionError" tone="danger" :title="actionErrorTitle || 'Action failed'">

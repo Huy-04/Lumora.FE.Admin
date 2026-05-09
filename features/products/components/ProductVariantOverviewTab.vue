@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
 import type { ProductVariantResponse } from "~/features/products/types";
 
 const props = defineProps<{
@@ -12,8 +13,7 @@ const compareAtPriceLabel = computed(() =>
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Variant details" description="SKU identity, pricing, and merchandising state for the selected product variant.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Variant details">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Name</dt>
           <dd class="text-sm font-medium text-ink">{{ variant.name }}</dd>
@@ -38,11 +38,9 @@ const compareAtPriceLabel = computed(() =>
           <dt class="meta-label w-40 shrink-0">Image URL</dt>
           <dd class="break-all text-sm text-smoke">{{ variant.img || "Not set" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Pricing" description="Current selling price and optional compare-at pricing.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Pricing">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Price</dt>
           <dd class="text-sm font-medium text-ink">{{ variant.price }}</dd>
@@ -51,7 +49,6 @@ const compareAtPriceLabel = computed(() =>
           <dt class="meta-label w-40 shrink-0">Compare-at price</dt>
           <dd class="text-sm text-smoke">{{ compareAtPriceLabel }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
   </div>
 </template>

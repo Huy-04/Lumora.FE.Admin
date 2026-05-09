@@ -19,7 +19,12 @@ const canRevokeSessions = computed(() => authz.can(ADMIN_PERMISSION.refreshToken
 
 const actionPending = ref<"" | "revoke-device" | "revoke-all">("");
 const actionError = ref("");
-const actionSuccess = ref("");
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
 
 const pageSize = 5;
 const currentPage = ref(1);
@@ -67,13 +72,11 @@ const executeConfirm = async () => {
 
   closeConfirm();
   actionError.value = "";
-  actionSuccess.value = "";
 
   if (action === "revoke-device") {
     actionPending.value = "revoke-device";
     try {
       await sessionsApi.revokeUserDevice({ userId: props.userId, deviceId: id });
-      actionSuccess.value = "Device session revoked.";
       emit("refresh");
     } catch (err) {
       actionError.value = getProblemMessage(err, "Unable to revoke the device session.");
@@ -86,7 +89,6 @@ const executeConfirm = async () => {
     actionPending.value = "revoke-all";
     try {
       await usersApi.forceLogoutUser(props.userId);
-      actionSuccess.value = "User was signed out of every active device.";
       emit("refresh");
     } catch (err) {
       actionError.value = getProblemMessage(err, "Unable to force logout this user.");
@@ -108,6 +110,15 @@ const executeConfirm = async () => {
       :loading="actionPending !== ''"
       @confirm="executeConfirm"
       @cancel="closeConfirm"
+    />
+    <AppConfirm
+      :open="actionErrorOpen"
+      title="Session action failed"
+      :detail="actionError"
+      cancel-label="Close"
+      tone="danger"
+      hide-confirm
+      @cancel="closeActionError"
     />
 
     <div v-if="sessions.length" class="grid gap-3">
@@ -149,7 +160,7 @@ const executeConfirm = async () => {
             </dl>
 
             <AppButton
-              v-if="canRevokeSessions"
+              v-if="canRevokeSessions && entry.tokenStatus === 'Active'"
               :loading="actionPending === 'revoke-device'"
               class="justify-self-start xl:min-w-[112px] xl:justify-self-end"
               variant="danger"
@@ -203,12 +214,5 @@ const executeConfirm = async () => {
       detail="There are no active refresh-token sessions for this user."
     />
 
-    <AppNotice v-if="actionSuccess" tone="success" title="Session action completed" class="mt-4">
-      {{ actionSuccess }}
-    </AppNotice>
-
-    <AppNotice v-if="actionError" tone="danger" title="Session action failed" class="mt-4">
-      {{ actionError }}
-    </AppNotice>
   </AppPanel>
 </template>

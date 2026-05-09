@@ -33,7 +33,6 @@ export const usePermissionsIndexPage = async () => {
   const confirmPermissionId = ref("");
   const actionPending = ref<"" | "remove">("");
   const actionError = ref("");
-  const actionSuccess = ref("");
 
   const moduleOptions = [{ label: "All modules", value: "" }, ...permissionModuleOptions];
   const operationOptions = [{ label: "All operations", value: "" }, ...permissionOperationOptions];
@@ -118,7 +117,6 @@ export const usePermissionsIndexPage = async () => {
   const requestRemove = (permissionId: string) => {
     confirmPermissionId.value = permissionId;
     actionError.value = "";
-    actionSuccess.value = "";
   };
 
   const cancelRemove = () => {
@@ -132,11 +130,9 @@ export const usePermissionsIndexPage = async () => {
 
     actionPending.value = "remove";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       await permissionsApi.deletePermission(confirmPermissionId.value);
-      actionSuccess.value = "Permission removed.";
       confirmPermissionId.value = "";
       await refresh();
     } catch (error) {
@@ -149,7 +145,6 @@ export const usePermissionsIndexPage = async () => {
   return {
     actionError,
     actionPending,
-    actionSuccess,
     applyFilters,
     canCreatePermission,
     canRemovePermission,

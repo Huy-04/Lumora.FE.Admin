@@ -79,7 +79,7 @@ const emit = defineEmits<{
                 :disabled="loading"
                 @click="emit('cancel')"
               >
-                {{ cancelLabel ?? "Huỷ" }}
+                {{ cancelLabel ?? "Cancel" }}
               </AppButton>
               <AppButton
                 v-if="!hideConfirm"
@@ -87,7 +87,7 @@ const emit = defineEmits<{
                 :loading="loading"
                 @click="emit('confirm')"
               >
-                {{ confirmLabel ?? "Xác nhận" }}
+                {{ confirmLabel ?? "Confirm" }}
               </AppButton>
             </div>
           </div>

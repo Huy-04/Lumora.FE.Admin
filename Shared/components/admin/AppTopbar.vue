@@ -1,52 +1,14 @@
 <script setup lang="ts">
+import { resolveStaticPageBreadcrumbs, usePageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 
 const route = useRoute();
-const { groups } = useAdminNavigation();
+const pageBreadcrumbs = usePageBreadcrumbs();
 
-const flatItems = computed(() => groups.value.flatMap((group) => group.items));
-const accountBreadcrumbs = [
-  {
-    path: "/profile/sessions",
-    items: [
-      { label: "Profile", to: "/profile" },
-      { label: "Sessions", to: "/profile/sessions" },
-    ],
-  },
-  {
-    path: "/profile/avatar",
-    items: [
-      { label: "Profile", to: "/profile" },
-      { label: "Avatar", to: "/profile/avatar" },
-    ],
-  },
-  {
-    path: "/profile",
-    items: [
-      { label: "Profile", to: "/profile" },
-    ],
-  },
-  {
-    path: "/settings",
-    items: [
-      { label: "Settings", to: "/settings" },
-    ],
-  },
-];
-const breadcrumbs = computed(() => {
-  const accountMatch = accountBreadcrumbs.find((entry) =>
-    route.path === entry.path || route.path.startsWith(`${entry.path}/`),
-  );
-
-  if (accountMatch) {
-    return accountMatch.items;
-  }
-
-  const activeItem = flatItems.value.find((item) =>
-    route.path === item.to || (item.to !== "/" && route.path.startsWith(`${item.to}/`)),
-  );
-
-  return activeItem ? [activeItem] : [{ label: "Dashboard", to: "/" }];
-});
+const breadcrumbs = computed(() =>
+  pageBreadcrumbs.items.value.length
+    ? pageBreadcrumbs.items.value
+    : resolveStaticPageBreadcrumbs(route.path),
+);
 </script>
 
 <template>
@@ -55,14 +17,21 @@ const breadcrumbs = computed(() => {
       <NuxtLink to="/" class="layout-breadcrumb-link">
         Admin
       </NuxtLink>
-      <template v-for="(item, index) in breadcrumbs" :key="item.to">
+      <template v-for="(item, index) in breadcrumbs" :key="`${item.to ?? item.label}-${index}`">
         <span class="layout-breadcrumb-separator">/</span>
         <NuxtLink
+          v-if="item.to"
           :to="item.to"
           :class="index === breadcrumbs.length - 1 ? 'layout-breadcrumb-current' : 'layout-breadcrumb-link'"
         >
           {{ item.label }}
         </NuxtLink>
+        <span
+          v-else
+          :class="index === breadcrumbs.length - 1 ? 'layout-breadcrumb-current' : 'layout-breadcrumb-link'"
+        >
+          {{ item.label }}
+        </span>
       </template>
     </div>
   </header>

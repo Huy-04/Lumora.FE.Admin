@@ -10,6 +10,7 @@ import {
   PhTruck,
   PhUsersThree,
   PhBuildings,
+  PhCreditCard,
 } from "@phosphor-icons/vue";
 
 export interface AdminNavigationItem {
@@ -63,6 +64,7 @@ export const useAdminNavigation = () => {
       collapsible: true,
       items: [
         { label: "Orders", to: "/orders", icon: PhReceipt },
+        { label: "Payments", to: "/payments", icon: PhCreditCard },
       ],
     },
     {

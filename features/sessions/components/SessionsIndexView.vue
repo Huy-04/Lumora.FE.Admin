@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { SessionsIndexPage } from "~/features/sessions/composables/useSessionsIndexPage";
 
 defineProps<{
@@ -16,8 +15,6 @@ defineProps<{
     :pending="page.pending.value"
     :error="page.error.value ? 'Error loading data' : null"
     :error-detail="page.error.value ? getProblemMessage(page.error.value, 'The active session list is unavailable.') : ''"
-    :action-success="page.actionSuccess.value"
-    action-success-title="Session action completed"
     :action-error="page.actionError.value"
     action-error-title="Session action failed"
     :items-length="page.data.value?.length ?? 0"
@@ -38,8 +35,8 @@ defineProps<{
     </template>
 
     <template #actions>
-      <AppButton aria-label="Reload sessions" class="toolbar-refresh-button" icon-only variant="secondary" @click="page.refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="page.refresh">
+        Refresh
       </AppButton>
     </template>
 
@@ -83,7 +80,7 @@ defineProps<{
                 >
                   Open
                 </NuxtLink>
-                <template v-if="page.canRevokeSessions.value">
+                <template v-if="page.canRevokeSessions.value && session.tokenStatus === 'Active'">
                   <AppButton
                     :loading="page.actionPending.value === 'revoke'"
                     class="table-action !min-w-[0] !px-3"
@@ -91,14 +88,6 @@ defineProps<{
                     @click="page.revokeSession(session, 'revoke')"
                   >
                     Revoke
-                  </AppButton>
-                  <AppButton
-                    :loading="page.actionPending.value === 'revoke-device'"
-                    class="table-action !min-w-[0] !px-3"
-                    variant="secondary"
-                    @click="page.revokeSession(session, 'revoke-device')"
-                  >
-                    Revoke device
                   </AppButton>
                   <AppButton
                     :loading="page.actionPending.value === 'revoke-user'"

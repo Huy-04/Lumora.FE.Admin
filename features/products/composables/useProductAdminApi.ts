@@ -13,6 +13,7 @@ import type {
   ReorderProductsRequest,
   ReorderImagesRequest,
   ReorderVariantsRequest,
+  UpdateImageRequest,
   UpdateImageAltRequest,
   UpdateProductRequest,
   UpdateVariantRequest,
@@ -186,6 +187,12 @@ export const useProductAdminApi = () => {
 
     updateProductImageAlt: (productId: string, imageId: string, payload: UpdateImageAltRequest) =>
       api.request<ProductGalleryResponse>(productChildRoute(productId, `/gallery/${imageId}/alt`), {
+        method: "PUT",
+        body: payload,
+      }),
+
+    updateProductImage: (productId: string, imageId: string, payload: UpdateImageRequest) =>
+      api.request<ProductGalleryResponse>(productChildRoute(productId, `/gallery/${imageId}`), {
         method: "PUT",
         body: payload,
       }),

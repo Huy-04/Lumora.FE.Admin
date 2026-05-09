@@ -63,12 +63,33 @@ export const useOrderDetailPage = async () => {
   const route = useRoute();
   const orderApi = useOrderAdminApi();
   const authz = useAdminAuthorization();
+
+  type OrderTab = "overview" | "items" | "lifecycle";
+
   const orderId = computed(() => String(route.params.id ?? ""));
 
   const canModifyOrder = computed(() => authz.can(ADMIN_PERMISSION.orderModifyAll));
+  const orderTabs = computed<Array<{ label: string; value: OrderTab }>>(() => [
+    { label: "Overview", value: "overview" },
+    { label: "Items", value: "items" },
+    { label: "Lifecycle", value: "lifecycle" },
+  ]);
+
+  const normalizeTab = (value: unknown): OrderTab => {
+    if (value === "items") {
+      return "items";
+    }
+
+    if (value === "operations" || value === "actions" || value === "lifecycle") {
+      return "lifecycle";
+    }
+
+    return "overview";
+  };
+
+  const activeTab = ref<OrderTab>(normalizeTab(route.query.tab));
   const actionPending = ref<OrderActionKey | "">("");
   const actionError = ref("");
-  const actionSuccess = ref("");
   const requestedAction = ref<OrderAction | null>(null);
   const actionReason = ref("");
   const selectedReasonPreset = ref("");
@@ -80,6 +101,7 @@ export const useOrderDetailPage = async () => {
 
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This order is not available right now."));
   const order = computed(() => data.value ?? null);
+  const hasStockReservationFailure = computed(() => order.value?.stockReservationStatus === "Failed");
 
   const availableActions = computed<OrderAction[]>(() => {
     if (!order.value || !canModifyOrder.value) {
@@ -137,7 +159,6 @@ export const useOrderDetailPage = async () => {
     selectedReasonPreset.value = action.requiresReason ? presets[0]?.label ?? "" : "";
     actionReason.value = action.requiresReason ? presets[0]?.value ?? "" : "";
     actionError.value = "";
-    actionSuccess.value = "";
   };
 
   const closeAction = () => {
@@ -176,7 +197,6 @@ export const useOrderDetailPage = async () => {
 
     actionPending.value = action.key;
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       if (action.key === "confirm") {
@@ -195,7 +215,6 @@ export const useOrderDetailPage = async () => {
         data.value = await orderApi.returnOrderToSender(order.value.id, { reason: actionReason.value.trim() });
       }
 
-      actionSuccess.value = `${action.label} completed.`;
       closeAction();
       await refresh();
     } catch (requestError) {
@@ -207,25 +226,56 @@ export const useOrderDetailPage = async () => {
 
   const totalQuantity = computed(() => order.value?.items.reduce((total, item) => total + item.quantity, 0) ?? 0);
 
+  const selectTab = async (tab: OrderTab) => {
+    const nextTab = normalizeTab(tab);
+
+    if (!orderTabs.value.some((item) => item.value === nextTab)) {
+      return;
+    }
+
+    activeTab.value = nextTab;
+    await navigateTo(
+      {
+        path: `/orders/${orderId.value}`,
+        query: nextTab === "overview" ? {} : { tab: nextTab },
+      },
+      { replace: true },
+    );
+  };
+
+  watch(
+    () => route.query.tab,
+    (value) => {
+      activeTab.value = normalizeTab(value);
+    },
+  );
+
+  watchEffect(() => {
+    activeTab.value = normalizeTab(activeTab.value);
+  });
+
   return {
     actionError,
     actionPending,
     actionReason,
-    actionSuccess,
+    activeTab,
     availableActions,
     canModifyOrder,
     closeAction,
     error,
     executeAction,
+    hasStockReservationFailure,
     loadErrorMessage,
     order,
     orderId,
+    orderTabs,
     pending,
     refresh,
     requestedAction,
     requestAction,
     reasonPresets,
     selectReasonPreset,
+    selectTab,
     selectedReasonPreset,
     totalQuantity,
   };

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { ProfilePage } from "~/features/profile/composables/useProfilePage";
 
 const props = defineProps<{
@@ -10,6 +11,19 @@ const { data, pending, error, profileTabs, activeTab, selectTab, handleUpdated }
 const selectProfileTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
 };
+
+const activeTabLabel = computed(() =>
+  profileTabs.find((tab) => tab.value === activeTab.value)?.label ?? "Profile",
+);
+
+useScopedPageBreadcrumbs(() =>
+  data.value
+    ? [
+        { label: "Profile", to: "/profile" },
+        { label: activeTabLabel.value },
+      ]
+    : [],
+);
 </script>
 
 <template>

@@ -50,8 +50,7 @@ const submitPassword = async () => {
 <template>
   <div class="grid max-w-6xl content-start gap-6">
     <AppPanel
-      eyebrow="Sessions"
-      title="Session activity"
+      eyebrow="Session activity"
     >
       <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div class="soft-card p-4">
@@ -70,9 +69,7 @@ const submitPassword = async () => {
     </AppPanel>
 
     <AppPanel
-      eyebrow="Security"
-      title="Change password"
-      description="Enter your current password and choose a new one."
+      eyebrow="Change password"
     >
       <form class="form-stack" @submit.prevent="submitPassword">
         <AppInput

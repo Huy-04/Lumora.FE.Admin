@@ -70,8 +70,7 @@ const savePermission = async () => {
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
     <AppPanel
-      title="Edit permission"
-      description="Adjust the permission contract used by backend policy checks without breaking naming consistency."
+      eyebrow="Edit permission"
     >
       <form class="form-stack" @submit.prevent="savePermission">
         <div class="grid gap-4 md:grid-cols-2">
@@ -87,11 +86,8 @@ const savePermission = async () => {
           <AppTextarea v-model="form.description" label="Description" placeholder="Describe where this permission is used." />
         </div>
 
-        <div class="panel-action-row pt-2">
+        <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
           <AppButton :loading="actionPending" type="submit">Save changes</AppButton>
-          <NuxtLink class="secondary-link" to="/permissions">
-            Back to permissions
-          </NuxtLink>
         </div>
       </form>
 

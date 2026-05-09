@@ -19,7 +19,6 @@ const confirmImageId = ref("");
 const actionPending = ref<"" | "remove" | "primary" | "reorder">("");
 const actionTargetId = ref("");
 const actionError = ref("");
-const actionSuccess = ref("");
 const dragSourceId = ref("");
 const dragTargetId = ref("");
 const pendingReorder = ref<null | {
@@ -28,6 +27,12 @@ const pendingReorder = ref<null | {
   targetId: string;
   targetLabel: string;
 }>(null);
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
 
 const confirmImage = computed(() =>
   props.gallery?.images.find((image) => image.id === confirmImageId.value) ?? null,
@@ -58,11 +63,9 @@ const removeImage = async () => {
   actionPending.value = "remove";
   actionTargetId.value = confirmImageId.value;
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     await productApi.removeProductImage(props.productId, confirmImageId.value);
-    actionSuccess.value = "Image removed.";
     confirmImageId.value = "";
     emit("refresh");
   } catch (requestError) {
@@ -88,11 +91,9 @@ const setPrimary = async (imageId: string) => {
   actionPending.value = "primary";
   actionTargetId.value = imageId;
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     await productApi.setPrimaryProductImage(props.productId, imageId);
-    actionSuccess.value = "Primary image updated.";
     emit("refresh");
   } catch (requestError) {
     actionError.value = getProblemMessage(requestError, "Unable to set the primary image.");
@@ -110,7 +111,6 @@ const saveOrder = async () => {
 
   actionPending.value = "reorder";
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     const ordered = [...props.gallery.images];
@@ -133,7 +133,6 @@ const saveOrder = async () => {
     }));
 
     await productApi.reorderProductImages(props.productId, { items });
-    actionSuccess.value = "Gallery order updated.";
     pendingReorder.value = null;
     emit("refresh");
   } catch (requestError) {
@@ -218,19 +217,21 @@ const handleImageDrop = (targetId: string) => {
       @confirm="confirmRemoveImageAction"
       @cancel="confirmImageId = ''"
     />
+    <AppConfirm
+      :open="actionErrorOpen"
+      title="Gallery action failed"
+      :detail="actionError"
+      cancel-label="Close"
+      tone="danger"
+      hide-confirm
+      @cancel="closeActionError"
+    />
 
-    <AppPanel title="Gallery" description="Manage product gallery imagery, choose the primary storefront product image, update alt text, and control ordering with drag-and-drop.">
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <AppPanel eyebrow="Gallery">
+      <div class="mb-6">
         <p class="text-sm text-smoke">
           {{ gallery?.images.length ?? 0 }} images in the current gallery.
         </p>
-        <NuxtLink
-          v-if="canUpdate"
-          class="secondary-link"
-          :to="`/products/${productId}/gallery/create`"
-        >
-          Add image
-        </NuxtLink>
       </div>
 
       <AppNotice v-if="!canUpdate" tone="warning" title="Read-only access">
@@ -238,14 +239,6 @@ const handleImageDrop = (targetId: string) => {
       </AppNotice>
       <AppNotice v-else-if="!canReorder && (gallery?.images.length ?? 0) > 1" tone="warning" title="Reorder unavailable">
         Product reorder permission is required to drag and reorder gallery images.
-      </AppNotice>
-
-      <AppNotice v-if="actionSuccess" tone="success" title="Gallery updated">
-        {{ actionSuccess }}
-      </AppNotice>
-
-      <AppNotice v-if="actionError" tone="danger" title="Gallery action failed">
-        {{ actionError }}
       </AppNotice>
 
       <div v-if="gallery?.images.length" class="table-shell overflow-x-auto">
@@ -336,6 +329,15 @@ const handleImageDrop = (targetId: string) => {
         title="No gallery images yet"
         detail="Create the first gallery image to build the product's storefront gallery."
       />
+
+      <div v-if="canUpdate" class="mt-4 flex justify-end border-t border-line/70 pt-4">
+        <NuxtLink
+          class="secondary-link"
+          :to="`/products/${productId}/gallery/create`"
+        >
+          Add image
+        </NuxtLink>
+      </div>
     </AppPanel>
   </div>
 </template>

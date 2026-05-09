@@ -49,10 +49,7 @@ const saveRole = async () => {
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel
-      title="Edit role"
-      description="Update the role name and description."
-    >
+    <AppPanel eyebrow="Edit role">
       <form class="form-stack" @submit.prevent="saveRole">
         <div class="grid gap-5">
           <div class="max-w-2xl">
@@ -74,11 +71,8 @@ const saveRole = async () => {
           {{ actionError }}
         </AppNotice>
 
-        <div class="panel-action-row border-t border-line/70 pt-4">
+        <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-5">
           <AppButton :loading="actionPending" type="submit">Save changes</AppButton>
-          <NuxtLink class="secondary-link" to="/roles">
-            Back to roles
-          </NuxtLink>
         </div>
       </form>
     </AppPanel>

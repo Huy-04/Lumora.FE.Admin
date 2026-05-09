@@ -133,6 +133,10 @@ export interface AddVariantRequest {
   sku: string;
   name: string;
   price: number;
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
   compareAtPrice?: number | null;
   productAssetId?: string | null;
 }
@@ -141,6 +145,10 @@ export interface UpdateVariantRequest {
   sku: string;
   name: string;
   price: number;
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
   compareAtPrice?: number | null;
   productAssetId?: string | null;
 }
@@ -164,6 +172,11 @@ export interface AddImageRequest {
 }
 
 export interface UpdateImageAltRequest {
+  alt?: string | null;
+}
+
+export interface UpdateImageRequest {
+  assetId: string;
   alt?: string | null;
 }
 

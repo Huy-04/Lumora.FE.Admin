@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { WarehouseIndexPageState } from "~/features/warehouses/composables/useWarehouseIndexPage";
 
 const props = defineProps<{
@@ -9,7 +8,6 @@ const props = defineProps<{
 const {
   actionError,
   actionPending,
-  actionSuccess,
   canCreateWarehouse,
   canReadWarehouse,
   createWarehouse,
@@ -34,8 +32,6 @@ const {
     :pending="pending"
     :error="error ? 'Error loading data' : null"
     :error-detail="error ? loadErrorMessage : ''"
-    :action-success="actionSuccess"
-    action-success-title="Warehouse updated"
     :action-error="actionError"
     action-error-title="Warehouse action failed"
     :items-length="warehouses.length"
@@ -46,8 +42,8 @@ const {
       <AppButton v-if="canCreateWarehouse" variant="primary" @click="createWarehouseOpen = !createWarehouseOpen">
         Create warehouse
       </AppButton>
-      <AppButton aria-label="Reload warehouses" class="toolbar-refresh-button" icon-only variant="secondary" @click="refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="refresh">
+        Refresh
       </AppButton>
     </template>
 
@@ -57,10 +53,7 @@ const {
           <AppSelect v-model="warehouseForm.code" label="Warehouse code" :options="warehouseCodeOptions" />
           <AppInput v-model="warehouseForm.name" label="Name" />
           <AppInput v-model="warehouseForm.phoneNational" label="Phone" />
-          <AppInput v-model="warehouseForm.province" label="Province" />
-          <AppInput v-model="warehouseForm.district" label="District" />
-          <AppInput v-model="warehouseForm.ward" label="Ward" />
-          <AppInput v-model="warehouseForm.street" class="lg:col-span-2" label="Street" />
+          <AppInput v-model="warehouseForm.address" class="lg:col-span-2" label="Address" />
           <div class="flex items-end">
             <AppButton :loading="actionPending === 'create-warehouse'" type="submit">
               Create
@@ -85,7 +78,7 @@ const {
           <tr v-for="warehouse in warehouses" :key="warehouse.id">
             <td>
               <p class="table-title">{{ warehouse.name }}</p>
-              <p class="table-copy">{{ warehouse.street }}, {{ warehouse.ward }}</p>
+              <p class="table-copy">{{ warehouse.address }}</p>
             </td>
             <td>{{ warehouse.code }}</td>
             <td>

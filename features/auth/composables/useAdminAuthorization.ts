@@ -46,6 +46,8 @@ export const ADMIN_PERMISSION = {
   orderReadSelf: "Order.Order.Read.Self",
   orderModifyAll: "Order.Order.Modify.All",
   orderModifySelf: "Order.Order.Modify.Self",
+  paymentReadAll: "Order.Order.Read.All",
+  paymentManageAll: "Order.Order.Modify.All",
   warehouseReadAll: "Inventory.Warehouse.Read.All",
   warehouseCreateAll: "Inventory.Warehouse.Create.All",
   warehouseUpdateAll: "Inventory.Warehouse.Update.All",
@@ -96,6 +98,8 @@ const routeAccessRules: RouteAccessRule[] = [
   { pattern: /^\/products\/[^/]+$/, requirements: [ADMIN_PERMISSION.productReadAll] },
   { pattern: /^\/orders$/, requirements: [ADMIN_PERMISSION.orderReadAll] },
   { pattern: /^\/orders\/[^/]+$/, requirements: [ADMIN_PERMISSION.orderReadAll] },
+  { pattern: /^\/payments$/, requirements: [ADMIN_PERMISSION.paymentReadAll] },
+  { pattern: /^\/payments\/[^/]+$/, requirements: [ADMIN_PERMISSION.paymentReadAll] },
   { pattern: /^\/inventory$/, requirements: [[ADMIN_PERMISSION.inventoryReadAll, ADMIN_PERMISSION.warehouseReadAll]] },
   { pattern: /^\/inventory\/[^/]+$/, requirements: [ADMIN_PERMISSION.inventoryReadAll] },
   { pattern: /^\/warehouses\/[^/]+$/, requirements: [ADMIN_PERMISSION.warehouseReadAll] },
@@ -144,7 +148,7 @@ export const useAdminAuthorization = () => {
     }
 
     const fallbacks = ["/", "/profile", "/settings"];
-    const preferred = ["/users", "/roles", "/permissions", "/categories", "/products", "/inventory", "/orders", "/shipments", "/sessions"];
+    const preferred = ["/users", "/roles", "/permissions", "/categories", "/products", "/inventory", "/orders", "/payments", "/shipments", "/sessions"];
 
     const preferredPath = preferred.find((path) => canAccessPath(path));
     return preferredPath ?? fallbacks.find((path) => canAccessPath(path)) ?? "/";

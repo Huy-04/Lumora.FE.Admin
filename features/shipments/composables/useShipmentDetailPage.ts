@@ -25,13 +25,15 @@ export const useShipmentDetailPage = async () => {
   const route = useRoute();
   const shipmentApi = useShipmentAdminApi();
   const authz = useAdminAuthorization();
+
+  type ShipmentTab = "overview" | "tracking" | "submit" | "cancellation";
+
   const shipmentId = computed(() => String(route.params.id ?? ""));
 
   const canSubmitShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentModifyAll));
   const actionPending = ref("");
   const actionError = ref("");
-  const actionSuccess = ref("");
-  const submitOpen = ref(false);
+  const activeTab = ref<ShipmentTab>("overview");
 
   const submitForm = reactive({
     requiredNote: "",
@@ -55,29 +57,24 @@ export const useShipmentDetailPage = async () => {
   const shipment = computed<ShipmentResponse | null>(() => data.value ?? null);
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This shipment is not available right now."));
   const isDraft = computed(() => shipment.value?.status === "Draft");
-
-  const lifecycleStats = computed(() => [
-    {
-      label: "Status",
-      value: shipment.value?.status ?? "-",
-      detail: "Local shipment lifecycle state.",
-    },
-    {
-      label: "Carrier",
-      value: shipment.value?.carrier ?? "-",
-      detail: "Carrier selected by backend.",
-    },
-    {
-      label: "Carrier code",
-      value: shipment.value?.carrierOrderCode ?? "Not submitted",
-      detail: "GHN order code after submit.",
-    },
-    {
-      label: "Submitted",
-      value: shipment.value?.submittedAt ? new Date(shipment.value.submittedAt).toLocaleDateString() : "Pending",
-      detail: "Submit timestamp from backend.",
-    },
+  const shipmentTabs = computed<Array<{ label: string; value: ShipmentTab }>>(() => [
+    { label: "Overview", value: "overview" },
+    { label: "Tracking", value: "tracking" },
+    ...(canSubmitShipment.value && isDraft.value ? [{ label: "Submit", value: "submit" as const }] : []),
+    ...(shipment.value?.cancellation ? [{ label: "Cancellation", value: "cancellation" as const }] : []),
   ]);
+
+  const normalizeTab = (value: unknown): ShipmentTab => {
+    const resolved = value === "tracking" || value === "timeline" || value === "status"
+      ? "tracking"
+      : value === "submit"
+        ? "submit"
+        : value === "cancellation"
+          ? "cancellation"
+          : "overview";
+
+    return shipmentTabs.value.some((tab) => tab.value === resolved) ? resolved : "overview";
+  };
 
   const submitShipment = async () => {
     if (!shipment.value) {
@@ -86,7 +83,6 @@ export const useShipmentDetailPage = async () => {
 
     actionPending.value = "submit";
     actionError.value = "";
-    actionSuccess.value = "";
 
     const payload: SubmitShipmentRequest = {
       requiredNote: nullableText(submitForm.requiredNote),
@@ -104,8 +100,6 @@ export const useShipmentDetailPage = async () => {
 
     try {
       data.value = await shipmentApi.submitShipment(shipment.value.id, payload);
-      actionSuccess.value = "Shipment submitted to GHN.";
-      submitOpen.value = false;
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to submit shipment.");
@@ -114,20 +108,46 @@ export const useShipmentDetailPage = async () => {
     }
   };
 
+  watch(
+    () => route.query.tab,
+    (value) => {
+      activeTab.value = normalizeTab(value);
+    },
+    { immediate: true },
+  );
+
+  watchEffect(() => {
+    activeTab.value = normalizeTab(activeTab.value);
+  });
+
+  const selectTab = async (tab: ShipmentTab) => {
+    const nextTab = normalizeTab(tab);
+
+    activeTab.value = nextTab;
+    await navigateTo(
+      {
+        path: `/shipments/${shipmentId.value}`,
+        query: nextTab === "overview" ? {} : { tab: nextTab },
+      },
+      { replace: true },
+    );
+  };
+
   return {
     actionError,
     actionPending,
-    actionSuccess,
+    activeTab,
     canSubmitShipment,
     error,
     isDraft,
-    lifecycleStats,
     loadErrorMessage,
     pending,
     refresh,
+    selectTab,
     shipment,
+    shipmentId,
+    shipmentTabs,
     submitForm,
-    submitOpen,
     submitShipment,
   };
 };

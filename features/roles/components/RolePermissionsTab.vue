@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { PhCaretDown } from "@phosphor-icons/vue";
-
 import type { RolePermissionResponse } from "~/features/roles/types";
 import type { PermissionResponse } from "~/features/permissions/types";
 
@@ -16,13 +14,17 @@ const emit = defineEmits<{
 
 const rolesApi = useRolesAdminApi();
 const authz = useAdminAuthorization();
-const { permissionModuleOptions } = useAuthOptions();
 const canSyncPermissions = computed(() => authz.can([ADMIN_PERMISSION.rolePermissionUpdateAll, ADMIN_PERMISSION.permissionUpdateAll]));
 
 const actionPending = ref(false);
 const actionError = ref("");
-const actionSuccess = ref("");
 const moduleFilter = ref("");
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
 
 const assignedIds = computed(() =>
   new Set((props.permissions ?? []).map((permission) => permission.permissionId)),
@@ -62,6 +64,32 @@ const filteredGroups = computed(() => {
 const flatPerms = (subGroups: Array<{ perms: typeof props.catalog }>) =>
   subGroups.flatMap((group) => group.perms);
 
+const countChecked = (permissions: Array<{ id: string }>) =>
+  permissions.filter((permission) => checked.value.has(permission.id)).length;
+
+const moduleTabOptions = computed(() => {
+  const allPermissions = moduleGroups.value.flatMap((group) => flatPerms(group.subGroups));
+
+  return [
+    {
+      label: "All",
+      value: "",
+      checkedCount: countChecked(allPermissions),
+      totalCount: allPermissions.length,
+    },
+    ...moduleGroups.value.map((group) => {
+      const permissions = flatPerms(group.subGroups);
+
+      return {
+        label: group.module,
+        value: group.module,
+        checkedCount: countChecked(permissions),
+        totalCount: permissions.length,
+      };
+    }),
+  ];
+});
+
 const togglePermission = (permissionId: string) => {
   const next = new Set(checked.value);
   if (next.has(permissionId)) {
@@ -96,7 +124,6 @@ const groupPartialChecked = (permissions: Array<{ id: string }>) =>
 const syncPermissions = async () => {
   actionPending.value = true;
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     const addPermissionIds = [...checked.value].filter((id) => !assignedIds.value.has(id));
@@ -106,7 +133,6 @@ const syncPermissions = async () => {
 
     await rolesApi.syncRolePermissions(props.roleId, { addPermissionIds, removeRolePermissionIds });
 
-    actionSuccess.value = "Permissions updated.";
     emit("refresh");
   } catch (requestError) {
     actionError.value = getProblemMessage(requestError, "Unable to sync permissions.");
@@ -117,108 +143,95 @@ const syncPermissions = async () => {
 </script>
 
 <template>
-  <div class="grid max-w-4xl content-start gap-6">
-    <AppPanel
-      title="Permission matrix"
-      description="Toggle permissions by module. Changes are applied when you click Save."
-    >
-      <div v-if="moduleGroups.length" class="grid gap-4">
-        <div class="flex items-center gap-3">
-          <AppSelect
-            v-model="moduleFilter"
-            label="Filter by module"
-            :options="[{ label: 'All modules', value: '' }, ...permissionModuleOptions]"
-            class="w-48"
-          />
-        </div>
+  <AppAssignmentPanel
+    eyebrow="Permissions"
+    :has-items="moduleGroups.length > 0"
+    empty-title="No permissions in catalog"
+    empty-detail="Create permissions first, then return here to assign them."
+  >
+    <AppConfirm
+      :open="actionErrorOpen"
+      title="Update failed"
+      :detail="actionError"
+      cancel-label="Close"
+      tone="danger"
+      hide-confirm
+      @cancel="closeActionError"
+    />
 
-        <div class="grid max-h-[460px] gap-3 overflow-y-auto pr-1">
-          <details
-            v-for="group in filteredGroups"
-            :key="group.module"
-            class="accordion-shell accordion-shell-active group"
-            open
-          >
-            <summary class="accordion-summary">
-              <input
-                type="checkbox"
-                class="h-4 w-4 cursor-pointer rounded accent-ink"
-                :checked="groupAllChecked(flatPerms(group.subGroups))"
-                :indeterminate="groupPartialChecked(flatPerms(group.subGroups))"
-                @change.stop="toggleGroup(flatPerms(group.subGroups))"
-                @click.stop
-              />
-              <span class="flex-1 text-sm font-semibold text-ink">{{ group.module }}</span>
-              <span class="subtle-pill text-xs">
-                {{ flatPerms(group.subGroups).filter((permission) => checked.has(permission.id)).length }}/{{ flatPerms(group.subGroups).length }}
-              </span>
-              <PhCaretDown :size="14" class="text-smoke transition-transform group-open:rotate-180" />
-            </summary>
+    <template #controls>
+      <AppAssignmentTabs v-model="moduleFilter" label="Module" :tabs="moduleTabOptions" />
+    </template>
 
-            <div class="border-t border-line/60">
-              <details
-                v-for="subGroup in group.subGroups"
-                :key="subGroup.subModule"
-                class="group/sub border-b border-line/30 last:border-b-0"
-                open
+    <template #actions>
+      <AppButton v-if="canSyncPermissions" :loading="actionPending" @click="syncPermissions">
+        Save permissions
+      </AppButton>
+    </template>
+
+    <div class="grid max-h-[560px] gap-4 overflow-y-auto pr-1">
+      <AppAssignmentGroup
+        v-for="group in filteredGroups"
+        :key="group.module"
+        :title="group.module"
+        :count-label="`${countChecked(flatPerms(group.subGroups))}/${flatPerms(group.subGroups).length}`"
+        :checked="groupAllChecked(flatPerms(group.subGroups))"
+        :indeterminate="groupPartialChecked(flatPerms(group.subGroups))"
+        :collapsible="false"
+        @toggle-all="toggleGroup(flatPerms(group.subGroups))"
+      >
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="w-[64px] text-center">Use</th>
+                <th class="min-w-[220px]">Permission</th>
+                <th class="min-w-[160px]">Sub module</th>
+                <th class="min-w-[120px]">Operation</th>
+                <th class="min-w-[120px]">Scope</th>
+                <th class="w-[132px] text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="permission in flatPerms(group.subGroups)"
+                :key="permission.id"
+                class="cursor-pointer"
+                @click="togglePermission(permission.id)"
               >
-                <summary class="accordion-summary py-2.5 pl-8 pr-4">
+                <td class="align-middle text-center">
                   <input
                     type="checkbox"
-                    class="h-3.5 w-3.5 cursor-pointer rounded accent-ink"
-                    :checked="groupAllChecked(subGroup.perms)"
-                    :indeterminate="groupPartialChecked(subGroup.perms)"
-                    @change.stop="toggleGroup(subGroup.perms)"
+                    class="h-4 w-4 cursor-pointer rounded accent-ink"
+                    :checked="checked.has(permission.id)"
                     @click.stop
+                    @change="togglePermission(permission.id)"
                   />
-                  <span class="flex-1 text-sm font-semibold text-ink">{{ subGroup.subModule }}</span>
-                  <span class="subtle-pill text-xs">
-                    {{ subGroup.perms.filter((permission) => checked.has(permission.id)).length }}/{{ subGroup.perms.length }}
-                  </span>
-                  <PhCaretDown :size="14" class="text-smoke transition-transform group-open/sub:rotate-180" />
-                </summary>
-
-                <div class="accordion-body border-t border-line/30 divide-y divide-line/20">
-                  <label
-                    v-for="permission in subGroup.perms"
-                    :key="permission.id"
-                    class="flex cursor-pointer items-center gap-3 py-2.5 pl-11 pr-4 transition-colors hover:bg-line/20 dark:hover:bg-white/6"
-                  >
-                    <input
-                      type="checkbox"
-                      class="h-3.5 w-3.5 cursor-pointer rounded accent-ink"
-                      :checked="checked.has(permission.id)"
-                      @change="togglePermission(permission.id)"
-                    />
-                    <span class="flex-1 text-xs font-medium text-ink">{{ permission.permissionName }}</span>
-                    <AppBadge>{{ permission.operation }}</AppBadge>
-                  </label>
-                </div>
-              </details>
-            </div>
-          </details>
+                </td>
+                <td class="align-middle">
+                  <p class="table-title">{{ permission.permissionName }}</p>
+                  <p v-if="permission.description" class="table-copy">{{ permission.description }}</p>
+                </td>
+                <td class="align-middle">
+                  <p class="text-sm font-medium text-ink">{{ permission.subModule }}</p>
+                </td>
+                <td class="align-middle">
+                  <AppBadge>{{ permission.operation }}</AppBadge>
+                </td>
+                <td class="align-middle">
+                  <p class="text-sm text-smoke">{{ permission.scope }}</p>
+                </td>
+                <td class="align-middle text-center">
+                  <AppBadge :tone="checked.has(permission.id) ? 'success' : 'default'">
+                    {{ checked.has(permission.id) ? "Assigned" : "Available" }}
+                  </AppBadge>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </AppAssignmentGroup>
+    </div>
 
-        <div v-if="canSyncPermissions" class="panel-action-row">
-          <AppButton :loading="actionPending" @click="syncPermissions">
-            Save permissions
-          </AppButton>
-        </div>
-
-        <AppNotice v-if="actionSuccess" tone="success" title="Permissions updated">
-          {{ actionSuccess }}
-        </AppNotice>
-
-        <AppNotice v-if="actionError" tone="danger" title="Update failed">
-          {{ actionError }}
-        </AppNotice>
-      </div>
-
-      <AppEmptyState
-        v-else
-        title="No permissions in catalog"
-        detail="Create permissions first, then return here to assign them."
-      />
-    </AppPanel>
-  </div>
+  </AppAssignmentPanel>
 </template>

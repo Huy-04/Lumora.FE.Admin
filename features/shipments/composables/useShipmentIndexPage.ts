@@ -5,7 +5,6 @@ export const useShipmentIndexPage = async () => {
   const authz = useAdminAuthorization();
 
   const canReadShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentReadAll));
-  const canModifyShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentModifyAll));
 
   const localKeyword = ref("");
   const localOrderId = ref("");
@@ -18,20 +17,6 @@ export const useShipmentIndexPage = async () => {
   const carrier = ref<ShipmentCarrier | "">("");
   const page = ref(1);
   const pageSize = ref("20");
-  const actionPending = ref("");
-  const actionError = ref("");
-  const actionSuccess = ref("");
-  const foundShipmentId = ref("");
-
-  const lookupForm = reactive({
-    shipmentId: "",
-    orderId: "",
-  });
-
-  const createForm = reactive({
-    orderId: "",
-    shipmentNumber: "",
-  });
 
   const shipmentStatusOptions = [
     { label: "All statuses", value: "" },
@@ -83,61 +68,6 @@ export const useShipmentIndexPage = async () => {
       size: Number(pageSize.value),
     }),
   );
-
-  const openShipmentById = async () => {
-    if (!lookupForm.shipmentId.trim()) {
-      actionError.value = "Shipment id is required.";
-      return;
-    }
-
-    await navigateTo(`/shipments/${lookupForm.shipmentId.trim()}`);
-  };
-
-  const lookupByOrderId = async () => {
-    if (!lookupForm.orderId.trim()) {
-      actionError.value = "Order id is required.";
-      return;
-    }
-
-    actionPending.value = "lookup-order";
-    actionError.value = "";
-    actionSuccess.value = "";
-    foundShipmentId.value = "";
-
-    try {
-      const shipment = await shipmentApi.getShipmentByOrderId(lookupForm.orderId.trim());
-      foundShipmentId.value = shipment.id;
-      actionSuccess.value = `Shipment found for order ${shipment.orderId}.`;
-    } catch (requestError) {
-      actionError.value = getProblemMessage(requestError, "No shipment was found for this order.");
-    } finally {
-      actionPending.value = "";
-    }
-  };
-
-  const createShipment = async () => {
-    if (!createForm.orderId.trim()) {
-      actionError.value = "Order id is required.";
-      return;
-    }
-
-    actionPending.value = "create";
-    actionError.value = "";
-    actionSuccess.value = "";
-
-    try {
-      const shipment = await shipmentApi.createShipment({
-        orderId: createForm.orderId.trim(),
-        shipmentNumber: createForm.shipmentNumber.trim() || null,
-      });
-      await refresh();
-      await navigateTo(`/shipments/${shipment.id}`);
-    } catch (requestError) {
-      actionError.value = getProblemMessage(requestError, "Unable to create shipment draft.");
-    } finally {
-      actionPending.value = "";
-    }
-  };
 
   const shipments = computed(() => data.value?.items ?? []);
   const totalShipments = computed(() => data.value?.totalCount ?? 0);
@@ -191,19 +121,12 @@ export const useShipmentIndexPage = async () => {
   ]);
 
   return {
-    actionError,
-    actionPending,
-    actionSuccess,
     applyFilters,
     carrierOptions,
-    canModifyShipment,
     canReadShipment,
     clearFilters,
-    createForm,
-    createShipment,
     error,
     firstItemNumber,
-    foundShipmentId,
     goToNextPage,
     goToPreviousPage,
     hasFilters,
@@ -213,9 +136,6 @@ export const useShipmentIndexPage = async () => {
     localKeyword,
     localOrderId,
     localStatus,
-    lookupByOrderId,
-    lookupForm,
-    openShipmentById,
     page,
     pageSize,
     pageSizeOptions,

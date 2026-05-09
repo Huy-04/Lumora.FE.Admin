@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { OrderIndexPageState } from "~/features/orders/composables/useOrderIndexPage";
 
 const props = defineProps<{
@@ -10,14 +9,12 @@ const {
   applyFilters,
   clearFilters,
   error,
-  hasFilters,
   loadErrorMessage,
   localCreatedFrom,
   localCreatedTo,
   localKeyword,
   localPaymentStatus,
   localStatus,
-  localUserId,
   localWarehouseId,
   orderStatusOptions,
   orders,
@@ -30,10 +27,11 @@ const {
   goToNextPage,
   goToPreviousPage,
   lastItemNumber,
-  refresh,
   summaryStats,
   totalOrders,
   totalPages,
+  warehouseOptions,
+  warehousesPending,
 } = props.page;
 </script>
 
@@ -59,22 +57,23 @@ const {
     @next-page="goToNextPage"
   >
     <template #search-input>
-      <AppInput v-model="localKeyword" label="" placeholder="Order number, customer, or note" @keyup.enter="applyFilters" />
+      <AppInput v-model="localKeyword" label="" placeholder="Order number, recipient, or phone" @keyup.enter="applyFilters" />
     </template>
 
     <template #actions>
-      <div class="grid gap-4 sm:grid-cols-2 lg:w-[560px] mr-3">
-        <AppInput v-model="localUserId" label="User id" placeholder="Filter by user id" @keyup.enter="applyFilters" />
-        <AppInput v-model="localWarehouseId" label="Warehouse id" placeholder="Filter by warehouse id" @keyup.enter="applyFilters" />
+      <div class="grid gap-4 sm:grid-cols-1 lg:w-[320px] mr-3">
+        <AppSelect
+          v-model="localWarehouseId"
+          label="Warehouse"
+          :disabled="warehousesPending"
+          :options="warehouseOptions"
+        />
       </div>
       <AppButton variant="primary" @click="applyFilters">
         Search
       </AppButton>
-      <AppButton v-if="hasFilters" variant="secondary" @click="clearFilters">
-        Clear
-      </AppButton>
-      <AppButton aria-label="Reload orders" class="toolbar-refresh-button" icon-only variant="secondary" @click="refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="clearFilters">
+        Refresh
       </AppButton>
     </template>
 
@@ -106,7 +105,6 @@ const {
           <tr v-for="order in orders" :key="order.id">
             <td>
               <p class="table-title">{{ order.orderNumber }}</p>
-              <p class="table-copy">{{ order.id }}</p>
             </td>
             <td>
               <AppBadge :tone="order.status === 'Completed' ? 'success' : order.status === 'Cancelled' || order.status === 'ReturnedToSender' ? 'danger' : 'default'">

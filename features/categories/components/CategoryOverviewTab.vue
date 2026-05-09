@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
 import type {
   CategoryResponse,
   CategoryTreeNodeResponse,
@@ -17,8 +18,7 @@ const activeChildren = computed(() => props.children.filter((child) => child.isA
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Category details" description="Core catalog identity, placement, and storefront visibility state.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Category details">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Name</dt>
           <dd class="text-sm font-medium text-ink">{{ category.name }}</dd>
@@ -55,11 +55,9 @@ const activeChildren = computed(() => props.children.filter((child) => child.isA
           <dt class="meta-label w-40 shrink-0">Image URL</dt>
           <dd class="break-all text-sm text-smoke">{{ category.img || "Not set" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Hierarchy and SEO" description="Relationships that drive tree browsing plus metadata surfaced to search engines.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Hierarchy and SEO">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Children</dt>
           <dd class="text-sm font-medium text-ink">{{ children.length }} total / {{ activeChildren }} active</dd>
@@ -72,11 +70,9 @@ const activeChildren = computed(() => props.children.filter((child) => child.isA
           <dt class="meta-label w-40 shrink-0">SEO description</dt>
           <dd class="text-sm text-smoke">{{ category.seoDescription || "Not set" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
 
-    <AppPanel title="Audit trail" description="Administrative authorship and timestamps.">
-      <dl class="divide-y divide-line/60">
+    <AppDetailMetaPanel eyebrow="Audit trail">
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Created at</dt>
           <dd class="text-sm text-smoke">{{ category.createdAt ? formatDateTime(category.createdAt) : "Not set" }}</dd>
@@ -97,7 +93,6 @@ const activeChildren = computed(() => props.children.filter((child) => child.isA
           <dt class="meta-label w-40 shrink-0">Deleted at</dt>
           <dd class="text-sm text-smoke">{{ category.deletedAt ? formatDateTime(category.deletedAt) : "Not deleted" }}</dd>
         </div>
-      </dl>
-    </AppPanel>
+    </AppDetailMetaPanel>
   </div>
 </template>

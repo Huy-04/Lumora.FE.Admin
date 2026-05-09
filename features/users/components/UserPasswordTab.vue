@@ -36,12 +36,9 @@ const submit = async () => {
 </script>
 
 <template>
-  <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel
-      title="Admin set password"
-      description="Override the user's password directly. This action does not require the current password."
-    >
-      <form class="form-stack" @submit.prevent="submit">
+  <div class="grid max-w-6xl content-start gap-6">
+    <AppPanel eyebrow="Password">
+      <form class="grid gap-5" @submit.prevent="submit">
         <AppInput v-model="adminPassword" label="New password" type="password" placeholder="Enter new password" required />
         <AppPasswordChecklist v-if="adminPassword" :rules="passwordRules" />
 
@@ -49,7 +46,7 @@ const submit = async () => {
           {{ errorMessage }}
         </AppNotice>
 
-        <div class="panel-action-row">
+        <div class="flex justify-end border-t border-line pt-5">
           <AppButton :loading="pending" type="submit">Set password</AppButton>
         </div>
       </form>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { ProductVariantDetailPage } from "~/features/products/composables/useProductVariantDetailPage";
 
 const props = defineProps<{
@@ -19,7 +20,6 @@ const {
   createInventory,
   inventoryActionError,
   inventoryActionPending,
-  inventoryActionSuccess,
   openInventory,
   selectTab,
   refresh,
@@ -28,6 +28,30 @@ const {
 const selectVariantTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
 };
+
+const activeTabLabel = computed(() =>
+  variantTabs.value.find((tab) => tab.value === activeTab.value)?.label ?? "Overview",
+);
+
+const inventoryActionErrorOpen = computed(() => inventoryActionError.value.length > 0);
+
+const closeInventoryActionError = () => {
+  inventoryActionError.value = "";
+};
+
+useScopedPageBreadcrumbs(() => {
+  const productName = data.value?.product?.name ?? "";
+
+  return variant.value && productName
+      ? [
+          { label: "Products", to: "/products" },
+          { label: productName, to: `/products/${productId.value}` },
+          { label: "Variants", to: `/products/${productId.value}?tab=variants` },
+          { label: variant.value.name, to: `/products/${productId.value}/variants/${variantId.value}` },
+          { label: activeTabLabel.value },
+        ]
+    : [];
+});
 </script>
 
 <template>
@@ -40,22 +64,48 @@ const selectVariantTab = (tab: string) => {
     error-title="Unable to load variant"
     @select-tab="selectVariantTab"
   >
+    <template #modals>
+      <AppConfirm
+        :open="inventoryActionErrorOpen"
+        title="Inventory action failed"
+        :detail="inventoryActionError"
+        cancel-label="Close"
+        tone="danger"
+        hide-confirm
+        @cancel="closeInventoryActionError"
+      />
+    </template>
+
     <AppNotice v-if="!variant" tone="danger" title="Variant not found">
       The selected variant does not exist for this product.
     </AppNotice>
 
     <template v-else>
+      <ProductVariantOverviewTab
+        v-if="activeTab === 'overview'"
+        :variant="variant"
+      />
+      <ProductVariantEditTab
+        v-else-if="activeTab === 'edit'"
+        :product-id="productId"
+        :variant="variant"
+        :assets="data?.assets.assets ?? []"
+        @refresh="refresh"
+      />
       <AppPanel
-        v-if="canReadInventory || canCreateInventory"
-        title="Inventory"
-        description="Open or create the inventory record attached to this product variant."
+        v-else-if="activeTab === 'inventory'"
+        eyebrow="Inventory"
       >
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p class="text-sm font-medium text-ink">{{ variant.sku }}</p>
-            <p class="text-sm text-smoke">{{ variantId }}</p>
+        <div class="grid gap-4">
+          <div class="grid gap-3 border-y border-line/70 py-4 md:grid-cols-[12rem_minmax(0,1fr)] md:items-center">
+            <p class="meta-label">Variant</p>
+            <div class="min-w-0">
+              <p class="table-title">{{ variant.sku }}</p>
+              <p class="mt-1 break-all text-sm text-smoke">{{ variantId }}</p>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-3">
+
+          <div class="flex flex-wrap items-center justify-end gap-3">
             <AppButton
               v-if="canReadInventory"
               variant="secondary"
@@ -73,25 +123,8 @@ const selectVariantTab = (tab: string) => {
             </AppButton>
           </div>
         </div>
-        <AppNotice v-if="inventoryActionSuccess" class="mt-4" tone="success" title="Inventory ready">
-          {{ inventoryActionSuccess }}
-        </AppNotice>
-        <AppNotice v-if="inventoryActionError" class="mt-4" tone="danger" title="Inventory action failed">
-          {{ inventoryActionError }}
-        </AppNotice>
-      </AppPanel>
 
-      <ProductVariantOverviewTab
-        v-if="activeTab === 'overview'"
-        :variant="variant"
-      />
-      <ProductVariantEditTab
-        v-else
-        :product-id="productId"
-        :variant="variant"
-        :assets="data?.assets.assets ?? []"
-        @refresh="refresh"
-      />
+      </AppPanel>
     </template>
   </AppDetailPage>
 </template>

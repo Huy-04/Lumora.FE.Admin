@@ -36,7 +36,6 @@ export const useUsersIndexPage = async () => {
   const confirmUserId = ref("");
   const actionPending = ref<"" | "remove">("");
   const actionError = ref("");
-  const actionSuccess = ref("");
 
   const page = ref(1);
   const pageSize = ref("20");
@@ -114,7 +113,6 @@ export const useUsersIndexPage = async () => {
   const requestRemove = (userId: string) => {
     confirmUserId.value = userId;
     actionError.value = "";
-    actionSuccess.value = "";
   };
 
   const cancelRemove = () => {
@@ -128,11 +126,9 @@ export const useUsersIndexPage = async () => {
 
     actionPending.value = "remove";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       await usersApi.deleteUser(confirmUserId.value);
-      actionSuccess.value = "User removed.";
       confirmUserId.value = "";
       await refresh();
     } catch (error) {
@@ -145,7 +141,6 @@ export const useUsersIndexPage = async () => {
   return {
     actionError,
     actionPending,
-    actionSuccess,
     applyFilters: applyFiltersWithReset,
     canCreateUser,
     canRemoveUser,

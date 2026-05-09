@@ -5,7 +5,13 @@ const props = defineProps<{
   page: ProfileSessionsPage;
 }>();
 
-const { confirmMode, confirmTitle, confirmDetail, actionPending, executeConfirm, closeConfirm, pending, error, currentSession, otherSessions, canRevokeOwnSessions, openConfirm, actionSuccess, actionError } = props.page;
+const { confirmMode, confirmTitle, confirmDetail, actionPending, executeConfirm, closeConfirm, pending, error, currentSession, otherSessions, canRevokeOwnSessions, openConfirm, actionError } = props.page;
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
 </script>
 
 <template>
@@ -19,6 +25,15 @@ const { confirmMode, confirmTitle, confirmDetail, actionPending, executeConfirm,
       :loading="actionPending !== ''"
       @confirm="executeConfirm"
       @cancel="closeConfirm"
+    />
+    <AppConfirm
+      :open="actionErrorOpen"
+      title="Session action failed"
+      :detail="actionError"
+      cancel-label="Close"
+      tone="danger"
+      hide-confirm
+      @cancel="closeActionError"
     />
 
     <ProfileSessionsSummaryPanels
@@ -40,12 +55,5 @@ const { confirmMode, confirmTitle, confirmDetail, actionPending, executeConfirm,
       @confirm-device="(entry) => openConfirm('device', entry)"
     />
 
-    <AppNotice v-if="actionSuccess" tone="success" title="Session action completed">
-      {{ actionSuccess }}
-    </AppNotice>
-
-    <AppNotice v-if="actionError" tone="danger" title="Session action failed">
-      {{ actionError }}
-    </AppNotice>
   </div>
 </template>

@@ -89,21 +89,13 @@ const handleChildDrop = (targetId: string) => {
 
 <template>
   <AppPanel
-    title="Child categories"
-    description="Manage the second-level categories attached to this root."
+    eyebrow="Child categories"
   >
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div class="mb-5">
       <p class="text-sm text-smoke">
         {{ children.length }} child categories linked to this root.
       </p>
-      <NuxtLink
-        v-if="canCreateCategory && !category.isDeleted"
-        class="secondary-link"
-        :to="`/categories/create?parentId=${category.id}`"
-        >
-          Add child
-        </NuxtLink>
-      </div>
+    </div>
 
     <div v-if="children.length" class="table-shell overflow-x-auto">
       <table class="data-table">
@@ -194,5 +186,14 @@ const handleChildDrop = (targetId: string) => {
       title="No child categories yet"
       detail="Create the first child category from this root to build out the second level."
     />
+
+    <div v-if="canCreateCategory && !category.isDeleted" class="mt-4 flex justify-end border-t border-line/70 pt-4">
+      <NuxtLink
+        class="secondary-link"
+        :to="`/categories/create?parentId=${category.id}`"
+      >
+        Add child
+      </NuxtLink>
+    </div>
   </AppPanel>
 </template>

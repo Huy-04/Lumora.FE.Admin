@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { ProductVariantCreatePage } from "~/features/products/composables/useProductVariantCreatePage";
 
 const props = defineProps<{
@@ -6,11 +7,22 @@ const props = defineProps<{
 }>();
 
 const { productError, productPending, product, productId, form, canUpdateProduct, canCreateVariant, pending, errorMessage, submit } = props.page;
+
+useScopedPageBreadcrumbs(() =>
+  product.value
+      ? [
+          { label: "Products", to: "/products" },
+          { label: product.value.name, to: `/products/${productId.value}` },
+          { label: "Variants", to: `/products/${productId.value}?tab=variants` },
+          { label: "Add variant" },
+        ]
+    : [],
+);
 </script>
 
 <template>
   <div class="page-shell">
-    <section class="max-w-4xl">
+    <section class="max-w-6xl">
       <AppNotice v-if="productError" tone="danger" title="Unable to load product">
         {{ getProblemMessage(productError, "The parent product could not be loaded.") }}
       </AppNotice>
@@ -18,10 +30,6 @@ const { productError, productPending, product, productId, form, canUpdateProduct
       <AppPanel
         v-else
         eyebrow="Add variant"
-        title="Add variant"
-        :description="product
-          ? `Create a new purchasable variant for ${product.name}. Variant order is assigned automatically and can be rearranged later from the variants tab.`
-          : 'Create a new purchasable variant for this product.'"
       >
         <template v-if="productPending">
           <div class="grid gap-4">
@@ -40,33 +48,44 @@ const { productError, productPending, product, productId, form, canUpdateProduct
             Restore this product before adding new variants.
           </AppNotice>
 
+          <div class="border-y border-line/70 py-4">
+            <div class="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+              <span class="meta-label w-40 shrink-0">Product</span>
+              <span class="text-sm font-medium text-ink">{{ product?.name ?? productId }}</span>
+            </div>
+          </div>
+
           <div class="grid gap-4 md:grid-cols-2">
-            <AppInput :model-value="product?.name ?? productId" label="Product" readonly />
             <AppInput v-model="form.sku" label="SKU" placeholder="LM-BDW-300" />
+            <AppInput v-model="form.name" label="Variant name" placeholder="300 ml" />
           </div>
 
           <div class="grid gap-4 md:grid-cols-2">
-            <AppInput v-model="form.name" label="Variant name" placeholder="300 ml" />
             <AppInput v-model="form.price" label="Price" inputmode="decimal" placeholder="189000" />
+            <AppInput v-model="form.compareAtPrice" label="Compare-at price" inputmode="decimal" placeholder="229000" />
           </div>
 
-          <AppInput v-model="form.compareAtPrice" label="Compare-at price" inputmode="decimal" placeholder="229000" />
-
-          <AppNotice tone="info" title="Variant image">
-            Create the variant first, then choose one representative image from the product asset library.
-          </AppNotice>
+          <div class="grid gap-4 border-t border-line/70 pt-4">
+            <div class="flex items-center gap-4">
+              <span class="h-px w-16 bg-line" />
+              <span class="meta-label">Package</span>
+            </div>
+            <div class="grid gap-4 md:grid-cols-4">
+              <AppInput v-model="form.weight" label="Weight" inputmode="numeric" placeholder="300" />
+              <AppInput v-model="form.length" label="Length" inputmode="numeric" placeholder="10" />
+              <AppInput v-model="form.width" label="Width" inputmode="numeric" placeholder="6" />
+              <AppInput v-model="form.height" label="Height" inputmode="numeric" placeholder="16" />
+            </div>
+          </div>
 
           <AppNotice v-if="errorMessage" tone="danger" title="Create variant failed">
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="panel-action-row">
+          <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
             <AppButton :loading="pending" type="submit" :disabled="!canCreateVariant">
               Create variant
             </AppButton>
-            <NuxtLink class="secondary-link" :to="`/products/${productId}?tab=variants`">
-              Back to variants
-            </NuxtLink>
           </div>
         </form>
       </AppPanel>

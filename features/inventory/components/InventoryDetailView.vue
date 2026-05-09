@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
+import InventoryOverviewTab from "~/features/inventory/components/InventoryOverviewTab.vue";
 import type { InventoryDetailPageState } from "~/features/inventory/composables/useInventoryDetailPage";
 
 const props = defineProps<{
@@ -9,130 +10,246 @@ const props = defineProps<{
 const {
   actionError,
   actionPending,
-  actionSuccess,
-  addStock,
-  addStockForm,
-  adjustQuantity,
+  activeTab,
   canRemoveInventory,
   canUpdateInventory,
   error,
   inventory,
+  inventoryTabs,
   loadErrorMessage,
   pending,
-  refresh,
   removeConfirmOpen,
   removeInventory,
-  setLowStockThreshold,
-  setStockActionWarehouse,
-  setStockStatus,
-  stockActionForm,
-  stockStatusOptions,
+  selectTab,
+  warehouseNameById,
+  warehouseStatusById,
 } = props.page;
+
+const selectInventoryTab = (tab: string) => {
+  selectTab(tab as typeof activeTab.value);
+};
+
+const activeTabLabel = computed(() =>
+  inventoryTabs.value.find((tab) => tab.value === activeTab.value)?.label ?? "Overview",
+);
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
+
+const stockRowsNeedingAttention = computed(() =>
+  inventory.value?.stocks.filter((stock) =>
+    stock.alertStatus === "LowStock" || stock.alertStatus === "OutOfStock",
+  ).length ?? 0,
+);
+
+const stockStatusTone = (status: string) => {
+  if (status === "Active") {
+    return "success";
+  }
+
+  if (status === "OutOfStock") {
+    return "danger";
+  }
+
+  return "default";
+};
+
+const stockAlertTone = (alertStatus: string) => {
+  if (alertStatus === "InStock") {
+    return "success";
+  }
+
+  if (alertStatus === "LowStock") {
+    return "warning";
+  }
+
+  if (alertStatus === "OutOfStock") {
+    return "danger";
+  }
+
+  return "default";
+};
+
+const isWarehouseInactive = (warehouseId: string) => warehouseStatusById(warehouseId) === "Inactive";
+
+useScopedPageBreadcrumbs(() =>
+  inventory.value
+    ? [
+        { label: "Inventories", to: "/inventory" },
+        { label: inventory.value.sku, to: `/inventory/${inventory.value.id}` },
+        { label: activeTabLabel.value },
+      ]
+    : [],
+);
 </script>
 
 <template>
-  <div class="page-shell">
-    <AppConfirm
-      :open="removeConfirmOpen"
-      title="Remove inventory?"
-      detail="Backend only allows removal when all stock and reserved quantities are zero."
-      confirm-label="Remove"
-      tone="danger"
-      :loading="actionPending === 'remove-inventory'"
-      @confirm="removeInventory"
-      @cancel="removeConfirmOpen = false"
-    />
+  <AppDetailPage
+    :title="inventory?.sku ?? ''"
+    :tabs="inventoryTabs"
+    :active-tab="activeTab"
+    :pending="pending"
+    :error="error ? loadErrorMessage : null"
+    error-title="Unable to load inventory"
+    @select-tab="selectInventoryTab"
+  >
+    <template #modals>
+      <AppConfirm
+        :open="removeConfirmOpen"
+        title="Remove inventory?"
+        detail="This deletes the inventory record. It only succeeds when total stock and reserved stock are zero."
+        confirm-label="Remove"
+        tone="danger"
+        :loading="actionPending === 'remove-inventory'"
+        @confirm="removeInventory"
+        @cancel="removeConfirmOpen = false"
+      />
+      <AppConfirm
+        :open="actionErrorOpen"
+        title="Inventory action failed"
+        :detail="actionError"
+        cancel-label="Close"
+        tone="danger"
+        hide-confirm
+        @cancel="closeActionError"
+      />
+    </template>
 
-    <AppPanel v-if="inventory" eyebrow="Inventory detail" :title="inventory.sku" description="Manage stock rows, availability status, and low-stock thresholds.">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap gap-2">
-          <AppBadge>Total {{ inventory.totalQuantity }}</AppBadge>
-          <AppBadge :tone="inventory.totalAvailableQuantity > 0 ? 'success' : 'warning'">Available {{ inventory.totalAvailableQuantity }}</AppBadge>
-          <AppBadge>Reserved {{ inventory.totalReservedQuantity }}</AppBadge>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <AppButton aria-label="Reload inventory" icon-only variant="secondary" @click="refresh">
-            <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
-          </AppButton>
-          <AppButton v-if="canRemoveInventory" variant="danger" @click="removeConfirmOpen = true">
-            Remove
-          </AppButton>
-        </div>
-      </div>
-      <AppNotice v-if="actionSuccess" class="mt-6" tone="success" title="Inventory updated">{{ actionSuccess }}</AppNotice>
-      <AppNotice v-if="actionError" class="mt-6" tone="danger" title="Inventory action failed">{{ actionError }}</AppNotice>
-    </AppPanel>
+    <template v-if="inventory">
+      <InventoryOverviewTab v-if="activeTab === 'overview'" :inventory="inventory" />
 
-    <AppNotice v-if="error" tone="danger" title="Unable to load inventory">{{ loadErrorMessage }}</AppNotice>
-    <div v-if="pending" class="soft-card h-64 animate-pulse" />
+      <div v-else-if="activeTab === 'stock'" class="grid gap-4 content-start max-w-6xl">
+        <AppPanel
+          eyebrow="Current stock"
+        >
+          <template v-if="canUpdateInventory && inventory.stocks.length === 0" #actions>
+            <NuxtLink
+              class="secondary-link"
+              :to="`/inventory-stocks/${inventory.id}/create`"
+            >
+              Add warehouse stock
+            </NuxtLink>
+          </template>
 
-    <template v-else-if="inventory">
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-        <AppStat label="Total" :value="`${inventory.totalQuantity}`" detail="All units across warehouses." />
-        <AppStat label="Available" :value="`${inventory.totalAvailableQuantity}`" detail="Sellable units after reservations." />
-        <AppStat label="Reserved" :value="`${inventory.totalReservedQuantity}`" detail="Units reserved by orders." />
-        <AppStat label="Stock rows" :value="`${inventory.stocks.length}`" detail="Warehouse-specific rows." />
-      </div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-lg border border-line bg-surface px-4 py-3">
+              <p class="text-xs font-semibold uppercase text-smoke">Total</p>
+              <p class="mt-2 text-2xl font-semibold text-ink">{{ inventory.totalQuantity }}</p>
+            </div>
+            <div class="rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-4 py-3">
+              <p class="text-xs font-semibold uppercase text-smoke">Available</p>
+              <p class="mt-2 text-2xl font-semibold text-emerald-300">{{ inventory.totalAvailableQuantity }}</p>
+            </div>
+            <div class="rounded-lg border border-line bg-surface px-4 py-3">
+              <p class="text-xs font-semibold uppercase text-smoke">Reserved</p>
+              <p class="mt-2 text-2xl font-semibold text-ink">{{ inventory.totalReservedQuantity }}</p>
+            </div>
+            <div
+              class="rounded-lg border px-4 py-3"
+              :class="stockRowsNeedingAttention > 0 ? 'border-amber-400/30 bg-amber-500/10' : 'border-line bg-surface'"
+            >
+              <p class="text-xs font-semibold uppercase text-smoke">Needs attention</p>
+              <p
+                class="mt-2 text-2xl font-semibold"
+                :class="stockRowsNeedingAttention > 0 ? 'text-amber-300' : 'text-ink'"
+              >
+                {{ stockRowsNeedingAttention }}
+              </p>
+              <p class="mt-1 text-xs text-smoke">{{ inventory.stocks.length }} stock rows</p>
+            </div>
+          </div>
+        </AppPanel>
 
-      <div class="grid gap-6 xl:grid-cols-[1fr_420px]">
-        <AppPanel title="Stock rows" description="Each warehouse can have one stock row.">
+        <AppPanel eyebrow="Stock rows">
+          <template #actions>
+            <NuxtLink
+              v-if="canUpdateInventory"
+              class="secondary-link"
+              :to="`/inventory-stocks/${inventory.id}/create`"
+            >
+              Add warehouse stock
+            </NuxtLink>
+          </template>
+
           <div class="table-shell overflow-x-auto">
-            <table class="data-table min-w-[900px]">
+            <table class="data-table min-w-[980px]">
               <thead>
                 <tr>
                   <th>Warehouse</th>
-                  <th>Status</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Alert</th>
                   <th>Quantity</th>
                   <th>Reserved</th>
                   <th>Available</th>
-                  <th>Threshold</th>
-                  <th class="w-[120px] text-center">Select</th>
+                  <th>Reorder point</th>
+                  <th v-if="canUpdateInventory" class="w-[130px] text-center">Adjust stock</th>
+                  <th v-if="canUpdateInventory" class="w-[150px] text-center">Reorder point</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="stock in inventory.stocks" :key="stock.id">
-                  <td>{{ stock.warehouseId }}</td>
-                  <td><AppBadge>{{ stock.status }}</AppBadge></td>
+                  <td>
+                    <p class="table-title">{{ warehouseNameById(stock.warehouseId) }}</p>
+                  </td>
+                  <td class="text-center"><AppBadge :tone="stockStatusTone(stock.status)">{{ stock.status }}</AppBadge></td>
+                  <td class="text-center"><AppBadge :tone="stockAlertTone(stock.alertStatus)">{{ stock.alertStatus }}</AppBadge></td>
                   <td>{{ stock.quantity }}</td>
                   <td>{{ stock.reservedQuantity }}</td>
                   <td>{{ stock.availableQuantity }}</td>
-                  <td>{{ stock.lowStockThreshold ?? "None" }}</td>
-                  <td>
-                    <div class="flex justify-center">
-                      <AppButton class="table-action" variant="secondary" @click="setStockActionWarehouse(stock.warehouseId)">
-                        Select
-                      </AppButton>
-                    </div>
+                  <td>{{ stock.reorderPoint ?? "None" }}</td>
+                  <td v-if="canUpdateInventory" class="text-center">
+                    <NuxtLink
+                      v-if="!isWarehouseInactive(stock.warehouseId)"
+                      class="secondary-link table-action min-w-[92px]"
+                      :to="`/inventory-stocks/${inventory.id}/warehouses/${stock.warehouseId}/add`"
+                    >
+                      Adjust
+                    </NuxtLink>
+                    <AppButton
+                      v-else
+                      class="table-action min-w-[92px]"
+                      variant="secondary"
+                      disabled
+                      title="Activate this warehouse before adjusting stock."
+                    >
+                      Adjust
+                    </AppButton>
+                  </td>
+                  <td v-if="canUpdateInventory" class="text-center">
+                    <NuxtLink
+                      class="secondary-link table-action min-w-[104px]"
+                      :to="`/inventory-stocks/${inventory.id}/warehouses/${stock.warehouseId}/reorder-point`"
+                    >
+                      Set point
+                    </NuxtLink>
+                  </td>
+                </tr>
+                <tr v-if="!inventory.stocks.length">
+                  <td :colspan="canUpdateInventory ? 9 : 7" class="py-10 text-center text-sm text-smoke">
+                    No stock rows yet.
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </AppPanel>
+      </div>
 
-        <div class="grid gap-6">
-          <AppPanel v-if="canUpdateInventory" title="Add stock" description="Create a stock row for a warehouse that is not already attached.">
-            <form class="grid gap-4" @submit.prevent="addStock">
-              <AppInput v-model="addStockForm.warehouseId" label="Warehouse id" />
-              <AppInput v-model.number="addStockForm.quantity" label="Quantity" type="number" />
-              <AppInput v-model.number="addStockForm.lowStockThreshold" label="Low-stock threshold" type="number" />
-              <AppButton :loading="actionPending === 'add-stock'" type="submit">Add stock</AppButton>
-            </form>
-          </AppPanel>
-
-          <AppPanel v-if="canUpdateInventory" title="Selected stock action" description="Adjust quantity, status, or low-stock threshold for a selected warehouse row.">
-            <div class="grid gap-4">
-              <AppInput v-model="stockActionForm.warehouseId" label="Warehouse id" />
-              <AppInput v-model.number="stockActionForm.delta" label="Quantity delta" type="number" />
-              <AppButton :loading="actionPending === 'adjust-quantity'" @click="adjustQuantity">Adjust quantity</AppButton>
-              <AppSelect v-model="stockActionForm.status" label="Status" :options="stockStatusOptions" />
-              <AppButton :loading="actionPending === 'set-status'" @click="setStockStatus">Set status</AppButton>
-              <AppInput v-model.number="stockActionForm.threshold" label="Low-stock threshold" type="number" />
-              <AppButton :loading="actionPending === 'set-threshold'" @click="setLowStockThreshold">Set threshold</AppButton>
-            </div>
-          </AppPanel>
-        </div>
+      <div v-else class="grid gap-4 content-start max-w-6xl">
+        <AppPanel v-if="canRemoveInventory" eyebrow="Remove inventory">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <p class="max-w-2xl text-sm text-smoke">
+              This only succeeds after all warehouse stock and reservations are cleared.
+            </p>
+            <AppButton variant="danger" @click="removeConfirmOpen = true">
+              Remove inventory
+            </AppButton>
+          </div>
+        </AppPanel>
       </div>
     </template>
-  </div>
+  </AppDetailPage>
 </template>

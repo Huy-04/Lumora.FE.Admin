@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { CategoryDetailPage } from "~/features/categories/composables/useCategoryDetailPage";
+import type { CategoryTreeNodeResponse } from "~/features/categories/types";
 
 const props = defineProps<{
   page: CategoryDetailPage;
@@ -10,6 +12,58 @@ const { confirmReorderOpen, pendingReorder, actionPending, confirmChildReorder, 
 const selectCategoryTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
 };
+
+const activeTabLabel = computed(() =>
+  categoryTabs.value.find((tab) => tab.value === activeTab.value)?.label ?? "Overview",
+);
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
+
+const findCategoryPath = (
+  nodes: CategoryTreeNodeResponse[],
+  categoryId: string,
+  parents: CategoryTreeNodeResponse[] = [],
+): CategoryTreeNodeResponse[] => {
+  for (const node of nodes) {
+    const currentPath = [...parents, node];
+
+    if (node.id === categoryId) {
+      return currentPath;
+    }
+
+    const childPath = findCategoryPath(node.children, categoryId, currentPath);
+    if (childPath.length) {
+      return childPath;
+    }
+  }
+
+  return [];
+};
+
+useScopedPageBreadcrumbs(() => {
+  const category = data.value?.category;
+  if (!category) {
+    return [];
+  }
+
+  const categoryPath = findCategoryPath(data.value?.tree ?? [], category.id);
+  const resolvedPath = categoryPath.length
+    ? categoryPath
+    : [{ ...category, children: [] }];
+
+  return [
+    { label: "Categories", to: "/categories" },
+    ...resolvedPath.map((entry) => ({
+      label: entry.name,
+      to: `/categories/${entry.id}`,
+    })),
+    { label: activeTabLabel.value },
+  ];
+});
 </script>
 
 <template>
@@ -52,13 +106,18 @@ const selectCategoryTab = (tab: string) => {
         @confirm="confirmChildRemoveAction"
         @cancel="cancelChildRemove"
       />
+      <AppConfirm
+        :open="actionErrorOpen"
+        title="Category action failed"
+        :detail="actionError"
+        cancel-label="Close"
+        tone="danger"
+        hide-confirm
+        @cancel="closeActionError"
+      />
     </template>
 
     <template v-if="data?.category">
-      <AppNotice v-if="actionError" tone="danger" title="Category action failed">
-        {{ actionError }}
-      </AppNotice>
-
       <CategoryOverviewTab
         v-if="activeTab === 'overview'"
         :category="data.category"

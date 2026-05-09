@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { ProductIndexPageState } from "~/features/products/composables/useProductIndexPage";
 
 const props = defineProps<{
@@ -9,17 +8,16 @@ const props = defineProps<{
 const {
   actionError,
   actionPending,
-  actionSuccess,
   actionTargetId,
   applyFilters,
   canCreateProduct,
   canDeleteProduct,
+  canDiscontinueProduct,
   canDragProducts,
   canFeatureProduct,
   canPublishProduct,
   canReorderProduct,
   canRestoreProduct,
-  categoryFilter,
   categoryFilterOptions,
   categoryNameFor,
   clearFilters,
@@ -27,15 +25,13 @@ const {
   confirmProductId,
   confirmProductReorder,
   confirmPublishBlockedOpen,
-  deletedFilter,
   deletedFilterOptions,
+  discontinueProduct,
   dragSourceId,
   dragTargetId,
   error,
-  featureFilter,
   featureFilterOptions,
   firstItemNumber,
-  genderTargetFilter,
   genderTargetOptions,
   goToNextPage,
   goToPreviousPage,
@@ -43,7 +39,6 @@ const {
   handleProductDragStart,
   handleProductDrop,
   items,
-  keyword,
   lastItemNumber,
   loadErrorMessage,
   localCategoryFilter,
@@ -60,12 +55,10 @@ const {
   productStatusOptions,
   publishBlockedMessage,
   publishProduct,
-  refresh,
   removeProduct,
   requestRemove,
   resetDragState,
   restoreProduct,
-  statusFilter,
   summaryStats,
   toggleFeatured,
   totalPages,
@@ -83,8 +76,6 @@ const {
     :pending="pending"
     :error="error ? 'Error loading data' : null"
     :error-detail="error ? loadErrorMessage : ''"
-    :action-success="actionSuccess"
-    action-success-title="Product updated"
     :action-error="actionError"
     action-error-title="Product action failed"
     :items-length="items.length"
@@ -138,15 +129,8 @@ const {
       <AppButton variant="primary" @click="applyFilters">
         Search
       </AppButton>
-      <AppButton
-        v-if="keyword || statusFilter || genderTargetFilter || featureFilter || deletedFilter || categoryFilter"
-        variant="secondary"
-        @click="clearFilters"
-      >
-        Clear
-      </AppButton>
-      <AppButton aria-label="Reload products" class="toolbar-refresh-button" icon-only variant="secondary" @click="refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="clearFilters">
+        Refresh
       </AppButton>
       <NuxtLink v-if="canCreateProduct" class="primary-link" to="/products/create">
         Create product
@@ -206,17 +190,13 @@ const {
         {{ loadErrorMessage }}
       </AppNotice>
 
-      <AppNotice v-if="actionSuccess" tone="success" title="Product updated">
-        {{ actionSuccess }}
-      </AppNotice>
-
       <AppNotice v-if="actionError" tone="danger" title="Product action failed">
         {{ actionError }}
       </AppNotice>
     </template>
 
     <template #table>
-      <table class="data-table min-w-[1430px]">
+      <table class="data-table min-w-[1680px]">
         <thead>
           <tr>
             <th class="min-w-[220px]">Product</th>
@@ -226,7 +206,8 @@ const {
             <th class="min-w-[100px]">Featured</th>
             <th class="min-w-[110px]">Target</th>
             <th class="min-w-[90px]">Sort</th>
-            <th class="min-w-[160px] text-center">State</th>
+            <th class="min-w-[130px] text-center">State</th>
+            <th class="min-w-[160px] text-center">Discontinued</th>
             <th class="min-w-[130px] text-center">Feature</th>
             <th class="w-[96px] text-center">Open</th>
             <th v-if="canDeleteProduct" class="w-[96px] text-center">Remove</th>
@@ -274,7 +255,7 @@ const {
             </td>
             <td class="align-middle">{{ product.sortOrder }}</td>
             <td class="align-middle">
-              <div class="flex flex-wrap justify-center gap-2">
+              <div class="flex justify-center">
                 <AppButton
                   v-if="product.isDeleted && canRestoreProduct"
                   class="table-action"
@@ -285,7 +266,7 @@ const {
                   Restore
                 </AppButton>
                 <AppButton
-                  v-else-if="!product.isDeleted && canPublishProduct && product.status !== 'Published'"
+                  v-else-if="!product.isDeleted && canPublishProduct && product.status === 'Draft'"
                   class="table-action"
                   variant="secondary"
                   :loading="actionPending === 'status' && actionTargetId === product.id"
@@ -301,6 +282,19 @@ const {
                   @click="unpublishProduct(product.id)"
                 >
                   Unpublish
+                </AppButton>
+              </div>
+            </td>
+            <td class="align-middle">
+              <div class="flex justify-center">
+                <AppButton
+                  v-if="!product.isDeleted && canDiscontinueProduct && product.status === 'Published'"
+                  class="table-action whitespace-nowrap"
+                  variant="secondary"
+                  :loading="actionPending === 'discontinue' && actionTargetId === product.id"
+                  @click="discontinueProduct(product.id)"
+                >
+                  Discontinue
                 </AppButton>
               </div>
             </td>

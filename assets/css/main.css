@@ -154,16 +154,20 @@
   }
 
   .layout-topbar {
-    position: relative;
-    z-index: 20;
-    min-height: 3.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    min-height: 4.25rem;
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin: -1.25rem -1.5rem 1.5rem;
-    padding: 0.75rem 1.5rem;
-    background: var(--surface-strong);
-    border-bottom: 1px solid var(--line);
+    margin: 0 0 1.5rem;
+    padding: 1rem 1.5rem;
+    border: 1px solid rgba(5, 150, 105, 0.18);
+    border-radius: 18px;
+    background: var(--success-soft);
+    box-shadow: 0 18px 36px -34px rgba(10, 10, 12, 0.78);
+    backdrop-filter: blur(10px);
   }
 
   .layout-sidebar-brand {
@@ -237,15 +241,15 @@
   }
 
   .layout-breadcrumb-link:hover {
-    color: var(--ink);
+    color: rgb(var(--success-rgb) / 1);
   }
 
   .layout-breadcrumb-separator {
-    color: #a1a1aa;
+    color: rgb(var(--success-rgb) / 0.78);
   }
 
   .layout-breadcrumb-current {
-    color: var(--ink);
+    color: rgb(var(--success-rgb) / 1);
     font-weight: 650;
   }
 
@@ -508,8 +512,10 @@
 
   @media (max-width: 1023px) {
     .layout-topbar {
-      margin: -1rem -1rem 1rem;
-      padding: 0.75rem 1rem;
+      top: 0;
+      margin-bottom: 1rem;
+      padding: 0.875rem 1rem;
+      border-radius: 16px;
     }
 
     .layout-main-container {
@@ -675,13 +681,14 @@
   }
 
   .primary-link {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--surface);
+    border-color: var(--line);
+    background: var(--surface);
+    color: var(--ink);
   }
 
   .primary-link:hover {
-    background: var(--ink-soft);
+    border-color: var(--line-strong);
+    background: var(--surface-quiet);
   }
 
   .surface-button-muted {
@@ -927,6 +934,15 @@
     transition: border-color 0.18s ease-out, box-shadow 0.18s ease-out, background-color 0.18s ease-out;
   }
 
+  .app-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23f4f4f5' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 1.15rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 3rem;
+  }
+
   .app-input::placeholder,
   .input-surface::placeholder {
     color: #a1a1aa;
@@ -937,7 +953,7 @@
   .input-surface:focus {
     border-color: var(--ink);
     box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.08);
-    background: var(--surface-strong);
+    background-color: var(--surface-strong);
   }
 
   .app-input-error {
@@ -947,7 +963,7 @@
 
   .app-input-disabled {
     cursor: not-allowed;
-    background: var(--surface-quiet);
+    background-color: var(--surface-quiet);
     color: var(--muted);
   }
 
@@ -982,13 +998,14 @@
   }
 
   .app-button-primary {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--surface);
+    border-color: var(--line);
+    background: var(--surface);
+    color: var(--ink);
   }
 
   .app-button-primary:hover {
-    background: var(--ink-soft);
+    border-color: var(--line-strong);
+    background: var(--surface-quiet);
   }
 
   .app-button-secondary {
@@ -1023,8 +1040,7 @@
     background: #fecaca;
   }
 
-  .app-button-icon-only,
-  .toolbar-refresh-button {
+  .app-button-icon-only {
     width: 2.75rem;
     min-width: 2.75rem;
     padding: 0;

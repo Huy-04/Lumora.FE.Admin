@@ -6,7 +6,7 @@ import type {
   CreateWarehouseRequest,
   InventoryListResponse,
   InventoryResponse,
-  SetLowStockThresholdRequest,
+  SetReorderPointRequest,
   SetStockStatusRequest,
   SyncWarehouseGhnStoreRequest,
   UpdateWarehouseRequest,
@@ -56,8 +56,8 @@ export const useInventoryAdminApi = () => {
         body: payload,
       }),
 
-    setLowStockThreshold: (inventoryId: string, payload: SetLowStockThresholdRequest) =>
-      api.request<InventoryResponse>(inventoryRoute(`/${inventoryId}/threshold`), {
+    setReorderPoint: (inventoryId: string, payload: SetReorderPointRequest) =>
+      api.request<InventoryResponse>(inventoryRoute(`/${inventoryId}/reorder-point`), {
         method: "PUT",
         body: payload,
       }),

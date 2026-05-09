@@ -143,7 +143,7 @@ const moveCategory = async () => {
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel title="Edit category" description="Update storefront-facing content and search metadata without changing hierarchy placement.">
+    <AppPanel eyebrow="Edit category">
       <form class="form-stack" @submit.prevent="saveCategory">
         <div class="grid gap-4 md:grid-cols-2">
           <AppInput v-model="form.name" label="Category name" />
@@ -163,16 +163,13 @@ const moveCategory = async () => {
           {{ actionError }}
         </AppNotice>
 
-        <div class="panel-action-row border-t border-line/70 pt-4">
+        <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
           <AppButton :loading="actionPending" type="submit">Save changes</AppButton>
-          <NuxtLink class="secondary-link" to="/categories">
-            Back to categories
-          </NuxtLink>
         </div>
       </form>
     </AppPanel>
 
-    <AppPanel title="Move category" description="Change the parent scope or save a specific sibling position.">
+    <AppPanel eyebrow="Move category">
       <form class="form-stack" @submit.prevent="moveCategory">
         <AppNotice tone="info" title="Hierarchy rule">
           {{ moveHelpText }}
@@ -197,11 +194,11 @@ const moveCategory = async () => {
           {{ moveError }}
         </AppNotice>
 
-        <div class="panel-action-row border-t border-line/70 pt-4">
-          <AppButton :loading="movePending" type="submit">Move category</AppButton>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-4">
           <p class="text-sm text-smoke">
             Current parent: {{ parent?.name ?? "Root category" }}
           </p>
+          <AppButton :loading="movePending" type="submit">Move category</AppButton>
         </div>
       </form>
     </AppPanel>

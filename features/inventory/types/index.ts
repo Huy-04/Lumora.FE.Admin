@@ -1,7 +1,8 @@
 import type { PaginatedResponse } from "~/Shared/types/api";
 
 export type WarehouseStatus = "Active" | "Inactive";
-export type InventoryStockStatus = "Available" | "Unavailable" | "Locked";
+export type InventoryStockStatus = "Active" | "OutOfStock" | "Locked";
+export type InventoryStockAlertStatus = "InStock" | "LowStock" | "OutOfStock";
 
 export interface WarehouseGhnStoreResponse {
   shopId: number;
@@ -18,10 +19,7 @@ export interface WarehouseResponse {
   id: string;
   code: number;
   name: string;
-  province: string;
-  district: string;
-  ward: string;
-  street: string;
+  address: string;
   phoneNational: string;
   status: WarehouseStatus;
   ghnStore?: WarehouseGhnStoreResponse | null;
@@ -39,7 +37,8 @@ export interface InventoryStockResponse {
   reservedQuantity: number;
   availableQuantity: number;
   status: InventoryStockStatus | string;
-  lowStockThreshold?: number | null;
+  reorderPoint?: number | null;
+  alertStatus: InventoryStockAlertStatus | string;
 }
 
 export interface InventoryResponse {
@@ -60,19 +59,13 @@ export interface InventoryResponse {
 export interface CreateWarehouseRequest {
   code: number;
   name: string;
-  province: string;
-  district: string;
-  ward: string;
-  street: string;
+  address: string;
   phoneNational: string;
 }
 
 export interface UpdateWarehouseRequest {
   name?: string | null;
-  province?: string | null;
-  district?: string | null;
-  ward?: string | null;
-  street?: string | null;
+  address?: string | null;
   phoneNational?: string | null;
 }
 
@@ -87,7 +80,7 @@ export interface CreateInventoryRequest {
 export interface AddStockRequest {
   warehouseId: string;
   quantity: number;
-  lowStockThreshold?: number | null;
+  reorderPoint?: number | null;
 }
 
 export interface AdjustQuantityRequest {
@@ -100,9 +93,9 @@ export interface SetStockStatusRequest {
   status: number;
 }
 
-export interface SetLowStockThresholdRequest {
+export interface SetReorderPointRequest {
   warehouseId: string;
-  threshold?: number | null;
+  reorderPoint?: number | null;
 }
 
 export type InventoryListResponse = PaginatedResponse<InventoryResponse>;

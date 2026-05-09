@@ -2,7 +2,7 @@ export const useProductVariantCreatePage = async () => {
   const route = useRoute();
   const productApi = useProductAdminApi();
   const authz = useAdminAuthorization();
-  const { parseOptionalNumber, parseRequiredNumber } = useNumericForm();
+  const { parseOptionalNumber, parseRequiredInt, parseRequiredNumber } = useNumericForm();
 
   const productId = computed(() => route.params.productId as string);
   const canUpdateProduct = computed(() => authz.can(ADMIN_PERMISSION.productUpdateAll));
@@ -12,6 +12,10 @@ export const useProductVariantCreatePage = async () => {
     name: "",
     price: "",
     compareAtPrice: "",
+    weight: "",
+    length: "",
+    width: "",
+    height: "",
   });
 
   const pending = ref(false);
@@ -32,6 +36,15 @@ export const useProductVariantCreatePage = async () => {
     return matchingVariant?.id ?? "";
   };
 
+  const parsePositiveInt = (value: string, label: string) => {
+    const parsed = parseRequiredInt(value, label);
+    if (parsed <= 0) {
+      throw new Error(`${label} must be greater than 0.`);
+    }
+
+    return parsed;
+  };
+
   const submit = async () => {
     if (!canCreateVariant.value) {
       return;
@@ -47,6 +60,10 @@ export const useProductVariantCreatePage = async () => {
         sku: normalizedSku,
         name: form.name,
         price: parseRequiredNumber(form.price, "Price"),
+        weight: parsePositiveInt(form.weight, "Weight"),
+        length: parsePositiveInt(form.length, "Length"),
+        width: parsePositiveInt(form.width, "Width"),
+        height: parsePositiveInt(form.height, "Height"),
         compareAtPrice: parseOptionalNumber(form.compareAtPrice, "Compare-at price"),
         productAssetId: null,
       });

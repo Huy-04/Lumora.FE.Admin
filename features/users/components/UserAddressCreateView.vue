@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { UserAddressCreatePage } from "~/features/users/composables/useUserAddressCreatePage";
 
 const props = defineProps<{
@@ -6,6 +7,17 @@ const props = defineProps<{
 }>();
 
 const { error, pending, data, userId, form, userAddressTypeOptions, saveAddress, actionPending, actionError } = props.page;
+
+useScopedPageBreadcrumbs(() =>
+  data.value
+    ? [
+        { label: "Users", to: "/users" },
+        { label: data.value.fullName, to: `/users/${userId.value}` },
+        { label: "Addresses", to: `/users/${userId.value}?tab=addresses` },
+        { label: "Add address" },
+      ]
+    : [],
+);
 </script>
 
 <template>

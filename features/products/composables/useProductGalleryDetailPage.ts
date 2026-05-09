@@ -1,4 +1,4 @@
-import type { ProductImageResponse } from "~/features/products/types";
+import type { ProductAssetResponse, ProductImageResponse } from "~/features/products/types";
 
 export const useProductGalleryDetailPage = async () => {
   const route = useRoute();
@@ -14,14 +14,16 @@ export const useProductGalleryDetailPage = async () => {
   const { data, pending, error, refresh } = await useAsyncData(
     () => `product-gallery-detail:${productId.value}:${imageId.value}`,
     async () => {
-      const [product, gallery] = await Promise.all([
+      const [product, gallery, assets] = await Promise.all([
         productApi.getProductById(productId.value),
         productApi.getProductGallery(productId.value),
+        productApi.getProductAssets(productId.value),
       ]);
 
       return {
         product,
         gallery,
+        assets,
       };
     },
   );
@@ -29,6 +31,8 @@ export const useProductGalleryDetailPage = async () => {
   const image = computed<ProductImageResponse | null>(() =>
     data.value?.gallery.images.find((entry) => entry.id === imageId.value) ?? null,
   );
+
+  const assets = computed<ProductAssetResponse[]>(() => data.value?.assets.assets ?? []);
 
   const canEditImage = computed(() => canUpdateProduct.value && !data.value?.product?.isDeleted);
 
@@ -75,6 +79,7 @@ export const useProductGalleryDetailPage = async () => {
     productId,
     imageId,
     image,
+    assets,
     galleryTabs,
     activeTab,
     selectTab,

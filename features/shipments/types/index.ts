@@ -21,9 +21,11 @@ export interface ShipmentCancellationResponse {
 export interface ShipmentResponse {
   id: string;
   orderId: string;
+  orderNumber: string;
   shipmentNumber: string;
   carrier: string;
   carrierOrderCode?: string | null;
+  carrierShopId?: number | null;
   status: ShipmentStatus | string;
   submittedAt?: string | null;
   pickedAt?: string | null;

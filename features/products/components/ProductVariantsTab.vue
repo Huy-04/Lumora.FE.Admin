@@ -20,7 +20,6 @@ const confirmVariantId = ref("");
 const actionPending = ref<"" | "remove" | "default" | "status" | "reorder">("");
 const actionTargetId = ref("");
 const actionError = ref("");
-const actionSuccess = ref("");
 const dragSourceId = ref("");
 const dragTargetId = ref("");
 const pendingReorder = ref<null | {
@@ -29,6 +28,12 @@ const pendingReorder = ref<null | {
   targetId: string;
   targetName: string;
 }>(null);
+
+const actionErrorOpen = computed(() => actionError.value.length > 0);
+
+const closeActionError = () => {
+  actionError.value = "";
+};
 
 const confirmVariant = computed(() =>
   props.variants.find((variant) => variant.id === confirmVariantId.value) ?? null,
@@ -53,6 +58,11 @@ const publishedVariantStatusMessage = "Published products must keep at least one
 const defaultVariantStatusMessage = "Default variants must stay active. Set another default variant before deactivating this one.";
 
 const isDeactivateBlocked = (variant: ProductVariantResponse) =>
+  props.productStatus === "Published"
+  && variant.status === "Active"
+  && activeVariantCount.value <= 1;
+
+const isRemoveBlocked = (variant: ProductVariantResponse) =>
   props.productStatus === "Published"
   && variant.status === "Active"
   && activeVariantCount.value <= 1;
@@ -83,14 +93,18 @@ const removeVariant = async () => {
     return;
   }
 
+  if (confirmVariant.value && isRemoveBlocked(confirmVariant.value)) {
+    blockedStatusVariantId.value = confirmVariantId.value;
+    confirmVariantId.value = "";
+    return;
+  }
+
   actionPending.value = "remove";
   actionTargetId.value = confirmVariantId.value;
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     await productApi.removeProductVariant(props.productId, confirmVariantId.value);
-    actionSuccess.value = "Variant removed.";
     confirmVariantId.value = "";
     emit("refresh");
   } catch (requestError) {
@@ -105,11 +119,9 @@ const setDefault = async (variantId: string) => {
   actionPending.value = "default";
   actionTargetId.value = variantId;
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     await productApi.setProductDefaultVariant(props.productId, variantId);
-    actionSuccess.value = "Default variant updated.";
     emit("refresh");
   } catch (requestError) {
     actionError.value = getProblemMessage(requestError, "Unable to change the default variant.");
@@ -129,7 +141,6 @@ const updateStatus = async (variantId: string) => {
   actionPending.value = "status";
   actionTargetId.value = variantId;
   actionError.value = "";
-  actionSuccess.value = "";
 
   if (isDeactivateBlocked(variant)) {
     blockedStatusVariantId.value = variantId;
@@ -142,9 +153,6 @@ const updateStatus = async (variantId: string) => {
     await productApi.changeProductVariantStatus(props.productId, variantId, {
       status: parseRequiredInt(variant.status === "Active" ? "1" : "0", "Variant status"),
     });
-    actionSuccess.value = variant.status === "Active"
-      ? "Variant deactivated."
-      : "Variant activated.";
     emit("refresh");
   } catch (requestError) {
     actionError.value = getVariantStatusErrorMessage(requestError);
@@ -232,11 +240,9 @@ const confirmReorder = async () => {
 
   actionPending.value = "reorder";
   actionError.value = "";
-  actionSuccess.value = "";
 
   try {
     await productApi.reorderProductVariants(props.productId, { items });
-    actionSuccess.value = "Variant order updated.";
     pendingReorder.value = null;
     emit("refresh");
   } catch (requestError) {
@@ -277,8 +283,17 @@ const confirmReorder = async () => {
       @confirm="removeVariant"
       @cancel="confirmVariantId = ''"
     />
+    <AppConfirm
+      :open="actionErrorOpen"
+      title="Variant action failed"
+      :detail="actionError"
+      cancel-label="Close"
+      tone="danger"
+      hide-confirm
+      @cancel="closeActionError"
+    />
 
-    <AppPanel title="Variants" description="Manage SKU-level offers, default purchasing choices, price points, and variant state.">
+    <AppPanel eyebrow="Variants">
       <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-smoke">
           {{ variants.length }} variants linked to this product.
@@ -297,14 +312,6 @@ const confirmReorder = async () => {
       </AppNotice>
       <AppNotice v-else-if="!canReorder && variants.length > 1" tone="warning" title="Reorder unavailable">
         Product reorder permission is required to drag and reorder variants.
-      </AppNotice>
-
-      <AppNotice v-if="actionSuccess" tone="success" title="Variants updated">
-        {{ actionSuccess }}
-      </AppNotice>
-
-      <AppNotice v-if="actionError" tone="danger" title="Variant action failed">
-        {{ actionError }}
       </AppNotice>
 
       <div v-if="variants.length" class="table-shell overflow-x-auto">

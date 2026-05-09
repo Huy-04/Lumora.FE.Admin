@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { UsersIndexPage } from "~/features/users/composables/useUsersIndexPage";
 
 defineProps<{
@@ -16,8 +15,6 @@ defineProps<{
     :pending="page.pending.value"
     :error="page.error.value ? 'Error loading data' : null"
     :error-detail="page.error.value ? getProblemMessage(page.error.value, 'The user directory is not available right now.') : ''"
-    :action-success="page.actionSuccess.value"
-    action-success-title="User removed"
     :action-error="page.actionError.value"
     action-error-title="User action failed"
     :items-length="page.data.value?.items?.length ?? 0"
@@ -53,15 +50,8 @@ defineProps<{
       <AppButton variant="primary" @click="page.applyFilters">
         Search
       </AppButton>
-      <AppButton
-        v-if="page.keyword.value || page.userStatus.value || page.emailStatus.value || page.phoneStatus.value"
-        variant="secondary"
-        @click="page.clearFilters"
-      >
-        Clear
-      </AppButton>
-      <AppButton aria-label="Reload users" class="toolbar-refresh-button" icon-only variant="secondary" @click="page.refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="page.clearFilters">
+        Refresh
       </AppButton>
       <NuxtLink v-if="page.canCreateUser.value" class="primary-link" to="/users/create">
         Create user

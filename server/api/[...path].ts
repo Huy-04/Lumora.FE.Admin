@@ -1,4 +1,4 @@
-import { getMethod, getProxyRequestHeaders, getRequestURL, readRawBody, setResponseHeader, setResponseStatus } from "h3";
+import { getMethod, getProxyRequestHeaders, getRequestURL, getRequestWebStream, setResponseHeader, setResponseStatus } from "h3";
 
 const PUBLIC_AUTH_PATHS = new Set([
   "authentication/login",
@@ -19,6 +19,10 @@ const HOP_BY_HOP = new Set([
   "content-length",
   "content-encoding",
 ]);
+
+type StreamedRequestInit = RequestInit & {
+  duplex?: "half";
+};
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig(event);
@@ -49,17 +53,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const canHaveBody = !["GET", "HEAD"].includes(method);
-  const requestInit: RequestInit = {
+  const requestInit: StreamedRequestInit = {
     method,
     headers,
   };
 
   if (canHaveBody) {
-    const body = await readRawBody(event);
-
-    if (body) {
-      requestInit.body = body;
-    }
+    requestInit.body = getRequestWebStream(event) as BodyInit;
+    requestInit.duplex = "half";
   }
 
   let upstream: Response;
@@ -67,10 +68,6 @@ export default defineEventHandler(async (event) => {
   try {
     upstream = await fetch(`${targetBase}/api/${path}${query}`, requestInit);
   } catch (error) {
-    if (import.meta.dev) {
-      console.error("[ApiProxy] Upstream request failed:", error);
-    }
-
     setResponseStatus(event, 503, "Service Unavailable");
     setResponseHeader(event, "content-type", "application/problem+json; charset=utf-8");
 

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { RolesIndexPage } from "~/features/roles/composables/useRolesIndexPage";
 
 defineProps<{
@@ -16,8 +15,6 @@ defineProps<{
     :pending="page.pending.value"
     :error="page.error.value ? 'Error loading data' : null"
     :error-detail="page.error.value ? getProblemMessage(page.error.value, 'The role list is unavailable.') : ''"
-    :action-success="page.actionSuccess.value"
-    action-success-title="Role removed"
     :action-error="page.actionError.value"
     action-error-title="Role action failed"
     :items-length="page.filteredRoles.value.length"
@@ -53,15 +50,8 @@ defineProps<{
       <AppButton variant="primary" @click="page.applyFilters">
         Search
       </AppButton>
-      <AppButton
-        v-if="page.search.value"
-        variant="secondary"
-        @click="page.clearFilters"
-      >
-        Clear
-      </AppButton>
-      <AppButton aria-label="Reload roles" class="toolbar-refresh-button" icon-only variant="secondary" @click="page.refresh">
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="page.clearFilters">
+        Refresh
       </AppButton>
       <NuxtLink v-if="page.canCreateRole.value" class="primary-link" to="/roles/create">
         Create role

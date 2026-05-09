@@ -2,13 +2,14 @@ import type { OrderPaymentStatus, OrderStatus } from "~/features/orders/types";
 
 export const useOrderIndexPage = async () => {
   const orderApi = useOrderAdminApi();
+  const inventoryApi = useInventoryAdminApi();
   const authz = useAdminAuthorization();
   const { orderStatusOptions, paymentStatusOptions } = useOrderOptions();
 
   const canReadOrders = computed(() => authz.can(ADMIN_PERMISSION.orderReadAll));
+  const canReadWarehouses = computed(() => authz.can(ADMIN_PERMISSION.warehouseReadAll));
 
   const localKeyword = ref("");
-  const localUserId = ref("");
   const localWarehouseId = ref("");
   const localStatus = ref<OrderStatus | "">("");
   const localPaymentStatus = ref<OrderPaymentStatus | "">("");
@@ -16,7 +17,6 @@ export const useOrderIndexPage = async () => {
   const localCreatedTo = ref("");
 
   const keyword = ref("");
-  const userId = ref("");
   const warehouseId = ref("");
   const status = ref<OrderStatus | "">("");
   const paymentStatus = ref<OrderPaymentStatus | "">("");
@@ -27,7 +27,6 @@ export const useOrderIndexPage = async () => {
 
   const applyFilters = () => {
     keyword.value = localKeyword.value.trim();
-    userId.value = localUserId.value.trim();
     warehouseId.value = localWarehouseId.value.trim();
     status.value = localStatus.value;
     paymentStatus.value = localPaymentStatus.value;
@@ -38,7 +37,6 @@ export const useOrderIndexPage = async () => {
 
   const clearFilters = () => {
     localKeyword.value = "";
-    localUserId.value = "";
     localWarehouseId.value = "";
     localStatus.value = "";
     localPaymentStatus.value = "";
@@ -48,10 +46,9 @@ export const useOrderIndexPage = async () => {
   };
 
   const { data, pending, error, refresh } = await useAsyncData(
-    () => `orders:${keyword.value || "all"}:${userId.value || "all"}:${warehouseId.value || "all"}:${status.value || "all"}:${paymentStatus.value || "all"}:${createdFrom.value || "none"}:${createdTo.value || "none"}:${page.value}:${pageSize.value}`,
+    () => `orders:${keyword.value || "all"}:${warehouseId.value || "all"}:${status.value || "all"}:${paymentStatus.value || "all"}:${createdFrom.value || "none"}:${createdTo.value || "none"}:${page.value}:${pageSize.value}`,
     () => orderApi.searchOrders({
       keyword: keyword.value || undefined,
-      userId: userId.value || undefined,
       warehouseId: warehouseId.value || undefined,
       status: status.value || undefined,
       paymentStatus: paymentStatus.value || undefined,
@@ -62,9 +59,27 @@ export const useOrderIndexPage = async () => {
     }),
   );
 
+  const { data: warehousesData, pending: warehousesPending } = await useAsyncData(
+    "orders:warehouse-options",
+    async () => {
+      if (!canReadWarehouses.value) {
+        return [];
+      }
+
+      return await inventoryApi.getWarehouses();
+    },
+  );
+
   const orders = computed(() => data.value?.items ?? []);
+  const warehouseOptions = computed(() => [
+    { label: "All warehouses", value: "" },
+    ...(warehousesData.value ?? []).map((warehouse) => ({
+      label: warehouse.name,
+      value: warehouse.id,
+    })),
+  ]);
   const totalOrders = computed(() => data.value?.totalCount ?? 0);
-  const hasFilters = computed(() => Boolean(keyword.value || userId.value || warehouseId.value || status.value || paymentStatus.value || createdFrom.value || createdTo.value));
+  const hasFilters = computed(() => Boolean(keyword.value || warehouseId.value || status.value || paymentStatus.value || createdFrom.value || createdTo.value));
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "The order queue is not available right now."));
   const totalPages = computed(() => Math.max(1, Math.ceil(totalOrders.value / Number(pageSize.value))));
   const pageSizeOptions = [
@@ -133,7 +148,6 @@ export const useOrderIndexPage = async () => {
     localKeyword,
     localPaymentStatus,
     localStatus,
-    localUserId,
     localWarehouseId,
     orderStatusOptions,
     orders,
@@ -152,8 +166,9 @@ export const useOrderIndexPage = async () => {
     summaryStats,
     totalPages,
     totalOrders,
-    userId,
     warehouseId,
+    warehouseOptions,
+    warehousesPending,
   };
 };
 

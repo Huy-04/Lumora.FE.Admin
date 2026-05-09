@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { PhCaretDown } from "@phosphor-icons/vue";
-
 import type {
   UserResponse,
   UserRoleResponse,
@@ -23,9 +21,9 @@ const canSyncRoles = computed(() => authz.can([ADMIN_PERMISSION.userRoleUpdateAl
 
 const syncPending = ref(false);
 const syncError = ref("");
-const syncSuccess = ref("");
 const blockedRoleSyncMessage = ref("");
 const roleFilter = ref("");
+const visibleRolesOpen = ref(true);
 
 const assignedIds = computed(() =>
   new Set((props.roles ?? []).map((entry) => entry.roleId)),
@@ -104,7 +102,6 @@ const getBlockedRoleSyncMessage = (requestError: unknown) => {
 const syncRoles = async () => {
   syncPending.value = true;
   syncError.value = "";
-  syncSuccess.value = "";
   blockedRoleSyncMessage.value = "";
 
   try {
@@ -115,7 +112,6 @@ const syncRoles = async () => {
 
     await usersApi.syncUserRoles(props.user.id, { addRoleIds, removeUserRoleIds });
 
-    syncSuccess.value = "Roles updated.";
     emit("refresh");
   } catch (requestError) {
     const blockedMessage = getBlockedRoleSyncMessage(requestError);
@@ -131,82 +127,73 @@ const syncRoles = async () => {
 </script>
 
 <template>
-  <div class="grid max-w-6xl content-start gap-6">
-    <AppConfirm
-      :open="Boolean(blockedRoleSyncMessage)"
-      title="Cannot update administrator roles"
-      :detail="blockedRoleSyncMessage"
-      cancel-label="Close"
-      :hide-confirm="true"
-      tone="warning"
-      @cancel="blockedRoleSyncMessage = ''"
-    />
-    <AppPanel
-      title="Role matrix"
-      description="Toggle roles assigned to this user. Changes are applied when you click Save."
-    >
-      <div v-if="rolesCatalog.length" class="grid gap-4">
-        <div class="flex items-center gap-3">
-          <AppSelect v-model="roleFilter" label="Filter by role" :options="roleFilterOptions" class="w-48" />
-        </div>
-
-        <div class="grid max-h-[460px] gap-3 overflow-y-auto pr-1">
-          <details class="accordion-shell accordion-shell-active group" open>
-            <summary class="accordion-summary">
-              <input
-                type="checkbox"
-                class="h-4 w-4 cursor-pointer rounded accent-ink"
-                :checked="groupAllChecked(filteredRoles)"
-                :indeterminate="groupPartialChecked(filteredRoles)"
-                @change.stop="toggleGroup(filteredRoles)"
-                @click.stop
-              />
-              <span class="flex-1 text-sm font-semibold text-ink">Roles</span>
-              <span class="subtle-pill text-xs">
-                {{ filteredRoles.filter((role) => checked.has(role.id)).length }}/{{ filteredRoles.length }}
-              </span>
-              <PhCaretDown :size="14" class="text-smoke transition-transform group-open:rotate-180" />
-            </summary>
-
-            <div class="accordion-body divide-y divide-line/20">
-              <label
-                v-for="role in filteredRoles"
-                :key="role.id"
-                class="flex cursor-pointer items-center gap-3 py-2.5 pl-11 pr-4 transition-colors hover:bg-line/20 dark:hover:bg-white/6"
-              >
-                <input
-                  type="checkbox"
-                  class="h-3.5 w-3.5 cursor-pointer rounded accent-ink"
-                  :checked="checked.has(role.id)"
-                  @change="toggleRole(role.id)"
-                />
-                <span class="flex-1 text-xs font-medium text-ink">{{ role.roleName }}</span>
-                <span v-if="role.description" class="max-w-[240px] truncate text-xs text-smoke">{{ role.description }}</span>
-              </label>
-            </div>
-          </details>
-        </div>
-
-        <div v-if="canSyncRoles" class="panel-action-row">
-          <AppButton :loading="syncPending" @click="syncRoles">
-            Save roles
-          </AppButton>
-        </div>
-
-        <AppNotice v-if="syncSuccess" tone="success" title="Roles updated">
-          {{ syncSuccess }}
-        </AppNotice>
-
-        <AppNotice v-if="syncError" tone="danger" title="Update failed">
-          {{ syncError }}
-        </AppNotice>
-      </div>
-
-      <AppEmptyState
-        v-else
-        title="No roles in catalog"
-        detail="Create roles first, then return here to assign them."
+  <AppAssignmentPanel
+    eyebrow="Roles"
+    :has-items="rolesCatalog.length > 0"
+    empty-title="No roles in catalog"
+    empty-detail="Create roles first, then return here to assign them."
+    toolbar-columns="lg:grid-cols-[minmax(14rem,18rem)]"
+  >
+    <template #modals>
+      <AppConfirm
+        :open="Boolean(blockedRoleSyncMessage)"
+        title="Cannot update administrator roles"
+        :detail="blockedRoleSyncMessage"
+        cancel-label="Close"
+        :hide-confirm="true"
+        tone="warning"
+        @cancel="blockedRoleSyncMessage = ''"
       />
-    </AppPanel>
-  </div>
+    </template>
+
+    <template #controls>
+      <AppSelect v-model="roleFilter" label="Filter by role" :options="roleFilterOptions" />
+    </template>
+
+    <template #actions>
+      <AppButton v-if="canSyncRoles" :loading="syncPending" @click="syncRoles">
+        Save roles
+      </AppButton>
+    </template>
+
+    <AppAssignmentGroup
+      v-model:open="visibleRolesOpen"
+      title="Visible roles"
+      :count-label="`${filteredRoles.filter((role) => checked.has(role.id)).length}/${filteredRoles.length}`"
+      :checked="groupAllChecked(filteredRoles)"
+      :indeterminate="groupPartialChecked(filteredRoles)"
+      content-id="visible-roles-list"
+      @toggle-all="toggleGroup(filteredRoles)"
+    >
+      <div class="max-h-[460px] divide-y divide-line/50 overflow-y-auto">
+        <label
+          v-for="role in filteredRoles"
+          :key="role.id"
+          class="grid cursor-pointer gap-3 px-5 py-4 transition-colors hover:bg-line/20 md:grid-cols-[minmax(0,1fr)_auto] md:items-center dark:hover:bg-white/6"
+        >
+          <div class="flex min-w-0 items-start gap-3">
+            <input
+              type="checkbox"
+              class="mt-1 h-4 w-4 cursor-pointer rounded accent-ink"
+              :checked="checked.has(role.id)"
+              @change="toggleRole(role.id)"
+            />
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-ink">{{ role.roleName }}</p>
+              <p v-if="role.description" class="mt-1 max-w-3xl truncate text-sm text-smoke">{{ role.description }}</p>
+            </div>
+          </div>
+          <AppBadge :tone="checked.has(role.id) ? 'success' : 'default'" class="justify-self-start md:justify-self-end">
+            {{ checked.has(role.id) ? "Assigned" : "Available" }}
+          </AppBadge>
+        </label>
+      </div>
+    </AppAssignmentGroup>
+
+    <template #notices>
+      <AppNotice v-if="syncError" tone="danger" title="Update failed">
+        {{ syncError }}
+      </AppNotice>
+    </template>
+  </AppAssignmentPanel>
 </template>

@@ -80,8 +80,7 @@ const statusTone = (value?: string | null) => {
 <template>
   <div class="grid max-w-6xl content-start gap-6">
     <AppPanel
-      eyebrow="Identity"
-      title="Personal info"
+      eyebrow="Personal info"
     >
       <form class="form-stack" @submit.prevent="submitProfile">
         <div class="rounded-[28px] border border-line/70 bg-panel px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-panel/80">

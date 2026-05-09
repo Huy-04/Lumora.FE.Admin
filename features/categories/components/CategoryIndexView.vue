@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PhArrowClockwise } from "@phosphor-icons/vue";
 import type { CategoryIndexPage } from "~/features/categories/composables/useCategoryIndexPage";
 
 defineProps<{
@@ -89,21 +88,8 @@ defineProps<{
       <AppButton variant="primary" @click="page.applyFilters">
         Search
       </AppButton>
-      <AppButton
-        v-if="page.keyword.value || page.activeFilter.value"
-        variant="secondary"
-        @click="page.clearFilters"
-      >
-        Clear
-      </AppButton>
-      <AppButton
-        aria-label="Reload categories"
-        class="toolbar-refresh-button"
-        icon-only
-        variant="secondary"
-        @click="page.refresh"
-      >
-        <PhArrowClockwise color="#171c1a" :size="22" weight="bold" />
+      <AppButton variant="primary" @click="page.clearFilters">
+        Refresh
       </AppButton>
       <NuxtLink v-if="page.canCreateCategory.value" class="primary-link" to="/categories/create">
         Create root

@@ -14,6 +14,7 @@ export const useProductIndexPage = async () => {
   const canRestoreProduct = computed(() => authz.can(ADMIN_PERMISSION.productRestoreAll));
   const canReorderProduct = computed(() => authz.can(ADMIN_PERMISSION.productReorderAll));
   const canPublishProduct = computed(() => authz.can(ADMIN_PERMISSION.productPublishAll));
+  const canDiscontinueProduct = computed(() => authz.can(ADMIN_PERMISSION.productDiscontinueAll));
   const canFeatureProduct = computed(() => authz.can(ADMIN_PERMISSION.productFeatureAll));
 
   const localKeyword = ref("");
@@ -55,10 +56,9 @@ export const useProductIndexPage = async () => {
   };
 
   const confirmProductId = ref("");
-  const actionPending = ref<"" | "remove" | "status" | "feature" | "restore" | "reorder">("");
+  const actionPending = ref<"" | "remove" | "status" | "feature" | "restore" | "reorder" | "discontinue">("");
   const actionTargetId = ref("");
   const actionError = ref("");
-  const actionSuccess = ref("");
   const confirmPublishBlockedOpen = ref(false);
   const publishBlockedMessage = ref("");
   const dragSourceId = ref("");
@@ -187,7 +187,6 @@ export const useProductIndexPage = async () => {
   const requestRemove = (productId: string) => {
     confirmProductId.value = productId;
     actionError.value = "";
-    actionSuccess.value = "";
   };
 
   const removeProduct = async () => {
@@ -198,7 +197,6 @@ export const useProductIndexPage = async () => {
     actionPending.value = "remove";
     actionTargetId.value = confirmProductId.value;
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       if (confirmProduct.value?.isDeleted) {
@@ -207,7 +205,6 @@ export const useProductIndexPage = async () => {
       }
 
       await productApi.deleteProduct(confirmProductId.value);
-      actionSuccess.value = "Product removed.";
 
       confirmProductId.value = "";
       await refresh();
@@ -223,11 +220,9 @@ export const useProductIndexPage = async () => {
     actionPending.value = "restore";
     actionTargetId.value = productId;
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       await productApi.restoreProduct(productId);
-      actionSuccess.value = "Product restored.";
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to restore the product.");
@@ -241,12 +236,10 @@ export const useProductIndexPage = async () => {
     actionPending.value = "status";
     actionTargetId.value = productId;
     actionError.value = "";
-    actionSuccess.value = "";
     publishBlockedMessage.value = "";
 
     try {
       await productApi.publishProduct(productId);
-      actionSuccess.value = "Product published.";
       await refresh();
     } catch (requestError) {
       const problem = getProblemDetails(requestError);
@@ -277,14 +270,28 @@ export const useProductIndexPage = async () => {
     actionPending.value = "status";
     actionTargetId.value = productId;
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       await productApi.unpublishProduct(productId);
-      actionSuccess.value = "Product moved back to draft.";
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to unpublish the product.");
+    } finally {
+      actionPending.value = "";
+      actionTargetId.value = "";
+    }
+  };
+
+  const discontinueProduct = async (productId: string) => {
+    actionPending.value = "discontinue";
+    actionTargetId.value = productId;
+    actionError.value = "";
+
+    try {
+      await productApi.discontinueProduct(productId);
+      await refresh();
+    } catch (requestError) {
+      actionError.value = getProblemMessage(requestError, "Unable to discontinue the product.");
     } finally {
       actionPending.value = "";
       actionTargetId.value = "";
@@ -295,15 +302,12 @@ export const useProductIndexPage = async () => {
     actionPending.value = "feature";
     actionTargetId.value = product.id;
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       if (product.isFeatured) {
         await productApi.unmarkProductFeatured(product.id);
-        actionSuccess.value = "Product removed from featured merchandising.";
       } else {
         await productApi.markProductFeatured(product.id);
-        actionSuccess.value = "Product marked as featured.";
       }
 
       await refresh();
@@ -389,14 +393,12 @@ export const useProductIndexPage = async () => {
     actionPending.value = "reorder";
     actionTargetId.value = pendingReorder.value.sourceId;
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       await productApi.reorderProducts({
         items: pendingReorder.value.items,
       });
 
-      actionSuccess.value = "Product order updated.";
       pendingReorder.value = null;
       await refresh();
     } catch (requestError) {
@@ -410,12 +412,12 @@ export const useProductIndexPage = async () => {
   return {
     actionError,
     actionPending,
-    actionSuccess,
     actionTargetId,
     applyFilters: applyFiltersWithReset,
     canCreateProduct,
     canDeleteProduct,
     canDragProducts,
+    canDiscontinueProduct,
     canFeatureProduct,
     canPublishProduct,
     canReorderProduct,
@@ -430,6 +432,7 @@ export const useProductIndexPage = async () => {
     confirmPublishBlockedOpen,
     deletedFilter,
     deletedFilterOptions,
+    discontinueProduct,
     dragSourceId,
     dragTargetId,
     error,

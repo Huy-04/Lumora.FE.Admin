@@ -1,15 +1,30 @@
 <script setup lang="ts">
+import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { ProductDetailPage } from "~/features/products/composables/useProductDetailPage";
 
 const props = defineProps<{
   page: ProductDetailPage;
 }>();
 
-const { error, pending, data, categoryLabel, productSectionWarnings, productTabs, activeTab, selectTab, canRestoreProduct, productId, canManageProductContent, canReorderProduct, canReadCategories, canPublishProduct, canDiscontinueProduct, categoryOptions, refresh } = props.page;
+const { error, pending, data, categoryLabel, productSectionWarnings, productTabs, activeTab, selectTab, canRestoreProduct, productId, canManageProductContent, canReorderProduct, canReadCategories, categoryOptions, refresh } = props.page;
 
 const selectProductTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
 };
+
+const activeTabLabel = computed(() =>
+  productTabs.value.find((tab) => tab.value === activeTab.value)?.label ?? "Overview",
+);
+
+useScopedPageBreadcrumbs(() =>
+  data.value?.product
+    ? [
+        { label: "Products", to: "/products" },
+        { label: data.value.product.name, to: `/products/${productId.value}` },
+        { label: activeTabLabel.value },
+      ]
+    : [],
+);
 </script>
 
 <template>
@@ -78,8 +93,6 @@ const selectProductTab = (tab: string) => {
         :product="data.product"
         :category-options="categoryOptions"
         :can-read-categories="canReadCategories"
-        :can-publish="canPublishProduct"
-        :can-discontinue="canDiscontinueProduct"
         @refresh="refresh"
       />
     </template>

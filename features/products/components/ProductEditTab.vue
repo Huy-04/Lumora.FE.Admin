@@ -6,8 +6,6 @@ const props = defineProps<{
   product: ProductResponse;
   categoryOptions: CategoryCatalogOption[];
   canReadCategories: boolean;
-  canPublish: boolean;
-  canDiscontinue: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -41,9 +39,6 @@ const form = reactive({
 const actionPending = ref(false);
 const actionError = ref("");
 const actionSuccess = ref("");
-const lifecyclePending = ref<"" | "publish" | "unpublish" | "discontinue">("");
-const lifecycleError = ref("");
-const lifecycleSuccess = ref("");
 
 watchEffect(() => {
   form.categoryId = props.product.categoryId;
@@ -108,112 +103,11 @@ const saveProduct = async () => {
   }
 };
 
-const publishProduct = async () => {
-  lifecyclePending.value = "publish";
-  lifecycleError.value = "";
-  lifecycleSuccess.value = "";
-
-  try {
-    await productApi.publishProduct(props.product.id);
-    lifecycleSuccess.value = "Product published.";
-    emit("refresh");
-  } catch (requestError) {
-    const problem = getProblemDetails(requestError);
-    const normalizedErrors = Array.isArray(problem?.errors) ? problem.errors : [];
-    const publishBlockedReasons: string[] = [];
-
-    if (normalizedErrors.some((entry) => entry.field === "VariantStatus" && entry.errorCode === "InvalidStatus")) {
-      publishBlockedReasons.push("Add or activate at least one variant before publishing.");
-    }
-
-    if (normalizedErrors.some((entry) => entry.field === "ProductId" && entry.errorCode === "Required")) {
-      publishBlockedReasons.push("Add at least one gallery image before publishing.");
-    }
-
-    lifecycleError.value = publishBlockedReasons.length
-      ? publishBlockedReasons.join(" ")
-      : getProblemMessage(requestError, "Unable to publish the product.");
-  } finally {
-    lifecyclePending.value = "";
-  }
-};
-
-const unpublishProduct = async () => {
-  lifecyclePending.value = "unpublish";
-  lifecycleError.value = "";
-  lifecycleSuccess.value = "";
-
-  try {
-    await productApi.unpublishProduct(props.product.id);
-    lifecycleSuccess.value = "Product moved back to draft.";
-    emit("refresh");
-  } catch (requestError) {
-    lifecycleError.value = getProblemMessage(requestError, "Unable to unpublish the product.");
-  } finally {
-    lifecyclePending.value = "";
-  }
-};
-
-const discontinueProduct = async () => {
-  lifecyclePending.value = "discontinue";
-  lifecycleError.value = "";
-  lifecycleSuccess.value = "";
-
-  try {
-    await productApi.discontinueProduct(props.product.id);
-    lifecycleSuccess.value = "Product discontinued.";
-    emit("refresh");
-  } catch (requestError) {
-    lifecycleError.value = getProblemMessage(requestError, "Unable to discontinue the product.");
-  } finally {
-    lifecyclePending.value = "";
-  }
-};
 </script>
 
 <template>
   <div class="grid gap-6 content-start max-w-6xl">
-    <AppPanel
-      v-if="canPublish || canDiscontinue"
-      title="Lifecycle"
-      description="Keep the selling state in sync with how this product should appear in the catalog."
-    >
-      <AppNotice v-if="lifecycleSuccess" tone="success" title="Product updated">
-        {{ lifecycleSuccess }}
-      </AppNotice>
-
-      <AppNotice v-if="lifecycleError" tone="danger" title="Product action failed">
-        {{ lifecycleError }}
-      </AppNotice>
-
-      <div class="panel-action-row">
-        <AppButton
-          v-if="canPublish && product.status !== 'Published'"
-          :loading="lifecyclePending === 'publish'"
-          @click="publishProduct"
-        >
-          Publish
-        </AppButton>
-        <AppButton
-          v-if="canPublish && product.status === 'Published'"
-          variant="secondary"
-          :loading="lifecyclePending === 'unpublish'"
-          @click="unpublishProduct"
-        >
-          Unpublish
-        </AppButton>
-        <AppButton
-          v-if="canDiscontinue && product.status === 'Published'"
-          variant="secondary"
-          :loading="lifecyclePending === 'discontinue'"
-          @click="discontinueProduct"
-        >
-          Discontinue
-        </AppButton>
-      </div>
-    </AppPanel>
-
-    <AppPanel title="Edit product" description="Update catalog content, category placement, and search metadata. Product order is managed outside this form.">
+    <AppPanel eyebrow="Edit product">
       <form class="form-stack" @submit.prevent="saveProduct">
         <div class="grid gap-4 md:grid-cols-2">
           <AppSelect
@@ -273,11 +167,8 @@ const discontinueProduct = async () => {
           {{ actionError }}
         </AppNotice>
 
-        <div class="panel-action-row border-t border-line/70 pt-4">
+        <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
           <AppButton :loading="actionPending" type="submit">Save changes</AppButton>
-          <NuxtLink class="secondary-link" to="/products">
-            Back to products
-          </NuxtLink>
         </div>
       </form>
     </AppPanel>

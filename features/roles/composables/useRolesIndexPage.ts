@@ -19,7 +19,6 @@ export const useRolesIndexPage = async () => {
   const confirmRoleId = ref("");
   const actionPending = ref<"" | "remove">("");
   const actionError = ref("");
-  const actionSuccess = ref("");
 
   const { data, pending, error, refresh } = await useAsyncData("roles-index", () => rolesApi.getRoles(1, 50));
 
@@ -92,7 +91,6 @@ export const useRolesIndexPage = async () => {
   const requestRemove = (roleId: string) => {
     confirmRoleId.value = roleId;
     actionError.value = "";
-    actionSuccess.value = "";
   };
 
   const cancelRemove = () => {
@@ -106,11 +104,9 @@ export const useRolesIndexPage = async () => {
 
     actionPending.value = "remove";
     actionError.value = "";
-    actionSuccess.value = "";
 
     try {
       await rolesApi.deleteRole(confirmRoleId.value);
-      actionSuccess.value = "Role removed.";
       confirmRoleId.value = "";
       await refresh();
     } catch (error) {
@@ -123,7 +119,6 @@ export const useRolesIndexPage = async () => {
   return {
     actionError,
     actionPending,
-    actionSuccess,
     applyFilters,
     canCreateRole,
     canRemoveRole,
