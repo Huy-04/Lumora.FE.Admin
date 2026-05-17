@@ -1,4 +1,5 @@
 export const useLoginPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const session = useAuthSession();
   const resolveRedirectTarget = () => {
@@ -11,14 +12,18 @@ export const useLoginPage = async () => {
     return redirect;
   };
 
+  // 2. Form state
   const form = reactive({
     email: "",
     password: "",
   });
 
+  // 3. Submission state
   const pending = ref(false);
   const errorMessage = ref("");
   const attempted = ref(false);
+
+  // 4. Computed / derived state
   const sessionExpiredMessage = computed(() =>
     route.query.reason === "session-expired"
       ? session.lastError.value || "Your access for this workspace has changed. Please sign in again."
@@ -37,6 +42,7 @@ export const useLoginPage = async () => {
     return "";
   });
 
+  // 5. Actions
   const submit = async () => {
     attempted.value = true;
     if (emailError.value || passwordError.value) {
@@ -62,6 +68,7 @@ export const useLoginPage = async () => {
     }
   };
 
+  // 6. Return statement
   return {
     form,
     pending,
@@ -73,4 +80,4 @@ export const useLoginPage = async () => {
   };
 };
 
-export type LoginPage = Awaited<ReturnType<typeof useLoginPage>>;
+export type AuthLoginPageState = Awaited<ReturnType<typeof useLoginPage>>;

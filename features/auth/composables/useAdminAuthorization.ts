@@ -23,9 +23,11 @@ export const ADMIN_PERMISSION = {
   refreshTokenRemoveAll: "Auth.RefreshToken.Revoke.All",
   refreshTokenRemoveSelf: "Auth.RefreshToken.Revoke.Self",
   userRoleReadAll: "Auth.UserRole.Read.All",
-  userRoleUpdateAll: "Auth.UserRole.Update.All",
+  userRoleCreateAll: "Auth.UserRole.Create.All",
+  userRoleRemoveAll: "Auth.UserRole.Remove.All",
   rolePermissionReadAll: "Auth.RolePermission.Read.All",
-  rolePermissionUpdateAll: "Auth.RolePermission.Update.All",
+  rolePermissionCreateAll: "Auth.RolePermission.Create.All",
+  rolePermissionRemoveAll: "Auth.RolePermission.Remove.All",
   categoryReadAll: "Category.Category.Read.All",
   categoryCreateAll: "Category.Category.Create.All",
   categoryUpdateAll: "Category.Category.Update.All",
@@ -46,8 +48,8 @@ export const ADMIN_PERMISSION = {
   orderReadSelf: "Order.Order.Read.Self",
   orderModifyAll: "Order.Order.Modify.All",
   orderModifySelf: "Order.Order.Modify.Self",
-  paymentReadAll: "Order.Order.Read.All",
-  paymentManageAll: "Order.Order.Modify.All",
+  paymentReadAll: "Payment.Payment.Read.All",
+  paymentManageAll: "Payment.Payment.Modify.All",
   warehouseReadAll: "Inventory.Warehouse.Read.All",
   warehouseCreateAll: "Inventory.Warehouse.Create.All",
   warehouseUpdateAll: "Inventory.Warehouse.Update.All",
@@ -55,18 +57,21 @@ export const ADMIN_PERMISSION = {
   inventoryReadAll: "Inventory.Inventory.Read.All",
   inventoryCreateAll: "Inventory.Inventory.Create.All",
   inventoryUpdateAll: "Inventory.Inventory.Update.All",
-  inventoryUpdateHN: "Inventory.Inventory.Update.HN",
-  inventoryUpdateHCM: "Inventory.Inventory.Update.HCM",
-  inventoryUpdateDN: "Inventory.Inventory.Update.DN",
+  // NOTE: Location-based inventory scopes (HN, HCM, DN) removed — pending BE team confirmation if custom scopes are needed
   inventoryRemoveAll: "Inventory.Inventory.Remove.All",
   shipmentReadAll: "Shipment.Shipment.Read.All",
   shipmentReadSelf: "Shipment.Shipment.Read.Self",
   shipmentModifyAll: "Shipment.Shipment.Modify.All",
   shipmentModifySelf: "Shipment.Shipment.Modify.Self",
+  systemEventReadAll: "Operations.SystemEvents.Read.All",
   cartReadAll: "Cart.Cart.Read.All",
   cartReadSelf: "Cart.Cart.Read.Self",
   cartModifyAll: "Cart.Cart.Modify.All",
   cartModifySelf: "Cart.Cart.Modify.Self",
+  couponReadAll: "Coupon.Coupon.Read.All",
+  couponModifyAll: "Coupon.Coupon.Modify.All",
+  reviewReadAll: "Review.Review.Read.All",
+  reviewModifyAll: "Review.Review.Modify.All",
 } as const;
 
 type PermissionRequirement = string | readonly string[];
@@ -98,13 +103,26 @@ const routeAccessRules: RouteAccessRule[] = [
   { pattern: /^\/products\/[^/]+$/, requirements: [ADMIN_PERMISSION.productReadAll] },
   { pattern: /^\/orders$/, requirements: [ADMIN_PERMISSION.orderReadAll] },
   { pattern: /^\/orders\/[^/]+$/, requirements: [ADMIN_PERMISSION.orderReadAll] },
+  { pattern: /^\/coupons$/, requirements: [ADMIN_PERMISSION.couponReadAll] },
+  { pattern: /^\/coupons\/create$/, requirements: [ADMIN_PERMISSION.couponModifyAll] },
+  { pattern: /^\/coupons\/[^/]+$/, requirements: [ADMIN_PERMISSION.couponReadAll] },
   { pattern: /^\/payments$/, requirements: [ADMIN_PERMISSION.paymentReadAll] },
   { pattern: /^\/payments\/[^/]+$/, requirements: [ADMIN_PERMISSION.paymentReadAll] },
-  { pattern: /^\/inventory$/, requirements: [[ADMIN_PERMISSION.inventoryReadAll, ADMIN_PERMISSION.warehouseReadAll]] },
+  { pattern: /^\/inventory$/, requirements: [ADMIN_PERMISSION.inventoryReadAll] },
+  { pattern: /^\/inventory\/create$/, requirements: [ADMIN_PERMISSION.inventoryCreateAll] },
   { pattern: /^\/inventory\/[^/]+$/, requirements: [ADMIN_PERMISSION.inventoryReadAll] },
+  { pattern: /^\/inventory-stocks\/[^/]+\/create$/, requirements: [ADMIN_PERMISSION.inventoryUpdateAll] },
+  { pattern: /^\/inventory-stocks\/[^/]+\/warehouses\/[^/]+\/add$/, requirements: [ADMIN_PERMISSION.inventoryUpdateAll] },
+  { pattern: /^\/inventory-stocks\/[^/]+\/warehouses\/[^/]+\/reorder-point$/, requirements: [ADMIN_PERMISSION.inventoryUpdateAll] },
+  { pattern: /^\/warehouses$/, requirements: [ADMIN_PERMISSION.warehouseReadAll] },
+  { pattern: /^\/warehouses\/create$/, requirements: [ADMIN_PERMISSION.warehouseCreateAll] },
   { pattern: /^\/warehouses\/[^/]+$/, requirements: [ADMIN_PERMISSION.warehouseReadAll] },
   { pattern: /^\/shipments$/, requirements: [ADMIN_PERMISSION.shipmentReadAll] },
   { pattern: /^\/shipments\/[^/]+$/, requirements: [ADMIN_PERMISSION.shipmentReadAll] },
+  { pattern: /^\/reviews$/, requirements: [ADMIN_PERMISSION.reviewReadAll] },
+  { pattern: /^\/reviews\/[^/]+$/, requirements: [ADMIN_PERMISSION.reviewReadAll] },
+  { pattern: /^\/system-events$/, requirements: [[ADMIN_PERMISSION.systemEventReadAll, ADMIN_PERMISSION.adminAccessAll]] },
+  { pattern: /^\/system-events\/[^/]+$/, requirements: [[ADMIN_PERMISSION.systemEventReadAll, ADMIN_PERMISSION.adminAccessAll]] },
   { pattern: /^\/sessions$/, requirements: [ADMIN_PERMISSION.userReadAll, ADMIN_PERMISSION.refreshTokenReadAll] },
   { pattern: /^\/profile\/sessions$/, requirements: [[ADMIN_PERMISSION.refreshTokenReadAll, ADMIN_PERMISSION.refreshTokenReadSelf]] },
   { pattern: /^\/user-addresses\/[^/]+\/create$/, requirements: [ADMIN_PERMISSION.userAddressCreateAll] },
@@ -148,7 +166,7 @@ export const useAdminAuthorization = () => {
     }
 
     const fallbacks = ["/", "/profile", "/settings"];
-    const preferred = ["/users", "/roles", "/permissions", "/categories", "/products", "/inventory", "/orders", "/payments", "/shipments", "/sessions"];
+    const preferred = ["/users", "/roles", "/permissions", "/categories", "/products", "/inventory", "/orders", "/coupons", "/payments", "/shipments", "/reviews", "/system-events", "/sessions"];
 
     const preferredPath = preferred.find((path) => canAccessPath(path));
     return preferredPath ?? fallbacks.find((path) => canAccessPath(path)) ?? "/";

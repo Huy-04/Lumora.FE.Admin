@@ -1,12 +1,14 @@
 import type { ProductAssetResponse, ProductVariantResponse } from "~/features/products/types";
 
 export const useProductVariantImagePage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const productApi = useProductAdminApi();
 
   const productId = computed(() => route.params.productId as string);
   const variantId = computed(() => route.params.variantId as string);
 
+  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `product-variant-image:${productId.value}:${variantId.value}`,
     async () => {
@@ -24,6 +26,7 @@ export const useProductVariantImagePage = async () => {
     },
   );
 
+  // 4. Computed derivations
   const variant = computed<ProductVariantResponse | null>(() =>
     data.value?.variants.find((entry) => entry.id === variantId.value) ?? null,
   );
@@ -55,6 +58,7 @@ export const useProductVariantImagePage = async () => {
     return `${start}-${end} of ${assets.value.length} assets`;
   });
 
+  // 6. Watchers
   watch(
     () => variant.value,
     (currentVariant) => {
@@ -79,6 +83,7 @@ export const useProductVariantImagePage = async () => {
     assets.value.find((asset) => asset.id === draftProductAssetId.value) ?? null,
   );
 
+  // 5. Actions/mutations
   const selectAsset = (asset: ProductAssetResponse) => {
     draftProductAssetId.value = asset.id;
     saveError.value = "";
@@ -125,6 +130,7 @@ export const useProductVariantImagePage = async () => {
     }
   };
 
+  // 7. Return statement
   return {
     productId,
     variantId,

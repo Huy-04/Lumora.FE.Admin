@@ -1,15 +1,18 @@
 import type { SessionResponse } from "~/features/sessions/types";
 
 export const useProfileSessionsPage = async () => {
+  // 1. Dependency injection
   const sessionsApi = useSessionsAdminApi();
   const authSession = useAuthSession();
   const authz = useAdminAuthorization();
   const identity = useDeviceIdentity();
 
+  // 2. Permissions
   const canRevokeOwnSessions = computed(() =>
     authz.can([ADMIN_PERMISSION.refreshTokenRemoveAll, ADMIN_PERMISSION.refreshTokenRemoveSelf]),
   );
 
+  // 3. Data fetching
   const resolveUserId = async () => {
     if (authSession.user.value?.id) {
       return authSession.user.value.id;
@@ -32,6 +35,7 @@ export const useProfileSessionsPage = async () => {
     return sessionsApi.getSessionsByUserId(userId);
   });
 
+  // 4. Action state
   type ConfirmMode = "current" | "device" | "others" | "all" | null;
 
   const confirmMode = ref<ConfirmMode>(null);
@@ -39,6 +43,7 @@ export const useProfileSessionsPage = async () => {
   const actionPending = ref<"" | "current" | "device" | "others" | "all">("");
   const actionError = ref("");
 
+  // 5. Computed derivations
   const sessions = computed(() => data.value ?? []);
   const currentDeviceId = computed(() => identity.deviceId.value);
   const currentUser = computed(() => authSession.user.value);
@@ -87,6 +92,7 @@ export const useProfileSessionsPage = async () => {
     return "";
   });
 
+  // 6. Actions/mutations
   const openConfirm = (mode: Exclude<ConfirmMode, null>, session?: SessionResponse) => {
     confirmMode.value = mode;
     confirmSession.value = session ?? null;
@@ -192,6 +198,7 @@ export const useProfileSessionsPage = async () => {
     }
   };
 
+  // 7. Return statement
   return {
     confirmMode,
     confirmTitle,
@@ -209,4 +216,4 @@ export const useProfileSessionsPage = async () => {
   };
 };
 
-export type ProfileSessionsPage = Awaited<ReturnType<typeof useProfileSessionsPage>>;
+export type ProfileSessionsPageState = Awaited<ReturnType<typeof useProfileSessionsPage>>;

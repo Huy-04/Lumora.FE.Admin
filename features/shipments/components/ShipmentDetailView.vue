@@ -20,7 +20,6 @@ const {
   shipment,
   shipmentId,
   shipmentTabs,
-  submitForm,
   submitShipment,
 } = props.page;
 
@@ -95,7 +94,7 @@ const closeActionError = () => {
           <div class="flex items-baseline gap-4 py-3">
             <dt class="meta-label w-40 shrink-0">Status</dt>
             <dd>
-              <AppBadge :tone="shipment.status === 'Delivered' ? 'success' : shipment.status === 'Cancelled' || shipment.status === 'Failed' ? 'danger' : shipment.status === 'Draft' ? 'warning' : 'default'">
+              <AppBadge :tone="shipment.status === 'Delivered' ? 'success' : shipment.status === 'Cancelled' || shipment.status === 'Failed' || shipment.status === 'Returned' ? 'danger' : shipment.status === 'Draft' ? 'warning' : 'default'">
                 {{ shipment.status }}
               </AppBadge>
             </dd>
@@ -139,6 +138,19 @@ const closeActionError = () => {
       </div>
 
       <div v-else-if="activeTab === 'tracking'" class="grid gap-6 content-start max-w-6xl">
+        <AppPanel v-if="canSubmitShipment && isDraft" eyebrow="Carrier handoff">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-2">
+              <AppBadge tone="warning">{{ shipment.status }}</AppBadge>
+              <AppBadge>{{ shipment.carrier }}</AppBadge>
+              <span class="text-sm text-smoke">Carrier submission pending</span>
+            </div>
+            <AppButton :loading="actionPending === 'submit'" variant="secondary" @click="submitShipment">
+              Retry submit
+            </AppButton>
+          </div>
+        </AppPanel>
+
         <AppDetailMetaPanel eyebrow="Carrier timeline">
           <div class="flex items-baseline gap-4 py-3">
             <dt class="meta-label w-40 shrink-0">Carrier order</dt>
@@ -169,33 +181,6 @@ const closeActionError = () => {
             <dd class="text-sm text-smoke">{{ shipment.cancelledAt ? formatDateTime(shipment.cancelledAt) : "Pending" }}</dd>
           </div>
         </AppDetailMetaPanel>
-      </div>
-
-      <div v-else-if="activeTab === 'submit'" class="grid gap-6 content-start max-w-6xl">
-        <AppPanel v-if="canSubmitShipment && isDraft" title="Submit to GHN" description="All fields are optional overrides. Backend still builds the canonical payload from order and warehouse data.">
-          <div class="mb-4 flex flex-wrap gap-2">
-            <AppBadge :tone="shipment.status === 'Draft' ? 'warning' : 'default'">{{ shipment.status }}</AppBadge>
-            <AppBadge>{{ shipment.carrier }}</AppBadge>
-          </div>
-          <form class="grid gap-4 lg:grid-cols-2" @submit.prevent="submitShipment">
-            <AppInput v-model="submitForm.requiredNote" label="Required note" placeholder="CHOTHUHANG, CHOXEMHANGKHONGTHU, KHONGCHOXEMHANG" />
-            <AppInput v-model="submitForm.content" label="Content" placeholder="Package content" />
-            <AppInput v-model="submitForm.insuranceValue" label="Insurance value" type="number" />
-            <AppInput v-model="submitForm.returnPhone" label="Return phone" />
-            <AppInput v-model="submitForm.returnDistrictId" label="Return district id" type="number" />
-            <AppInput v-model="submitForm.returnWardCode" label="Return ward code" />
-            <AppInput v-model="submitForm.pickStationId" label="Pick station id" />
-            <AppInput v-model="submitForm.deliverStationId" label="Deliver station id" />
-            <AppInput v-model="submitForm.pickShift" class="lg:col-span-2" label="Pick shift" placeholder="Comma-separated shift ids" />
-            <AppTextarea v-model="submitForm.returnAddress" label="Return address" class="lg:col-span-2" />
-            <AppTextarea v-model="submitForm.note" label="Carrier note" class="lg:col-span-2" />
-            <div class="flex flex-wrap justify-end gap-3 lg:col-span-2">
-              <AppButton :loading="actionPending === 'submit'" type="submit">
-                Submit shipment
-              </AppButton>
-            </div>
-          </form>
-        </AppPanel>
       </div>
 
       <div v-else class="grid gap-6 content-start max-w-6xl">

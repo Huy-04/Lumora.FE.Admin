@@ -1,85 +1,56 @@
 export const usePermissionsIndexPage = async () => {
+  // 1. Dependency injection
   const permissionsApi = usePermissionsAdminApi();
   const authz = useAdminAuthorization();
   const { enumLabel } = useAuthPresentation();
   const { permissionModuleOptions, permissionOperationOptions, permissionScopeOptions } = useAuthOptions();
+
+  // 2. Permissions
   const canCreatePermission = computed(() => authz.can(ADMIN_PERMISSION.permissionCreateAll));
   const canRemovePermission = computed(() => authz.can(ADMIN_PERMISSION.permissionRemoveAll));
 
-  const localSearch = ref("");
-  const search = ref("");
-  const localModuleFilter = ref("");
-  const moduleFilter = ref("");
-  const localOperationFilter = ref("");
-  const operationFilter = ref("");
-  const localScopeFilter = ref("");
-  const scopeFilter = ref("");
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const applyFilters = () => {
-    search.value = localSearch.value;
-    moduleFilter.value = localModuleFilter.value;
-    operationFilter.value = localOperationFilter.value;
-    scopeFilter.value = localScopeFilter.value;
-  };
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } = useFilters(
+    { search: "", module: "", operation: "", scope: "" },
+    { onApply: () => { pagination.page.value = 1; } },
+  );
 
-  const clearFilters = () => {
-    localSearch.value = "";
-    localModuleFilter.value = "";
-    localOperationFilter.value = "";
-    localScopeFilter.value = "";
-    applyFilters();
-  };
+  // 5. Data fetching
+  const { data, pending, error, refresh } = await useAsyncData(
+    () => `permissions:${appliedFilters.module.value || "all"}`,
+    () => appliedFilters.module.value
+      ? permissionsApi.getPermissionsByModule(appliedFilters.module.value, 1, 100)
+      : permissionsApi.getPermissions(1, 100),
+  );
 
-  const confirmPermissionId = ref("");
-  const actionPending = ref<"" | "remove">("");
-  const actionError = ref("");
-
+  // 6. Computed derivations
   const moduleOptions = [{ label: "All modules", value: "" }, ...permissionModuleOptions];
   const operationOptions = [{ label: "All operations", value: "" }, ...permissionOperationOptions];
   const scopeOptions = [{ label: "All scopes", value: "" }, ...permissionScopeOptions];
 
-  const { data, pending, error, refresh } = await useAsyncData(
-    () => `permissions:${moduleFilter.value || "all"}`,
-    () => moduleFilter.value
-      ? permissionsApi.getPermissionsByModule(moduleFilter.value, 1, 100)
-      : permissionsApi.getPermissions(1, 100),
-  );
-
   const filteredPermissions = computed(() => {
     const items = data.value?.items ?? [];
-    const keyword = search.value.trim().toLowerCase();
+    const keyword = appliedFilters.search.value.trim().toLowerCase();
 
     return items.filter((permission) => {
       const matchesSearch = !keyword
         || permission.permissionName.toLowerCase().includes(keyword)
         || (permission.description || "").toLowerCase().includes(keyword);
-      const matchesOperation = !operationFilter.value || permission.operation === operationFilter.value;
-      const matchesScope = !scopeFilter.value || permission.scope === scopeFilter.value;
+      const matchesOperation = !appliedFilters.operation.value || permission.operation === appliedFilters.operation.value;
+      const matchesScope = !appliedFilters.scope.value || permission.scope === appliedFilters.scope.value;
 
       return matchesSearch && matchesOperation && matchesScope;
     });
   });
 
-  const page = ref(1);
-  const pageSize = ref("20");
-  const pageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-
-  const totalPermissions = computed(() => filteredPermissions.value.length);
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalPermissions.value / Number(pageSize.value))));
-  const firstItemNumber = computed(() => totalPermissions.value === 0 ? 0 : (page.value - 1) * Number(pageSize.value) + 1);
-  const lastItemNumber = computed(() => Math.min(page.value * Number(pageSize.value), totalPermissions.value));
   const pagedPermissions = computed(() => {
-    const start = (page.value - 1) * Number(pageSize.value);
-    return filteredPermissions.value.slice(start, start + Number(pageSize.value));
+    const start = (pagination.page.value - 1) * Number(pagination.pageSize.value);
+    return filteredPermissions.value.slice(start, start + Number(pagination.pageSize.value));
   });
-  const goToNextPage = () => { if (page.value < totalPages.value) page.value += 1; };
-  const goToPreviousPage = () => { if (page.value > 1) page.value -= 1; };
-
-  watch([() => search.value, () => moduleFilter.value, () => operationFilter.value, () => scopeFilter.value, pageSize], () => { page.value = 1; });
 
   const summaryStats = computed(() => {
     const all = data.value?.items ?? [];
@@ -108,12 +79,22 @@ export const usePermissionsIndexPage = async () => {
     ];
   });
 
+  // Wire totalItems to filteredPermissions count (client-side pagination)
+  watch(() => filteredPermissions.value.length, (count) => {
+    totalItems.value = count ?? 0;
+  }, { immediate: true });
+
+  const confirmPermissionId = ref("");
+  const actionPending = ref<"" | "remove">("");
+  const actionError = ref("");
+
   const confirmPermission = computed(() =>
     filteredPermissions.value.find((permission) => permission.id === confirmPermissionId.value) ?? null,
   );
   const confirmTitle = computed(() => confirmPermission.value ? `Remove ${confirmPermission.value.permissionName}?` : "");
   const confirmDetail = "This action removes the permission record.";
 
+  // 7. Actions/mutations
   const requestRemove = (permissionId: string) => {
     confirmPermissionId.value = permissionId;
     actionError.value = "";
@@ -142,6 +123,10 @@ export const usePermissionsIndexPage = async () => {
     }
   };
 
+  // 8. Watchers
+  // (pagination reset on filter change is handled by useFilters onApply callback)
+
+  // 9. Return statement
   return {
     actionError,
     actionPending,
@@ -157,33 +142,19 @@ export const usePermissionsIndexPage = async () => {
     enumLabel,
     error,
     filteredPermissions,
-    firstItemNumber,
-    goToNextPage,
-    goToPreviousPage,
-    lastItemNumber,
-    localSearch,
-    localModuleFilter,
-    moduleFilter,
+    hasActiveFilters,
+    localFilters,
     moduleOptions,
-    localOperationFilter,
-    operationFilter,
     operationOptions,
-    page,
-    pageSize,
-    pageSizeOptions,
     pagedPermissions,
     pending,
     refresh,
     removePermission,
     requestRemove,
-    localScopeFilter,
-    scopeFilter,
     scopeOptions,
-    search,
     summaryStats,
-    totalPages,
-    totalPermissions,
+    ...pagination,
   };
 };
 
-export type PermissionsIndexPage = Awaited<ReturnType<typeof usePermissionsIndexPage>>;
+export type PermissionIndexPageState = Awaited<ReturnType<typeof usePermissionsIndexPage>>;

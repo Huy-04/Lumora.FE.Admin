@@ -1,29 +1,43 @@
-import type { CreateInventoryRequest } from "~/features/inventory/types";
-
 export const useInventoryIndexPage = async () => {
+  // 1. Dependency injection
   const inventoryApi = useInventoryAdminApi();
   const authz = useAdminAuthorization();
-  const { warehouseCodeOptions } = useInventoryOptions();
+  const { warehouseCodeOptions, stockStatusFilterOptions } = useInventoryOptions();
 
+  // 2. Permissions
   const canReadInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryReadAll));
   const canCreateInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryCreateAll));
 
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
+
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
+    useFilters(
+      { keyword: "", stockStatus: "" },
+      { onApply: () => { pagination.page.value = 1; } },
+    );
+
+  // 5. Data fetching
   const actionPending = ref("");
   const actionError = ref("");
-  const createInventoryOpen = ref(false);
-  const inventoryPage = ref(1);
-  const inventoryPageSize = ref("20");
-
-  const inventoryForm = reactive<CreateInventoryRequest>({
-    productVariantId: "",
-  });
-
-
 
   const { data, pending, error, refresh } = await useAsyncData(
-    () => `inventory-admin:index:${inventoryPage.value}:${inventoryPageSize.value}`,
+    () => `inventory-admin:index:${pagination.page.value}:${pagination.pageSize.value}:${appliedFilters.keyword.value}:${appliedFilters.stockStatus.value}`,
     async () => {
-      const inventories = canReadInventory.value ? await inventoryApi.getInventories(inventoryPage.value, Number(inventoryPageSize.value)) : null;
+      if (!canReadInventory.value) return { inventories: null };
+
+      const hasFilters = !!(appliedFilters.keyword.value || appliedFilters.stockStatus.value);
+
+      const inventories = hasFilters
+        ? await inventoryApi.searchInventories({
+            keyword: appliedFilters.keyword.value || undefined,
+            stockStatus: appliedFilters.stockStatus.value ? Number(appliedFilters.stockStatus.value) : undefined,
+            page: pagination.page.value,
+            size: Number(pagination.pageSize.value),
+          })
+        : await inventoryApi.getInventories(pagination.page.value, Number(pagination.pageSize.value));
 
       return {
         inventories,
@@ -31,17 +45,21 @@ export const useInventoryIndexPage = async () => {
     },
   );
 
+  const realtimeRefresh = useRealtimeRefresh(refresh);
+  useCatalogRealtime((notification) => {
+    if (notification.entity === "inventory") {
+      realtimeRefresh.scheduleRefresh();
+    }
+  }, { enabled: canReadInventory });
+
+  // 6. Computed derivations
+  watch(() => data.value?.inventories?.totalCount, (count) => {
+    totalItems.value = count ?? 0;
+  }, { immediate: true });
+
   const inventories = computed(() => data.value?.inventories?.items ?? []);
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "Inventory data is not available right now."));
   const totalInventories = computed(() => data.value?.inventories?.totalCount ?? 0);
-  const inventoryTotalPages = computed(() => Math.max(1, Math.ceil(totalInventories.value / Number(inventoryPageSize.value))));
-  const inventoryPageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-  const firstInventoryNumber = computed(() => totalInventories.value === 0 ? 0 : (inventoryPage.value - 1) * Number(inventoryPageSize.value) + 1);
-  const lastInventoryNumber = computed(() => Math.min(inventoryPage.value * Number(inventoryPageSize.value), totalInventories.value));
 
   const summaryStats = computed(() => [
     {
@@ -61,75 +79,31 @@ export const useInventoryIndexPage = async () => {
     },
   ]);
 
-  const createInventory = async () => {
-    if (!inventoryForm.productVariantId.trim()) {
-      actionError.value = "Product variant id is required.";
-      return;
-    }
+  // 7. Actions/mutations
 
-    actionPending.value = "create-inventory";
-    actionError.value = "";
+  // 8. Watchers
+  // (pagination reset on filter apply and pageSize change handled by usePagination and useFilters)
 
-    try {
-      await inventoryApi.createInventory({
-        productVariantId: inventoryForm.productVariantId.trim(),
-      });
-      inventoryForm.productVariantId = "";
-      createInventoryOpen.value = false;
-      await refresh();
-    } catch (requestError) {
-      actionError.value = getProblemMessage(requestError, "Unable to create inventory.");
-    } finally {
-      actionPending.value = "";
-    }
-  };
-
-
-
-  const goToPreviousInventoryPage = () => {
-    if (inventoryPage.value <= 1) {
-      return;
-    }
-
-    inventoryPage.value -= 1;
-  };
-
-  const goToNextInventoryPage = () => {
-    if (inventoryPage.value >= inventoryTotalPages.value) {
-      return;
-    }
-
-    inventoryPage.value += 1;
-  };
-
-  watch(inventoryPageSize, () => {
-    inventoryPage.value = 1;
-  });
-
+  // 9. Return statement
   return {
     actionError,
     actionPending,
+    applyFilters,
     canCreateInventory,
     canReadInventory,
-    createInventory,
-    createInventoryOpen,
+    clearFilters,
     error,
-    firstInventoryNumber,
-    goToNextInventoryPage,
-    goToPreviousInventoryPage,
+    hasActiveFilters,
     inventories,
-    inventoryForm,
-    inventoryPage,
-    inventoryPageSize,
-    inventoryPageSizeOptions,
-    inventoryTotalPages,
-    lastInventoryNumber,
     loadErrorMessage,
+    localFilters,
     pending,
     refresh,
+    stockStatusFilterOptions,
     summaryStats,
     totalInventories,
     warehouseCodeOptions,
+    ...pagination,
   };
 };
 

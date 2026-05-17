@@ -1,6 +1,7 @@
 import type { ProductAssetResponse } from "~/features/products/types";
 
 export const useProductGalleryCreatePage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const productApi = useProductAdminApi();
   const authz = useAdminAuthorization();
@@ -8,16 +9,19 @@ export const useProductGalleryCreatePage = async () => {
   const productId = computed(() => route.params.productId as string);
   const canUpdateProduct = computed(() => authz.can(ADMIN_PERMISSION.productUpdateAll));
 
+  // 2. Form state
   const form = reactive({
     assetId: "",
     alt: "",
   });
 
+  // 3. Submission state
   const pending = ref(false);
   const errorMessage = ref("");
   const currentPage = ref(1);
   const assetsPerPage = 8;
 
+  // 4. Computed / derived state
   const { data: product, pending: productPending, error: productError } = await useAsyncData(
     () => `product-gallery-create:${productId.value}`,
     async () => {
@@ -78,6 +82,7 @@ export const useProductGalleryCreatePage = async () => {
     && Boolean(form.assetId),
   );
 
+  // 5. Actions
   const selectAsset = (asset: ProductAssetResponse) => {
     form.assetId = asset.id;
     errorMessage.value = "";
@@ -107,6 +112,7 @@ export const useProductGalleryCreatePage = async () => {
     }
   };
 
+  // 6. Return statement
   return {
     productError,
     productPending,

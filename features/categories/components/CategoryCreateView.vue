@@ -5,17 +5,13 @@ const props = defineProps<{
   page: CategoryCreatePage;
 }>();
 
-const { form, pending, errorMessage, categoryCatalogError, canReadCategories, activeRootOptions, submit } = props.page;
+const { form, pending, errorMessage, categoryCatalogError, canReadCategories, activeParentOptions, submit } = props.page;
 </script>
 
 <template>
   <div class="page-shell">
-    <section class="max-w-4xl">
-      <AppPanel
-        eyebrow="Create category"
-        title="Create category"
-        description="Create a new root category or attach a child category under an active root parent."
-      >
+    <section class="grid max-w-6xl gap-6">
+      <AppPanel eyebrow="Create category">
         <form class="form-stack" @submit.prevent="submit">
           <div class="grid gap-4">
             <AppSelect
@@ -33,13 +29,13 @@ const { form, pending, errorMessage, categoryCatalogError, canReadCategories, ac
               v-if="canReadCategories"
               v-model="form.parentId"
               label="Parent category"
-              :options="activeRootOptions"
+              :options="activeParentOptions"
             />
             <AppInput
               v-else
               v-model="form.parentId"
               label="Parent category ID"
-              placeholder="Enter an active root category ID"
+              placeholder="Enter an active parent category ID"
             />
 
             <AppNotice v-if="categoryCatalogError" tone="warning" title="Parent catalog unavailable">
@@ -69,11 +65,11 @@ const { form, pending, errorMessage, categoryCatalogError, canReadCategories, ac
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="panel-action-row">
-            <AppButton :loading="pending" type="submit">Create category</AppButton>
-            <NuxtLink class="secondary-link" to="/categories">
-              Back to categories
+          <div class="flex justify-end gap-4 border-t border-line pt-5">
+            <NuxtLink class="secondary-link min-w-[9rem]" to="/categories">
+              Cancel
             </NuxtLink>
+            <AppButton :loading="pending" type="submit" class="min-w-[12rem]">Create category</AppButton>
           </div>
         </form>
       </AppPanel>

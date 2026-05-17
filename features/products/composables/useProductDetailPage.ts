@@ -1,6 +1,7 @@
 import type { CategoryTreeNodeResponse } from "~/features/categories/types";
 
 export const useProductDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const categoryApi = useCategoryAdminApi();
   const productApi = useProductAdminApi();
@@ -9,6 +10,7 @@ export const useProductDetailPage = async () => {
 
   type ProductTab = "overview" | "edit" | "variants" | "assets" | "gallery" | "attributes";
 
+  // 2. Permissions
   const productId = computed(() => route.params.id as string);
   const canReadCategories = computed(() => authz.can(ADMIN_PERMISSION.categoryReadAll));
   const canUpdateProduct = computed(() => authz.can(ADMIN_PERMISSION.productUpdateAll));
@@ -27,6 +29,7 @@ export const useProductDetailPage = async () => {
     }
   };
 
+  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `product-detail:${productId.value}`,
     async () => {
@@ -52,6 +55,14 @@ export const useProductDetailPage = async () => {
     },
   );
 
+  const realtimeRefresh = useRealtimeRefresh(refresh);
+  useCatalogRealtime((notification) => {
+    if (notification.entity === "product" && notification.entityId === productId.value) {
+      realtimeRefresh.scheduleRefresh();
+    }
+  });
+
+  // 4. Computed derivations
   const canEditProduct = computed(() => canUpdateProduct.value && !data.value?.product?.isDeleted);
   const canManageProductContent = computed(() => canUpdateProduct.value && !data.value?.product?.isDeleted);
 
@@ -82,6 +93,7 @@ export const useProductDetailPage = async () => {
 
   const activeTab = ref<ProductTab>("overview");
 
+  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -94,6 +106,7 @@ export const useProductDetailPage = async () => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
+  // 5. Actions/mutations
   const selectTab = async (tab: ProductTab) => {
     activeTab.value = normalizeTab(tab);
 
@@ -117,6 +130,7 @@ export const useProductDetailPage = async () => {
 
   const categoryOptions = computed(() => toOptions((data.value?.categoryTree ?? []) as CategoryTreeNodeResponse[], true));
 
+  // 7. Return statement
   return {
     error,
     pending,

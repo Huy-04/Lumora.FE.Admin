@@ -14,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const authApi = useAuthApi();
+const authSession = useAuthSession();
 const otpCooldown = useOtpResendCooldown();
 const { phoneRegionOptions } = useAuthOptions();
 
@@ -138,7 +139,7 @@ const resendCurrentVerification = async () => {
 
   try {
     currentOtp.value = createOtpCode();
-    await authApi.requestCurrentPhoneVerification();
+    await authApi.resendCurrentPhoneVerification();
     otpCooldown.startCooldown(currentPhoneCooldownKey.value);
   } catch (requestError) {
     otpCooldown.syncFromError(currentPhoneCooldownKey.value, requestError);
@@ -200,11 +201,7 @@ const resendNewPhoneVerification = async () => {
   phoneError.value = "";
 
   try {
-    form.newPhone = form.newPhone.trim();
-    await authApi.requestNewPhoneVerification({
-      newPhone: form.newPhone,
-      phoneRegion: form.phoneRegion,
-    });
+    await authApi.resendNewPhoneVerification();
     otpCooldown.startCooldown(newPhoneCooldownKey.value);
     newOtp.value = createOtpCode();
     phoneStep.value = "confirm-new";
@@ -226,7 +223,13 @@ const completePhoneChange = async () => {
     });
     newOtp.value = createOtpCode();
     phoneStep.value = "done";
-    emit("updated");
+    setTimeout(() => {
+      authSession.expire("Your phone was changed. Please sign in again.");
+      navigateTo({
+        path: "/auth/login",
+        query: { reason: "security-updated" },
+      });
+    }, 3000);
   } catch (requestError) {
     phoneError.value = getProblemMessage(requestError, "New phone verification failed.");
   } finally {
@@ -379,11 +382,8 @@ watch(
 
               <template v-else>
                 <AppNotice tone="success" title="Phone updated">
-                  Your phone has been changed successfully.
+                  Change confirmed. Re-login required.
                 </AppNotice>
-                <AppButton class="justify-self-start" @click="closeDialog">
-                  Done
-                </AppButton>
               </template>
             </div>
 

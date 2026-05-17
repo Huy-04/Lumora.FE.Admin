@@ -154,7 +154,7 @@ export interface UpdateVariantRequest {
 }
 
 export interface ChangeVariantStatusRequest {
-  status: number;
+  status: VariantStatus;
 }
 
 export interface ReorderVariantItemRequest {

@@ -9,6 +9,7 @@
     "prepare": "node scripts/repair-vue-tsc-fixture.mjs && nuxt prepare"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@phosphor-icons/vue": "^2.2.1",
     "nuxt": "^3.17.4",

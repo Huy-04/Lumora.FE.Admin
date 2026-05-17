@@ -40,7 +40,7 @@ useScopedPageBreadcrumbs(() =>
 
 <template>
   <div class="page-shell">
-    <section class="max-w-6xl">
+    <section class="grid max-w-6xl gap-6">
       <AppNotice v-if="inventoryError" tone="danger" title="Unable to load inventory">
         {{ getProblemMessage(inventoryError, "The inventory record could not be loaded.") }}
       </AppNotice>
@@ -87,25 +87,79 @@ useScopedPageBreadcrumbs(() =>
               label="Current reorder point"
               readonly
             />
-            <AppInput
-              v-model="form.reorderPoint"
-              label="New reorder point"
-              inputmode="numeric"
-              placeholder="5"
-            />
+            <div class="grid gap-2">
+              <span class="app-label">New reorder point</span>
+              <div class="grid grid-cols-[1fr_auto] gap-3">
+                <AppInput
+                  v-model="form.reorderPoint"
+                  label=""
+                  inputmode="numeric"
+                  placeholder="5"
+                />
+                <button
+                  type="button"
+                  class="inline-flex h-[2.75rem] items-center justify-center rounded-[10px] border border-line bg-surface px-3 text-sm text-smoke transition duration-200 ease-out hover:text-ink"
+                  title="Clear reorder point (set to none)"
+                  @click="form.reorderPoint = ''"
+                >
+                  Clear
+                </button>
+              </div>
+              <p class="text-xs text-smoke">
+                Leave empty or press Clear to remove the reorder point threshold.
+              </p>
+            </div>
+          </div>
+
+          <div v-if="selectedStock" class="rounded-lg border border-line/50 bg-surface-alt/30 p-4">
+            <h4 class="mb-2 text-sm font-medium text-ink">Alert status explanation</h4>
+            <ul class="grid gap-1.5 text-xs text-smoke">
+              <li>
+                <span class="inline-block w-20 rounded bg-emerald-500/15 px-1.5 py-0.5 text-center text-emerald-400">InStock</span>
+                — availableQuantity is above the reorder point
+              </li>
+              <li>
+                <span class="inline-block w-20 rounded bg-amber-500/15 px-1.5 py-0.5 text-center text-amber-400">LowStock</span>
+                — availableQuantity ≤ reorder point (and &gt; 0)
+              </li>
+              <li>
+                <span class="inline-block w-20 rounded bg-red-500/15 px-1.5 py-0.5 text-center text-red-400">OutOfStock</span>
+                — availableQuantity = 0
+              </li>
+            </ul>
+            <p v-if="selectedStock.alertStatus" class="mt-2 text-xs text-smoke">
+              Current alert status:
+              <span
+                class="font-medium"
+                :class="{
+                  'text-emerald-400': selectedStock.alertStatus === 'InStock',
+                  'text-amber-400': selectedStock.alertStatus === 'LowStock',
+                  'text-red-400': selectedStock.alertStatus === 'OutOfStock',
+                }"
+              >
+                {{ selectedStock.alertStatus }}
+              </span>
+              <template v-if="selectedStock.alertStatus !== 'OutOfStock'">
+                (available: {{ selectedStock.availableQuantity }}<template v-if="selectedStock.reorderPoint != null">, reorder point: {{ selectedStock.reorderPoint }}</template>)
+              </template>
+              <template v-else>
+                (available: 0)
+              </template>
+            </p>
           </div>
 
           <AppNotice v-if="reorderPointErrorMessage" tone="danger" title="Set reorder point failed">
             {{ reorderPointErrorMessage }}
           </AppNotice>
 
-          <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
-            <NuxtLink class="secondary-link" :to="`/inventory/${inventoryId}?tab=operations`">
+          <div class="flex flex-wrap items-center justify-end gap-4 border-t border-line/70 pt-4">
+            <NuxtLink class="secondary-link min-w-[9rem]" :to="`/inventory/${inventoryId}?tab=operations`">
               Cancel
             </NuxtLink>
             <AppButton
               :loading="reorderPointPending"
               type="submit"
+              class="min-w-[12rem]"
               :disabled="!canAddStock || !form.warehouseId || !selectedStock"
             >
               Set reorder point

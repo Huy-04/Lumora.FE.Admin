@@ -20,6 +20,7 @@ const logApiError = (message: string, payload?: unknown) => {
 
 export const useApiClient = () => {
   const requestFetch = import.meta.server ? useRequestFetch() : $fetch;
+  const router = import.meta.client ? useRouter() : null;
   const authRefresh = useAuthRefresh();
   const sessionHint = useSessionHint();
   const session = useState<CurrentUserResponse | null>("auth:session", () => null);
@@ -34,9 +35,9 @@ export const useApiClient = () => {
     const requestPath = String(path);
     const problem = getProblemDetails(error);
     const status = problem?.status ?? (error as { response?: { status?: number } } | null)?.response?.status;
-    const hasRestoreHint = Boolean(authIndicator.value || sessionHint.hasHint.value);
+    const hasRefreshContext = Boolean(authIndicator.value || sessionHint.hasHint.value || session.value?.user?.id);
 
-    if (import.meta.server || options?.skipAuthRefresh || status !== 401 || !hasRestoreHint) {
+    if (import.meta.server || options?.skipAuthRefresh || status !== 401 || !hasRefreshContext) {
       return false;
     }
 
@@ -44,6 +45,7 @@ export const useApiClient = () => {
       && !requestPath.startsWith("/Authentication/admin-login")
       && !requestPath.startsWith("/Authentication/register")
       && !requestPath.startsWith("/Authentication/request-password-reset")
+      && !requestPath.startsWith("/Authentication/resend-password-reset-otp")
       && !requestPath.startsWith("/Authentication/verify-password-reset-otp")
       && !requestPath.startsWith("/Authentication/complete-password-reset")
       && !requestPath.startsWith("/Authentication/refresh-access-token");
@@ -80,16 +82,11 @@ export const useApiClient = () => {
     lastError.value = "Your access for this workspace has changed. Please sign in again.";
     sessionHint.clear();
 
-    if (import.meta.client) {
-      const router = useRouter();
-      const currentPath = router.currentRoute.value.fullPath;
-      const redirect = currentPath.startsWith("/auth") ? "/" : currentPath;
-
-      await navigateTo({
+    if (import.meta.client && router) {
+      await router.push({
         path: "/auth/login",
         query: {
           reason: "session-expired",
-          redirect,
         },
       });
     }
@@ -114,7 +111,7 @@ export const useApiClient = () => {
     } catch (error) {
       logApiError("[ApiClient] Request failed:", { path, error });
 
-      if (shouldAttemptRefresh(path, options, error) && await authRefresh.refresh()) {
+      if (shouldAttemptRefresh(path, options, error) && await authRefresh.refresh({ force: true })) {
         logApiDebug("[ApiClient] Retrying after token refresh...");
         return await requestFetch<T>(path, {
           baseURL: "/api",

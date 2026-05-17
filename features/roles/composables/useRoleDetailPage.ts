@@ -1,15 +1,18 @@
 export const useRoleDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const rolesApi = useRolesAdminApi();
   const permissionsApi = usePermissionsAdminApi();
   const authz = useAdminAuthorization();
 
+  // 2. Route & permissions
   type RoleTab = "overview" | "edit" | "permissions";
 
   const roleId = computed(() => route.params.id as string);
   const canEditRole = computed(() => authz.can(ADMIN_PERMISSION.roleUpdateAll));
   const canViewRolePermissions = computed(() => authz.can(ADMIN_PERMISSION.permissionReadAll));
 
+  // 3. Tab state
   const roleTabs = computed<Array<{ label: string; value: RoleTab }>>(() => [
     { label: "Overview", value: "overview" },
     ...(canEditRole.value ? [{ label: "Edit", value: "edit" as const }] : []),
@@ -21,6 +24,7 @@ export const useRoleDetailPage = async () => {
 
   const activeTab = ref<RoleTab>(normalizeTab("overview"));
 
+  // 4. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `role-detail:${roleId.value}`,
     async () => {
@@ -40,10 +44,12 @@ export const useRoleDetailPage = async () => {
     },
   );
 
+  // 5. Watchers
   watchEffect(() => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
+  // 6. Return statement
   return {
     roleId,
     canViewRolePermissions,

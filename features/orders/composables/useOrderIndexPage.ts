@@ -1,61 +1,46 @@
 import type { OrderPaymentStatus, OrderStatus } from "~/features/orders/types";
 
 export const useOrderIndexPage = async () => {
+  // 1. Dependency injection
   const orderApi = useOrderAdminApi();
   const inventoryApi = useInventoryAdminApi();
   const authz = useAdminAuthorization();
   const { orderStatusOptions, paymentStatusOptions } = useOrderOptions();
 
+  // 2. Permissions
   const canReadOrders = computed(() => authz.can(ADMIN_PERMISSION.orderReadAll));
   const canReadWarehouses = computed(() => authz.can(ADMIN_PERMISSION.warehouseReadAll));
 
-  const localKeyword = ref("");
-  const localWarehouseId = ref("");
-  const localStatus = ref<OrderStatus | "">("");
-  const localPaymentStatus = ref<OrderPaymentStatus | "">("");
-  const localCreatedFrom = ref("");
-  const localCreatedTo = ref("");
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const keyword = ref("");
-  const warehouseId = ref("");
-  const status = ref<OrderStatus | "">("");
-  const paymentStatus = ref<OrderPaymentStatus | "">("");
-  const createdFrom = ref("");
-  const createdTo = ref("");
-  const page = ref(1);
-  const pageSize = ref("20");
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
+    useFilters(
+      {
+        keyword: "",
+        warehouseId: "",
+        status: "" as OrderStatus | "",
+        paymentStatus: "" as OrderPaymentStatus | "",
+        createdFrom: "",
+        createdTo: "",
+      },
+      { onApply: () => { pagination.page.value = 1; } },
+    );
 
-  const applyFilters = () => {
-    keyword.value = localKeyword.value.trim();
-    warehouseId.value = localWarehouseId.value.trim();
-    status.value = localStatus.value;
-    paymentStatus.value = localPaymentStatus.value;
-    createdFrom.value = localCreatedFrom.value;
-    createdTo.value = localCreatedTo.value;
-    page.value = 1;
-  };
-
-  const clearFilters = () => {
-    localKeyword.value = "";
-    localWarehouseId.value = "";
-    localStatus.value = "";
-    localPaymentStatus.value = "";
-    localCreatedFrom.value = "";
-    localCreatedTo.value = "";
-    applyFilters();
-  };
-
+  // 5. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
-    () => `orders:${keyword.value || "all"}:${warehouseId.value || "all"}:${status.value || "all"}:${paymentStatus.value || "all"}:${createdFrom.value || "none"}:${createdTo.value || "none"}:${page.value}:${pageSize.value}`,
+    () => `orders:${appliedFilters.keyword.value || "all"}:${appliedFilters.warehouseId.value || "all"}:${appliedFilters.status.value || "all"}:${appliedFilters.paymentStatus.value || "all"}:${appliedFilters.createdFrom.value || "none"}:${appliedFilters.createdTo.value || "none"}:${pagination.page.value}:${pagination.pageSize.value}`,
     () => orderApi.searchOrders({
-      keyword: keyword.value || undefined,
-      warehouseId: warehouseId.value || undefined,
-      status: status.value || undefined,
-      paymentStatus: paymentStatus.value || undefined,
-      createdFrom: createdFrom.value || undefined,
-      createdTo: createdTo.value || undefined,
-      page: page.value,
-      size: Number(pageSize.value),
+      keyword: appliedFilters.keyword.value || undefined,
+      warehouseId: appliedFilters.warehouseId.value || undefined,
+      status: appliedFilters.status.value || undefined,
+      paymentStatus: appliedFilters.paymentStatus.value || undefined,
+      createdFrom: appliedFilters.createdFrom.value || undefined,
+      createdTo: appliedFilters.createdTo.value || undefined,
+      page: pagination.page.value,
+      size: Number(pagination.pageSize.value),
     }),
   );
 
@@ -70,6 +55,7 @@ export const useOrderIndexPage = async () => {
     },
   );
 
+  // 6. Computed derivations
   const orders = computed(() => data.value?.items ?? []);
   const warehouseOptions = computed(() => [
     { label: "All warehouses", value: "" },
@@ -79,36 +65,12 @@ export const useOrderIndexPage = async () => {
     })),
   ]);
   const totalOrders = computed(() => data.value?.totalCount ?? 0);
-  const hasFilters = computed(() => Boolean(keyword.value || warehouseId.value || status.value || paymentStatus.value || createdFrom.value || createdTo.value));
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "The order queue is not available right now."));
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalOrders.value / Number(pageSize.value))));
-  const pageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-  const firstItemNumber = computed(() => totalOrders.value === 0 ? 0 : (page.value - 1) * Number(pageSize.value) + 1);
-  const lastItemNumber = computed(() => Math.min(page.value * Number(pageSize.value), totalOrders.value));
 
-  const goToPreviousPage = () => {
-    if (page.value <= 1) {
-      return;
-    }
-
-    page.value -= 1;
-  };
-
-  const goToNextPage = () => {
-    if (page.value >= totalPages.value) {
-      return;
-    }
-
-    page.value += 1;
-  };
-
-  watch(pageSize, () => {
-    page.value = 1;
-  });
+  // Wire totalItems to fetched data
+  watch(() => data.value?.totalCount, (count) => {
+    totalItems.value = count ?? 0;
+  }, { immediate: true });
 
   const summaryStats = computed(() => [
     {
@@ -133,42 +95,31 @@ export const useOrderIndexPage = async () => {
     },
   ]);
 
+  // 7. Actions/mutations
+  // (none for index page)
+
+  // 8. Watchers
+  // (pagination reset on filter/pageSize change is handled by useFilters onApply and usePagination internal watcher)
+
+  // 9. Return statement
   return {
     applyFilters,
     canReadOrders,
     clearFilters,
-    createdFrom,
-    createdTo,
     error,
-    hasFilters,
-    keyword,
+    hasActiveFilters,
     loadErrorMessage,
-    localCreatedFrom,
-    localCreatedTo,
-    localKeyword,
-    localPaymentStatus,
-    localStatus,
-    localWarehouseId,
+    localFilters,
     orderStatusOptions,
     orders,
-    page,
-    pageSize,
-    pageSizeOptions,
-    paymentStatus,
     paymentStatusOptions,
     pending,
-    firstItemNumber,
-    goToNextPage,
-    goToPreviousPage,
-    lastItemNumber,
     refresh,
-    status,
     summaryStats,
-    totalPages,
     totalOrders,
-    warehouseId,
     warehouseOptions,
     warehousesPending,
+    ...pagination,
   };
 };
 

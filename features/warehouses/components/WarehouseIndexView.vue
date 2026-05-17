@@ -8,25 +8,39 @@ const props = defineProps<{
 const {
   actionError,
   actionPending,
+  applyFilters,
   canCreateWarehouse,
-  canReadWarehouse,
-  createWarehouse,
-  createWarehouseOpen,
+  canRemoveWarehouse,
+  clearFilters,
   error,
+  firstItemNumber,
+  lastItemNumber,
   loadErrorMessage,
+  localFilters,
+  page,
+  pagedWarehouses,
+  pageSize,
+  pageSizeOptions,
   pending,
-  refresh,
+  removeWarehouse,
   summaryStats,
-  warehouseCodeOptions,
-  warehouseForm,
+  totalPages,
+  warehouseStatusOptions,
   warehouses,
+  goToNextPage,
+  goToPreviousPage,
 } = props.page;
 </script>
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Warehouse management"
     search-label="Manage Warehouses"
+    search-placeholder="Search by name or address"
+    create-route="/warehouses/create"
+    create-label="Create warehouse"
+    :can-create="canCreateWarehouse"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="warehouses"
     :pending="pending"
@@ -34,32 +48,28 @@ const {
     :error-detail="error ? loadErrorMessage : ''"
     :action-error="actionError"
     action-error-title="Warehouse action failed"
-    :items-length="warehouses.length"
+    :items-length="pagedWarehouses.length"
     empty-title="No warehouses found"
     empty-detail="Create at least one warehouse before adding stock."
+    :first-item-number="firstItemNumber"
+    :last-item-number="lastItemNumber"
+    :page-size="pageSize"
+    :page-size-options="pageSizeOptions"
+    :page="page"
+    :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
+    @update:page-size="pageSize = String($event)"
+    @previous-page="goToPreviousPage"
+    @next-page="goToNextPage"
   >
-    <template #actions>
-      <AppButton v-if="canCreateWarehouse" variant="primary" @click="createWarehouseOpen = !createWarehouseOpen">
-        Create warehouse
-      </AppButton>
-      <AppButton variant="primary" @click="refresh">
-        Refresh
-      </AppButton>
-    </template>
-
     <template #filters>
-      <div v-if="createWarehouseOpen" class="w-full mt-2 soft-card">
-        <form class="grid gap-4 lg:grid-cols-3" @submit.prevent="createWarehouse">
-          <AppSelect v-model="warehouseForm.code" label="Warehouse code" :options="warehouseCodeOptions" />
-          <AppInput v-model="warehouseForm.name" label="Name" />
-          <AppInput v-model="warehouseForm.phoneNational" label="Phone" />
-          <AppInput v-model="warehouseForm.address" class="lg:col-span-2" label="Address" />
-          <div class="flex items-end">
-            <AppButton :loading="actionPending === 'create-warehouse'" type="submit">
-              Create
-            </AppButton>
-          </div>
-        </form>
+      <div class="w-full sm:flex-1">
+        <AppSelect
+          v-model="localFilters.statusFilter.value"
+          label="Status"
+          :options="warehouseStatusOptions"
+        />
       </div>
     </template>
 
@@ -71,11 +81,11 @@ const {
             <th>Code</th>
             <th>Status</th>
             <th>GHN</th>
-            <th class="w-[96px] text-center">Open</th>
+            <th class="w-[96px] text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="warehouse in warehouses" :key="warehouse.id">
+          <tr v-for="warehouse in pagedWarehouses" :key="warehouse.id">
             <td>
               <p class="table-title">{{ warehouse.name }}</p>
               <p class="table-copy">{{ warehouse.address }}</p>
@@ -86,12 +96,24 @@ const {
                 {{ warehouse.status }}
               </AppBadge>
             </td>
-            <td>{{ warehouse.ghnStore ? warehouse.ghnStore.shopName : "Not synced" }}</td>
             <td>
-              <div class="flex justify-center">
+              <AppBadge :tone="warehouse.ghnStore ? 'success' : 'warning'">
+                {{ warehouse.ghnStore ? "Synced" : "Not synced" }}
+              </AppBadge>
+            </td>
+            <td>
+              <div class="flex items-center justify-center gap-2">
                 <NuxtLink class="secondary-link table-action" :to="`/warehouses/${warehouse.id}`">
                   Open
                 </NuxtLink>
+                <button
+                  v-if="canRemoveWarehouse && warehouse.status === 'Inactive'"
+                  class="danger-link table-action"
+                  :disabled="actionPending === warehouse.id"
+                  @click="removeWarehouse(warehouse.id)"
+                >
+                  Remove
+                </button>
               </div>
             </td>
           </tr>

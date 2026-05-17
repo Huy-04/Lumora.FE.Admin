@@ -1,111 +1,69 @@
-import type { PaymentMethod, PaymentProvider, PaymentStatus } from "~/features/payments/types";
-import type { PaymentSearchResponse } from "~/features/payments/types";
+import type { PaymentMethod, PaymentProvider, PaymentStatus, PaymentSearchResponse } from "~/features/payments/types";
 
 export const usePaymentIndexPage = async () => {
+  // 1. Dependency injection
   const paymentApi = usePaymentAdminApi();
   const authz = useAdminAuthorization();
   const { paymentMethodOptions, paymentProviderOptions, paymentStatusOptions } = usePaymentOptions();
 
+  // 2. Permissions
   const canReadPayments = computed(() => authz.can(ADMIN_PERMISSION.paymentReadAll));
 
-  const localKeyword = ref("");
-  const localUserId = ref("");
-  const localOrderId = ref("");
-  const localStatus = ref<PaymentStatus | "">("");
-  const localMethod = ref<PaymentMethod | "">("");
-  const localProvider = ref<PaymentProvider | "">("");
-  const localCreatedFrom = ref("");
-  const localCreatedTo = ref("");
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const keyword = ref("");
-  const userId = ref("");
-  const orderId = ref("");
-  const status = ref<PaymentStatus | "">("");
-  const method = ref<PaymentMethod | "">("");
-  const provider = ref<PaymentProvider | "">("");
-  const createdFrom = ref("");
-  const createdTo = ref("");
-  const page = ref(1);
-  const pageSize = ref("20");
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
+    useFilters(
+      {
+        keyword: "",
+        status: "" as PaymentStatus | "",
+        method: "" as PaymentMethod | "",
+        provider: "" as PaymentProvider | "",
+        createdFrom: "",
+        createdTo: "",
+      },
+      { onApply: () => { pagination.page.value = 1; } },
+    );
 
-  const pageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-
+  // 5. Data fetching
   const emptyPayments = (): PaymentSearchResponse => ({
     items: [],
     totalCount: 0,
-    page: page.value,
-    size: Number(pageSize.value),
+    page: pagination.page.value,
+    size: Number(pagination.pageSize.value),
     totalPages: 0,
   });
 
-  const applyFilters = () => {
-    keyword.value = localKeyword.value.trim();
-    userId.value = localUserId.value.trim();
-    orderId.value = localOrderId.value.trim();
-    status.value = localStatus.value;
-    method.value = localMethod.value;
-    provider.value = localProvider.value;
-    createdFrom.value = localCreatedFrom.value;
-    createdTo.value = localCreatedTo.value;
-    page.value = 1;
-  };
-
-  const clearFilters = () => {
-    localKeyword.value = "";
-    localUserId.value = "";
-    localOrderId.value = "";
-    localStatus.value = "";
-    localMethod.value = "";
-    localProvider.value = "";
-    localCreatedFrom.value = "";
-    localCreatedTo.value = "";
-    applyFilters();
-  };
-
   const { data, pending, error, refresh } = await useAsyncData(
-    () => `payments:${keyword.value || "all"}:${userId.value || "all"}:${orderId.value || "all"}:${status.value || "all"}:${method.value || "all"}:${provider.value || "all"}:${createdFrom.value || "none"}:${createdTo.value || "none"}:${page.value}:${pageSize.value}`,
+    () => `payments:${appliedFilters.keyword.value || "all"}:${appliedFilters.status.value || "all"}:${appliedFilters.method.value || "all"}:${appliedFilters.provider.value || "all"}:${appliedFilters.createdFrom.value || "none"}:${appliedFilters.createdTo.value || "none"}:${pagination.page.value}:${pagination.pageSize.value}`,
     () => {
       if (!canReadPayments.value) {
         return Promise.resolve(emptyPayments());
       }
 
       return paymentApi.searchPayments({
-        keyword: keyword.value || undefined,
-        userId: userId.value || undefined,
-        orderId: orderId.value || undefined,
-        status: status.value || undefined,
-        method: method.value || undefined,
-        provider: provider.value || undefined,
-        createdFrom: createdFrom.value || undefined,
-        createdTo: createdTo.value || undefined,
-        page: page.value,
-        size: Number(pageSize.value),
+        keyword: appliedFilters.keyword.value || undefined,
+        status: appliedFilters.status.value || undefined,
+        method: appliedFilters.method.value || undefined,
+        provider: appliedFilters.provider.value || undefined,
+        createdFrom: appliedFilters.createdFrom.value || undefined,
+        createdTo: appliedFilters.createdTo.value || undefined,
+        page: pagination.page.value,
+        size: Number(pagination.pageSize.value),
       });
     },
   );
 
+  // 6. Computed derivations
+  watch(() => data.value?.totalCount, (count) => {
+    totalItems.value = count ?? 0;
+  }, { immediate: true });
+
   const payments = computed(() => data.value?.items ?? []);
   const totalPayments = computed(() => data.value?.totalCount ?? 0);
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalPayments.value / Number(pageSize.value))));
-  const firstItemNumber = computed(() => totalPayments.value === 0 ? 0 : (page.value - 1) * Number(pageSize.value) + 1);
-  const lastItemNumber = computed(() => Math.min(page.value * Number(pageSize.value), totalPayments.value));
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "The payment ledger is not available right now."));
-
-  const goToPreviousPage = () => {
-    if (page.value > 1) page.value -= 1;
-  };
-
-  const goToNextPage = () => {
-    if (page.value < totalPages.value) page.value += 1;
-  };
-
-  watch(pageSize, () => {
-    page.value = 1;
-  });
 
   const summaryStats = computed(() => [
     { label: "Payments", value: `${totalPayments.value}`, detail: "Payments matching the current admin search." },
@@ -114,27 +72,21 @@ export const usePaymentIndexPage = async () => {
     { label: "Failed", value: `${payments.value.filter((payment) => payment.status === "Failed").length}`, detail: "Failed payments on this page." },
   ]);
 
+  // 7. Actions/mutations
+  // (none for payment index)
+
+  // 8. Watchers
+  // (pagination reset on filter apply and pageSize change handled by usePagination and useFilters)
+
+  // 9. Return statement
   return {
     applyFilters,
     canReadPayments,
     clearFilters,
     error,
-    firstItemNumber,
-    goToNextPage,
-    goToPreviousPage,
-    lastItemNumber,
+    hasActiveFilters,
     loadErrorMessage,
-    localCreatedFrom,
-    localCreatedTo,
-    localKeyword,
-    localMethod,
-    localOrderId,
-    localProvider,
-    localStatus,
-    localUserId,
-    page,
-    pageSize,
-    pageSizeOptions,
+    localFilters,
     paymentMethodOptions,
     paymentProviderOptions,
     paymentStatusOptions,
@@ -142,8 +94,8 @@ export const usePaymentIndexPage = async () => {
     pending,
     refresh,
     summaryStats,
-    totalPages,
     totalPayments,
+    ...pagination,
   };
 };
 

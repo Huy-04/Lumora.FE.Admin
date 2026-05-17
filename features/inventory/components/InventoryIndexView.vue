@@ -8,32 +8,36 @@ const props = defineProps<{
 const {
   actionError,
   actionPending,
+  applyFilters,
   canCreateInventory,
-  createInventory,
-  createInventoryOpen,
+  clearFilters,
   error,
-  firstInventoryNumber,
-  goToNextInventoryPage,
-  goToPreviousInventoryPage,
+  firstItemNumber,
+  goToNextPage,
+  goToPreviousPage,
   inventories,
-  inventoryForm,
-  inventoryPage,
-  inventoryPageSize,
-  inventoryPageSizeOptions,
-  inventoryTotalPages,
-  lastInventoryNumber,
+  lastItemNumber,
   loadErrorMessage,
+  localFilters,
+  page,
+  pageSize,
+  pageSizeOptions,
   pending,
-  refresh,
+  stockStatusFilterOptions,
   summaryStats,
-  totalInventories,
+  totalPages,
 } = props.page;
 </script>
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Inventory workspace"
     search-label="Inventory"
+    search-placeholder="Search inventory..."
+    create-route="/inventory/create"
+    create-label="Create inventory"
+    :can-create="canCreateInventory"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="inventories"
     :pending="pending"
@@ -44,34 +48,28 @@ const {
     :items-length="inventories.length"
     empty-title="No inventories found"
     empty-detail="Create inventory after Product variants exist."
-    :first-item-number="firstInventoryNumber"
-    :last-item-number="lastInventoryNumber"
-    v-model:page-size="inventoryPageSize"
-    :page-size-options="inventoryPageSizeOptions"
-    :page="inventoryPage"
-    :total-pages="inventoryTotalPages"
-    @previous-page="goToPreviousInventoryPage"
-    @next-page="goToNextInventoryPage"
+    :first-item-number="firstItemNumber"
+    :last-item-number="lastItemNumber"
+    v-model:page-size="pageSize"
+    :page-size-options="pageSizeOptions"
+    :page="page"
+    :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
+    @previous-page="goToPreviousPage"
+    @next-page="goToNextPage"
   >
-    <template #actions>
-      <AppButton v-if="canCreateInventory" variant="primary" @click="createInventoryOpen = !createInventoryOpen">
-        Create inventory
-      </AppButton>
-      <AppButton variant="primary" @click="refresh">
-        Refresh
-      </AppButton>
-    </template>
-
     <template #filters>
-      <div v-if="createInventoryOpen" class="w-full mt-2 soft-card">
-        <form class="grid gap-4 md:grid-cols-[1fr_auto]" @submit.prevent="createInventory">
-          <AppInput v-model="inventoryForm.productVariantId" label="Product variant id" placeholder="Variant id from Product module" />
-          <div class="flex items-end">
-            <AppButton :loading="actionPending === 'create-inventory'" type="submit">
-              Create
-            </AppButton>
+      <div class="w-full flex flex-col gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div class="w-full sm:flex-1">
+            <AppSelect
+              v-model="localFilters.stockStatus.value"
+              label="Stock status"
+              :options="stockStatusFilterOptions"
+            />
           </div>
-        </form>
+        </div>
       </div>
     </template>
 

@@ -1,4 +1,5 @@
 export const useProductCreatePage = async () => {
+  // 1. Dependency injection
   const categoryApi = useCategoryAdminApi();
   const productApi = useProductAdminApi();
   const authz = useAdminAuthorization();
@@ -7,6 +8,7 @@ export const useProductCreatePage = async () => {
 
   const canReadCategories = computed(() => authz.can(ADMIN_PERMISSION.categoryReadAll));
 
+  // 2. Form state
   const form = reactive({
     categoryId: "",
     name: "",
@@ -28,9 +30,11 @@ export const useProductCreatePage = async () => {
     seoDescription: "",
   });
 
+  // 3. Submission state
   const pending = ref(false);
   const errorMessage = ref("");
 
+  // 4. Computed / derived state
   const { data: categoryCatalog, error: categoryCatalogError } = await useAsyncData(
     "products-create-catalog",
     async () => {
@@ -53,6 +57,7 @@ export const useProductCreatePage = async () => {
     }
   });
 
+  // 5. Actions
   const submit = async () => {
     pending.value = true;
     errorMessage.value = "";
@@ -89,6 +94,7 @@ export const useProductCreatePage = async () => {
     }
   };
 
+  // 6. Return statement
   return {
     form,
     canReadCategories,

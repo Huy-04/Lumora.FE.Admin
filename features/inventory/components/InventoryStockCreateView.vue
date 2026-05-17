@@ -68,7 +68,7 @@ useScopedPageBreadcrumbs(() =>
           </AppNotice>
 
           <AppNotice v-else-if="form.warehouseId && !selectedWarehouseActive" tone="warning" title="Warehouse inactive">
-            Activate this warehouse before adding or adjusting stock.
+            Stock correction is allowed, but this warehouse will not be operational until it is activated.
           </AppNotice>
 
           <div class="border-y border-line/70 py-4">

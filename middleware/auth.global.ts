@@ -7,7 +7,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     sameSite: "lax",
     default: () => null,
   });
-  const hasRestoreHint = () => Boolean(authIndicator.value || sessionHint.hasHint.value || session.isAuthenticated.value);
+  const hasRestoreHint = () => Boolean(
+    authIndicator.value === "1" ||
+    sessionHint.hasHint.value ||
+    session.isAuthenticated.value,
+  );
   const resolveRedirectTarget = (redirect: unknown) => {
     if (typeof redirect !== "string") {
       return "/";
@@ -21,14 +25,21 @@ export default defineNuxtRouteMiddleware(async (to) => {
   };
   const loginRedirect = () => navigateTo({
     path: "/auth/login",
-    query: {
-      redirect: to.fullPath,
-    },
+    query: to.fullPath === "/" ? undefined : { redirect: to.fullPath },
   });
 
   if (isAuthRoute) {
     if (to.path === "/auth/login" || to.path === "/auth") {
       if (!hasRestoreHint()) {
+        if (import.meta.client) {
+          const restored = await session.restore(true, {
+            allowRefresh: true,
+          });
+          if (restored) {
+            return navigateTo(resolveRedirectTarget(to.query.redirect));
+          }
+        }
+
         if (to.query.reason !== "session-expired") {
           session.clear();
         }
@@ -52,16 +63,26 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
+  let restoredWithoutHint = false;
+
   if (!hasRestoreHint()) {
-    session.clear();
-    return loginRedirect();
+    if (import.meta.client) {
+      restoredWithoutHint = await session.restore(true, {
+        allowRefresh: true,
+      });
+    }
+
+    if (!restoredWithoutHint) {
+      session.clear();
+      return loginRedirect();
+    }
   }
 
   if (import.meta.server) {
     return;
   }
 
-  const authenticated = await session.restore(false, {
+  const authenticated = restoredWithoutHint || await session.restore(false, {
     allowRefresh: true,
   });
   if (!authenticated) {

@@ -53,10 +53,13 @@ const saveVariant = async () => {
   actionError.value = "";
 
   try {
-    const normalizedSku = form.sku.trim().toUpperCase();
+    const skuValidationMessage = getProductSkuValidationMessage(form.sku);
+    if (skuValidationMessage) {
+      throw new Error(skuValidationMessage);
+    }
 
     await productApi.updateProductVariant(props.productId, props.variant.id, {
-      sku: normalizedSku,
+      sku: form.sku,
       name: form.name,
       price: parseRequiredNumber(form.price, "Price"),
       weight: parsePositiveInt(form.weight, "Weight"),

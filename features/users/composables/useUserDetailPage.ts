@@ -1,4 +1,5 @@
 export const useUserDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const usersApi = useUsersAdminApi();
   const rolesApi = useRolesAdminApi();
@@ -6,6 +7,7 @@ export const useUserDetailPage = async () => {
   const authz = useAdminAuthorization();
   const { enumLabel } = useAuthPresentation();
 
+  // 2. Permissions
   type UserTab = "overview" | "edit" | "roles" | "password" | "addresses" | "sessions";
 
   const userId = computed(() => route.params.id as string);
@@ -15,6 +17,7 @@ export const useUserDetailPage = async () => {
   const canViewUserAddresses = computed(() => authz.can(ADMIN_PERMISSION.userAddressReadAll));
   const canViewUserSessions = computed(() => authz.can(ADMIN_PERMISSION.refreshTokenReadAll));
 
+  // 3. Tab management
   const resolveTab = (value: unknown): UserTab => {
     if (value === "profile" || value === "edit") {
       return "edit";
@@ -43,6 +46,7 @@ export const useUserDetailPage = async () => {
 
   const activeTab = ref<UserTab>(normalizeTab(route.query.tab));
 
+  // 4. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `user-detail:${userId.value}`,
     async () => {
@@ -64,6 +68,7 @@ export const useUserDetailPage = async () => {
     },
   );
 
+  // 5. Actions/mutations
   const selectTab = async (tab: UserTab) => {
     if (!userTabs.value.some((item) => item.value === tab)) {
       return;
@@ -79,6 +84,7 @@ export const useUserDetailPage = async () => {
     );
   };
 
+  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -90,6 +96,7 @@ export const useUserDetailPage = async () => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
+  // 7. Return statement
   return {
     userId,
     userTabs,

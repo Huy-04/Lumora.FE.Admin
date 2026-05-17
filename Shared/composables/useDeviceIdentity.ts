@@ -1,5 +1,5 @@
 const DEVICE_ID_PATTERN = /^(web-[a-f0-9]{8}|[a-zA-Z0-9\-_]{3,32})$/;
-const DEVICE_NAME_MAX_LENGTH = 36;
+const DEVICE_NAME_MAX_LENGTH = 128;
 
 interface UseDeviceIdentityOptions {
   appName?: string;
@@ -36,35 +36,40 @@ const normalizeDeviceName = (value?: string | null, defaultName = "Lumora") => {
   return nextValue.slice(0, DEVICE_NAME_MAX_LENGTH);
 };
 
-const buildDeviceName = (appName: string) => {
+/**
+ * Builds a sanitized device name from the current platform/user-agent.
+ * Trims leading/trailing whitespace and truncates to 128 characters
+ * to satisfy the BE DeviceName value-object constraints.
+ * If the result is blank, the BE defaults to "Unknown Browser".
+ */
+const buildDeviceName = (appName: string): string => {
+  let raw: string;
+
   if (import.meta.server) {
-    return appName;
+    raw = appName;
+  } else {
+    const platform = navigator.platform || "";
+    const agent = navigator.userAgent;
+
+    if (agent.includes("iPhone") || agent.includes("iPad")) {
+      raw = `${appName} on iOS`;
+    } else if (agent.includes("Android")) {
+      raw = `${appName} on Android`;
+    } else if (agent.includes("Mac")) {
+      raw = `${appName} on Mac`;
+    } else if (agent.includes("Windows")) {
+      raw = `${appName} on Windows`;
+    } else if (platform) {
+      raw = `${appName} on ${platform}`;
+    } else {
+      raw = appName;
+    }
   }
 
-  const platform = navigator.platform || "";
-  const agent = navigator.userAgent;
-
-  if (agent.includes("iPhone") || agent.includes("iPad")) {
-    return `${appName} on iOS`;
-  }
-
-  if (agent.includes("Android")) {
-    return `${appName} on Android`;
-  }
-
-  if (agent.includes("Mac")) {
-    return `${appName} on Mac`;
-  }
-
-  if (agent.includes("Windows")) {
-    return `${appName} on Windows`;
-  }
-
-  if (platform) {
-    return `${appName} on ${platform}`;
-  }
-
-  return appName;
+  const trimmed = raw.trim();
+  return trimmed.length > DEVICE_NAME_MAX_LENGTH
+    ? trimmed.substring(0, DEVICE_NAME_MAX_LENGTH)
+    : trimmed;
 };
 
 export const useDeviceIdentity = (options: UseDeviceIdentityOptions = {}) => {

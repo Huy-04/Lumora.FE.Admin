@@ -1,29 +1,29 @@
 export const useRolesIndexPage = async () => {
+  // 1. Dependency injection
   const rolesApi = useRolesAdminApi();
   const authz = useAdminAuthorization();
+
+  // 2. Permissions
   const canCreateRole = computed(() => authz.can(ADMIN_PERMISSION.roleCreateAll));
   const canRemoveRole = computed(() => authz.can(ADMIN_PERMISSION.roleRemoveAll));
 
-  const localSearch = ref("");
-  const search = ref("");
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const applyFilters = () => {
-    search.value = localSearch.value;
-  };
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
+    useFilters(
+      { keyword: "" },
+      { onApply: () => { pagination.page.value = 1; } },
+    );
 
-  const clearFilters = () => {
-    localSearch.value = "";
-    search.value = "";
-  };
-
-  const confirmRoleId = ref("");
-  const actionPending = ref<"" | "remove">("");
-  const actionError = ref("");
-
+  // 5. Data fetching
   const { data, pending, error, refresh } = await useAsyncData("roles-index", () => rolesApi.getRoles(1, 50));
 
+  // 6. Computed derivations
   const filteredRoles = computed(() => {
-    const keyword = search.value.trim().toLowerCase();
+    const keyword = appliedFilters.keyword.value.trim().toLowerCase();
     const items = data.value?.items ?? [];
 
     if (!keyword) {
@@ -36,26 +36,16 @@ export const useRolesIndexPage = async () => {
     );
   });
 
-  const page = ref(1);
-  const pageSize = ref("20");
-  const pageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-
-  const totalRoles = computed(() => filteredRoles.value.length);
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalRoles.value / Number(pageSize.value))));
-  const firstItemNumber = computed(() => totalRoles.value === 0 ? 0 : (page.value - 1) * Number(pageSize.value) + 1);
-  const lastItemNumber = computed(() => Math.min(page.value * Number(pageSize.value), totalRoles.value));
   const pagedRoles = computed(() => {
-    const start = (page.value - 1) * Number(pageSize.value);
-    return filteredRoles.value.slice(start, start + Number(pageSize.value));
+    const start = (pagination.page.value - 1) * Number(pagination.pageSize.value);
+    return filteredRoles.value.slice(start, start + Number(pagination.pageSize.value));
   });
-  const goToNextPage = () => { if (page.value < totalPages.value) page.value += 1; };
-  const goToPreviousPage = () => { if (page.value > 1) page.value -= 1; };
 
-  watch([() => search.value, pageSize], () => { page.value = 1; });
+  // Wire totalItems to filteredRoles length (client-side pagination)
+  watch(() => filteredRoles.value.length, (count) => {
+    totalItems.value = count;
+  }, { immediate: true });
+
   const summaryStats = computed(() => {
     const all = data.value?.items ?? [];
     const shown = filteredRoles.value;
@@ -87,6 +77,12 @@ export const useRolesIndexPage = async () => {
   const confirmRole = computed(() => filteredRoles.value.find((role) => role.id === confirmRoleId.value) ?? null);
   const confirmTitle = computed(() => confirmRole.value ? `Remove ${confirmRole.value.roleName}?` : "");
   const confirmDetail = "This action removes the role record.";
+  const loadErrorMessage = computed(() => getProblemMessage(error.value, "The role list is unavailable."));
+
+  // 7. Actions/mutations
+  const confirmRoleId = ref("");
+  const actionPending = ref<"" | "remove">("");
+  const actionError = ref("");
 
   const requestRemove = (roleId: string) => {
     confirmRoleId.value = roleId;
@@ -116,6 +112,10 @@ export const useRolesIndexPage = async () => {
     }
   };
 
+  // 8. Watchers
+  // (pagination reset on filter apply and pageSize change handled by usePagination and useFilters)
+
+  // 9. Return statement
   return {
     actionError,
     actionPending,
@@ -130,24 +130,17 @@ export const useRolesIndexPage = async () => {
     data,
     error,
     filteredRoles,
-    firstItemNumber,
-    goToNextPage,
-    goToPreviousPage,
-    lastItemNumber,
-    localSearch,
-    page,
-    pageSize,
-    pageSizeOptions,
+    hasActiveFilters,
+    loadErrorMessage,
+    localFilters,
     pagedRoles,
     pending,
     refresh,
     removeRole,
     requestRemove,
-    search,
     summaryStats,
-    totalPages,
-    totalRoles,
+    ...pagination,
   };
 };
 
-export type RolesIndexPage = Awaited<ReturnType<typeof useRolesIndexPage>>;
+export type RoleIndexPageState = Awaited<ReturnType<typeof useRolesIndexPage>>;

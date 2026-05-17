@@ -1,4 +1,5 @@
 import { getProblemDetails } from "~/Shared/api/apiErrors";
+import type { LoginResponse } from "~/features/auth/types";
 
 const getProblemStatus = (error: unknown): number | null => {
   const problem = getProblemDetails(error);
@@ -35,8 +36,8 @@ export const useAuthRefresh = () => {
     sessionHint.clear();
   };
 
-  const refresh = async () => {
-    if (import.meta.server || !hasRestoreHint.value) {
+  const refresh = async (options?: { force?: boolean }) => {
+    if (import.meta.server || (!options?.force && !hasRestoreHint.value)) {
       return false;
     }
 
@@ -46,10 +47,10 @@ export const useAuthRefresh = () => {
 
     refreshPromise.value = (async () => {
       try {
-        await $fetch("/Authentication/refresh-access-token", {
-          baseURL: "/api",
-          credentials: "include",
+        const api = useApiClient();
+        await api.request<LoginResponse>("/Authentication/refresh-access-token", {
           method: "POST",
+          skipAuthRefresh: true,
           headers: {
             "X-Device-Id": identity.deviceId.value,
           },

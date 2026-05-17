@@ -1,8 +1,3 @@
-import { computed, ref } from "vue";
-import { useAsyncData } from "#app";
-import { ADMIN_PERMISSION, useAdminAuthorization } from "~/features/auth/composables/useAdminAuthorization";
-import { useCategoryAdminApi } from "~/features/categories/composables/useCategoryAdminApi";
-import { getProblemDetails, getProblemMessage } from "~/Shared/api/apiErrors";
 import type { CategoryTreeNodeResponse } from "~/features/categories/types";
 
 type ReorderItem = {
@@ -11,9 +6,11 @@ type ReorderItem = {
 };
 
 export const useCategoryIndexPage = async () => {
+  // 1. Dependency injection
   const categoryApi = useCategoryAdminApi();
   const authz = useAdminAuthorization();
 
+  // 2. Permissions
   const canCreateCategory = computed(() => authz.can(ADMIN_PERMISSION.categoryCreateAll));
   const canUpdateCategory = computed(() => authz.can(ADMIN_PERMISSION.categoryUpdateAll));
   const canDeleteCategory = computed(() => authz.can(ADMIN_PERMISSION.categoryDeleteAll));
@@ -22,52 +19,36 @@ export const useCategoryIndexPage = async () => {
   const canReorderCategory = computed(() => authz.can(ADMIN_PERMISSION.categoryReorderAll));
   const canRestoreCategory = canDeleteCategory;
 
-  const localKeyword = ref("");
-  const localActiveFilter = ref("");
-  const keyword = ref("");
-  const activeFilter = ref("");
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const applyFilters = () => {
-    keyword.value = localKeyword.value;
-    activeFilter.value = localActiveFilter.value;
-  };
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
+    useFilters(
+      { keyword: "", activeFilter: "" },
+      { onApply: () => { pagination.page.value = 1; } },
+    );
 
-  const clearFilters = () => {
-    localKeyword.value = "";
-    localActiveFilter.value = "";
-    keyword.value = "";
-    activeFilter.value = "";
-  };
-
-  const confirmCategoryId = ref("");
-  const actionPending = ref<"" | "remove" | "toggle" | "reorder">("");
-  const actionTargetId = ref("");
-  const actionError = ref("");
-  const dragSourceId = ref("");
-  const dragTargetId = ref("");
-  const pendingReorder = ref<null | {
-    sourceId: string;
-    sourceName: string;
-    targetName: string;
-    items: ReorderItem[];
-  }>(null);
-
+  // 5. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     "categories:all:admin",
     () => categoryApi.getAllCategoryTree(),
   );
 
+  const realtimeRefresh = useRealtimeRefresh(refresh);
+  useCatalogRealtime((notification) => {
+    if (notification.entity === "category") {
+      realtimeRefresh.scheduleRefresh();
+    }
+  });
+
+  // 6. Computed derivations
   const roots = computed(() =>
     [...(data.value ?? [])].sort((left, right) => left.sortOrder - right.sortOrder),
   );
 
-  const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase());
-  const canDragRoots = computed(() =>
-    canReorderCategory.value
-    && !normalizedKeyword.value
-    && !activeFilter.value
-    && roots.value.every((root) => !root.isDeleted),
-  );
+  const normalizedKeyword = computed(() => appliedFilters.keyword.value.trim().toLowerCase());
 
   const filteredRoots = computed(() =>
     roots.value.filter((root) => {
@@ -75,37 +56,33 @@ export const useCategoryIndexPage = async () => {
         || root.name.toLowerCase().includes(normalizedKeyword.value)
         || root.slug.toLowerCase().includes(normalizedKeyword.value);
 
-      const matchesStatus = activeFilter.value === ""
-        || String(root.isActive) === activeFilter.value;
+      const matchesStatus = appliedFilters.activeFilter.value === ""
+        || String(root.isActive) === appliedFilters.activeFilter.value;
 
       return matchesKeyword && matchesStatus;
     }),
   );
 
+  // Wire totalItems to filtered results length
+  watch(filteredRoots, (filtered) => {
+    totalItems.value = filtered.length;
+  }, { immediate: true });
+
+  const pagedRoots = computed(() => {
+    const start = (pagination.page.value - 1) * Number(pagination.pageSize.value);
+    return filteredRoots.value.slice(start, start + Number(pagination.pageSize.value));
+  });
+
+  const canDragRoots = computed(() =>
+    canReorderCategory.value
+    && !normalizedKeyword.value
+    && !appliedFilters.activeFilter.value
+    && roots.value.every((root) => !root.isDeleted),
+  );
+
   const totalChildren = computed(() =>
     roots.value.reduce((sum, root) => sum + root.children.length, 0),
   );
-
-  const page = ref(1);
-  const pageSize = ref("20");
-  const pageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-
-  const totalCategories = computed(() => filteredRoots.value.length);
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalCategories.value / Number(pageSize.value))));
-  const firstItemNumber = computed(() => totalCategories.value === 0 ? 0 : (page.value - 1) * Number(pageSize.value) + 1);
-  const lastItemNumber = computed(() => Math.min(page.value * Number(pageSize.value), totalCategories.value));
-  const pagedRoots = computed(() => {
-    const start = (page.value - 1) * Number(pageSize.value);
-    return filteredRoots.value.slice(start, start + Number(pageSize.value));
-  });
-  const goToNextPage = () => { if (page.value < totalPages.value) page.value += 1; };
-  const goToPreviousPage = () => { if (page.value > 1) page.value -= 1; };
-
-  watch([() => keyword.value, () => activeFilter.value, pageSize], () => { page.value = 1; });
 
   const activeChildCount = (root: CategoryTreeNodeResponse) =>
     root.children.filter((child) => child.isActive && !child.isDeleted).length;
@@ -114,7 +91,7 @@ export const useCategoryIndexPage = async () => {
     {
       label: "Visible roots",
       value: `${filteredRoots.value.length}`,
-      detail: normalizedKeyword.value || activeFilter.value
+      detail: normalizedKeyword.value || appliedFilters.activeFilter.value
         ? "Root categories matching the current view filters."
         : "Root categories available in the catalog tree.",
     },
@@ -134,6 +111,22 @@ export const useCategoryIndexPage = async () => {
       detail: "Roots currently visible to storefront flows.",
     },
   ]);
+
+  const loadErrorMessage = computed(() => getProblemMessage(error.value, "The category module is unavailable."));
+
+  // 7. Actions/mutations
+  const confirmCategoryId = ref("");
+  const actionPending = ref<"" | "remove" | "toggle" | "reorder">("");
+  const actionTargetId = ref("");
+  const actionError = ref("");
+  const dragSourceId = ref("");
+  const dragTargetId = ref("");
+  const pendingReorder = ref<null | {
+    sourceId: string;
+    sourceName: string;
+    targetName: string;
+    items: ReorderItem[];
+  }>(null);
 
   const confirmCategory = computed(() =>
     roots.value.find((category) => category.id === confirmCategoryId.value) ?? null,
@@ -319,14 +312,27 @@ export const useCategoryIndexPage = async () => {
     actionTargetId.value = pendingReorder.value.sourceId;
     actionError.value = "";
 
-    try {
-      await categoryApi.reorderCategories({
-        items: pendingReorder.value.items,
+    // Optimistic UI update: apply new sort orders before server confirms
+    const previousData = data.value ? [...data.value] : null;
+    if (data.value && pendingReorder.value.items.length) {
+      const orderMap = new Map(pendingReorder.value.items.map((item) => [item.categoryId, item.sortOrder]));
+      data.value = data.value.map((node) => {
+        const newSortOrder = orderMap.get(node.id);
+        return newSortOrder !== undefined ? { ...node, sortOrder: newSortOrder } : node;
       });
+    }
 
-      pendingReorder.value = null;
+    const reorderPayload = { items: pendingReorder.value.items };
+    pendingReorder.value = null;
+
+    try {
+      await categoryApi.reorderCategories(reorderPayload);
       await refresh();
     } catch (requestError) {
+      // Revert optimistic update on failure
+      if (previousData) {
+        data.value = previousData;
+      }
       actionError.value = getProblemMessage(requestError, "Unable to reorder categories.");
     } finally {
       actionPending.value = "";
@@ -334,63 +340,58 @@ export const useCategoryIndexPage = async () => {
     }
   };
 
+  // 8. Watchers
+  // (pagination reset on filter/pageSize change is handled by useFilters onApply and usePagination internal watcher)
+
+  // 9. Return statement
   return {
-    localKeyword,
-    localActiveFilter,
-    keyword,
-    activeFilter,
-    applyFilters,
-    clearFilters,
-    confirmCategoryId,
+    actionError,
     actionPending,
     actionTargetId,
-    actionError,
-    dragSourceId,
-    dragTargetId,
-    pendingReorder,
-    data,
-    pending,
-    error,
-    refresh,
-    roots,
-    normalizedKeyword,
-    canDragRoots,
-    filteredRoots,
-    firstItemNumber,
-    goToNextPage,
-    goToPreviousPage,
-    lastItemNumber,
-    page,
-    pageSize,
-    pageSizeOptions,
-    pagedRoots,
     activeChildCount,
-    summaryStats,
+    applyFilters,
+    canActivateCategory,
+    canCreateCategory,
+    canDeactivateCategory,
+    canDeleteCategory,
+    canDragRoots,
+    canReorderCategory,
+    canRestoreCategory,
+    canUpdateCategory,
+    cancelRemove,
+    categoryHasChildrenMessage,
+    clearFilters,
     confirmCategory,
     confirmCategoryHasChildren,
-    categoryHasChildrenMessage,
-    requestRemove,
-    cancelRemove,
+    confirmCategoryId,
     confirmRemoveAction,
-    restoreCategory,
-    toggleCategory,
-    statusTone,
-    resetDragState,
-    handleRootDragStart,
-    handleRootDragOver,
-    handleRootDrop,
     confirmRootReorder,
-    canCreateCategory,
-    canUpdateCategory,
-    canDeleteCategory,
-    canActivateCategory,
-    canDeactivateCategory,
-    canRestoreCategory,
-    canReorderCategory,
-    getProblemMessage,
-    totalCategories,
-    totalPages,
+    data,
+    dragSourceId,
+    dragTargetId,
+    error,
+    filteredRoots,
+    hasActiveFilters,
+    handleRootDragOver,
+    handleRootDragStart,
+    handleRootDrop,
+    loadErrorMessage,
+    localFilters,
+    normalizedKeyword,
+    pagedRoots,
+    pending,
+    pendingReorder,
+    refresh,
+    requestRemove,
+    resetDragState,
+    restoreCategory,
+    roots,
+    statusTone,
+    summaryStats,
+    toggleCategory,
+    totalChildren,
+    ...pagination,
   };
 };
 
-export type CategoryIndexPage = Awaited<ReturnType<typeof useCategoryIndexPage>>;
+export type CategoryIndexPageState = Awaited<ReturnType<typeof useCategoryIndexPage>>;

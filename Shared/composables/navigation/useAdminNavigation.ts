@@ -7,6 +7,7 @@ import {
   PhPackage,
   PhReceipt,
   PhShield,
+  PhTicket,
   PhTruck,
   PhUsersThree,
   PhBuildings,
@@ -64,6 +65,19 @@ export const useAdminNavigation = () => {
       collapsible: true,
       items: [
         { label: "Orders", to: "/orders", icon: PhReceipt },
+      ],
+    },
+    {
+      label: "Coupon",
+      collapsible: true,
+      items: [
+        { label: "Coupons", to: "/coupons", icon: PhTicket },
+      ],
+    },
+    {
+      label: "Payment",
+      collapsible: true,
+      items: [
         { label: "Payments", to: "/payments", icon: PhCreditCard },
       ],
     },
@@ -80,6 +94,13 @@ export const useAdminNavigation = () => {
       collapsible: true,
       items: [
         { label: "Shipments", to: "/shipments", icon: PhTruck },
+      ],
+    },
+    {
+      label: "Operations",
+      collapsible: true,
+      items: [
+        { label: "System Events", to: "/system-events", icon: PhFingerprint },
       ],
     },
   ]);

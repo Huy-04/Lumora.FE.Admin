@@ -1,61 +1,82 @@
 <script setup lang="ts">
-import type { RolesIndexPage } from "~/features/roles/composables/useRolesIndexPage";
+import type { RoleIndexPageState } from "~/features/roles/composables/useRolesIndexPage";
 
-defineProps<{
-  page: RolesIndexPage;
+const props = defineProps<{
+  page: RoleIndexPageState;
 }>();
+
+const {
+  actionError,
+  actionPending,
+  applyFilters,
+  cancelRemove,
+  canCreateRole,
+  canRemoveRole,
+  clearFilters,
+  confirmDetail,
+  confirmRole,
+  confirmTitle,
+  error,
+  filteredRoles,
+  firstItemNumber,
+  lastItemNumber,
+  loadErrorMessage,
+  localFilters,
+  page,
+  pagedRoles,
+  pageSize,
+  pageSizeOptions,
+  pending,
+  goToNextPage,
+  goToPreviousPage,
+  removeRole,
+  requestRemove,
+  summaryStats,
+  totalPages,
+} = props.page;
 </script>
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Roles API"
     search-label="Search roles"
-    :total-items="page.summaryStats.value[0]?.value ?? 0"
+    search-placeholder="Search by role name or description"
+    create-route="/roles/create"
+    create-label="Create role"
+    :can-create="canCreateRole"
+    :total-items="summaryStats[0]?.value ?? 0"
     item-label="roles"
-    :pending="page.pending.value"
-    :error="page.error.value ? 'Error loading data' : null"
-    :error-detail="page.error.value ? getProblemMessage(page.error.value, 'The role list is unavailable.') : ''"
-    :action-error="page.actionError.value"
+    :pending="pending"
+    :error="error ? 'Error loading data' : null"
+    :error-detail="error ? loadErrorMessage : ''"
+    :action-error="actionError"
     action-error-title="Role action failed"
-    :items-length="page.filteredRoles.value.length"
+    :items-length="filteredRoles.length"
     empty-title="No roles found"
     empty-detail="Try another search or create a new role."
-    :first-item-number="page.firstItemNumber.value"
-    :last-item-number="page.lastItemNumber.value"
-    v-model:page-size="page.pageSize.value"
-    :page-size-options="page.pageSizeOptions"
-    :page="page.page.value"
-    :total-pages="page.totalPages.value"
-    @previous-page="page.goToPreviousPage"
-    @next-page="page.goToNextPage"
+    :first-item-number="firstItemNumber"
+    :last-item-number="lastItemNumber"
+    v-model:page-size="pageSize"
+    :page-size-options="pageSizeOptions"
+    :page="page"
+    :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
+    @previous-page="goToPreviousPage"
+    @next-page="goToNextPage"
   >
     <template #modals>
       <AppConfirm
-        :open="page.confirmRole.value !== null"
-        :title="page.confirmTitle.value"
-        :detail="page.confirmDetail"
+        :open="confirmRole !== null"
+        :title="confirmTitle"
+        :detail="confirmDetail"
         confirm-label="Remove"
         tone="danger"
-        :loading="page.actionPending.value === 'remove'"
-        @confirm="page.removeRole"
-        @cancel="page.cancelRemove"
+        :loading="actionPending === 'remove'"
+        @confirm="removeRole"
+        @cancel="cancelRemove"
       />
-    </template>
-
-    <template #search-input>
-      <AppInput v-model="page.localSearch.value" label="" placeholder="Search by role name or description" @keyup.enter="page.applyFilters" />
-    </template>
-
-    <template #actions>
-      <AppButton variant="primary" @click="page.applyFilters">
-        Search
-      </AppButton>
-      <AppButton variant="primary" @click="page.clearFilters">
-        Refresh
-      </AppButton>
-      <NuxtLink v-if="page.canCreateRole.value" class="primary-link" to="/roles/create">
-        Create role
-      </NuxtLink>
     </template>
 
     <template #table>
@@ -65,11 +86,11 @@ defineProps<{
             <th class="w-[24%]">Role</th>
             <th class="w-[56%]">Description</th>
             <th class="w-[10%] text-center">Open</th>
-            <th v-if="page.canRemoveRole.value" class="w-[10%] text-center">Remove</th>
+            <th v-if="canRemoveRole" class="w-[10%] text-center">Remove</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="role in page.pagedRoles.value" :key="role.id">
+          <tr v-for="role in pagedRoles" :key="role.id">
             <td class="align-middle">
               <p class="table-title">{{ role.roleName }}</p>
             </td>
@@ -83,9 +104,9 @@ defineProps<{
                 </NuxtLink>
               </div>
             </td>
-            <td v-if="page.canRemoveRole.value" class="align-middle">
+            <td v-if="canRemoveRole" class="align-middle">
               <div class="flex justify-center">
-                <AppButton class="table-action" variant="danger" @click="page.requestRemove(role.id)">
+                <AppButton class="table-action" variant="danger" @click="requestRemove(role.id)">
                   Remove
                 </AppButton>
               </div>

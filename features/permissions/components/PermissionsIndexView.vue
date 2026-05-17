@@ -1,83 +1,107 @@
 <script setup lang="ts">
-import type { PermissionsIndexPage } from "~/features/permissions/composables/usePermissionsIndexPage";
+import type { PermissionIndexPageState } from "~/features/permissions/composables/usePermissionsIndexPage";
 
-defineProps<{
-  page: PermissionsIndexPage;
+const props = defineProps<{
+  page: PermissionIndexPageState;
 }>();
+
+const {
+  actionError,
+  actionPending,
+  applyFilters,
+  canCreatePermission,
+  canRemovePermission,
+  cancelRemove,
+  clearFilters,
+  confirmDetail,
+  confirmPermission,
+  confirmTitle,
+  enumLabel,
+  error,
+  filteredPermissions,
+  firstItemNumber,
+  lastItemNumber,
+  localFilters,
+  moduleOptions,
+  operationOptions,
+  page,
+  pageSize,
+  pageSizeOptions,
+  pagedPermissions,
+  pending,
+  removePermission,
+  requestRemove,
+  scopeOptions,
+  summaryStats,
+  totalPages,
+  goToNextPage,
+  goToPreviousPage,
+} = props.page;
 </script>
 
 <template>
   <AppIndexPage
+    v-model="localFilters.search.value"
     eyebrow="Permissions API"
     search-label="Search permissions"
-    :total-items="page.summaryStats.value[0]?.value ?? 0"
+    search-placeholder="Search by name or description"
+    create-route="/permissions/create"
+    create-label="Create permission"
+    :can-create="canCreatePermission"
+    :total-items="summaryStats[0]?.value ?? 0"
     item-label="permissions"
-    :pending="page.pending.value"
-    :error="page.error.value ? 'Error loading data' : null"
-    :error-detail="page.error.value ? getProblemMessage(page.error.value, 'The permission list is unavailable.') : ''"
-    :action-error="page.actionError.value"
+    :pending="pending"
+    :error="error ? 'Error loading data' : null"
+    :error-detail="error ? getProblemMessage(error, 'The permission list is unavailable.') : ''"
+    :action-error="actionError"
     action-error-title="Permission action failed"
-    :items-length="page.filteredPermissions.value.length"
+    :items-length="filteredPermissions.length"
     empty-title="No permissions found"
     empty-detail="Adjust the filters or add a new permission."
-    :first-item-number="page.firstItemNumber.value"
-    :last-item-number="page.lastItemNumber.value"
-    v-model:page-size="page.pageSize.value"
-    :page-size-options="page.pageSizeOptions"
-    :page="page.page.value"
-    :total-pages="page.totalPages.value"
-    @previous-page="page.goToPreviousPage"
-    @next-page="page.goToNextPage"
+    :first-item-number="firstItemNumber"
+    :last-item-number="lastItemNumber"
+    v-model:page-size="pageSize"
+    :page-size-options="pageSizeOptions"
+    :page="page"
+    :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
+    @previous-page="goToPreviousPage"
+    @next-page="goToNextPage"
   >
     <template #modals>
       <AppConfirm
-        :open="page.confirmPermission.value !== null"
-        :title="page.confirmTitle.value"
-        :detail="page.confirmDetail"
+        :open="confirmPermission !== null"
+        :title="confirmTitle"
+        :detail="confirmDetail"
         confirm-label="Remove"
         tone="danger"
-        :loading="page.actionPending.value === 'remove'"
-        @confirm="page.removePermission"
-        @cancel="page.cancelRemove"
+        :loading="actionPending === 'remove'"
+        @confirm="removePermission"
+        @cancel="cancelRemove"
       />
-    </template>
-
-    <template #search-input>
-      <AppInput v-model="page.localSearch.value" label="" placeholder="Search by name or description" @keyup.enter="page.applyFilters" />
-    </template>
-
-    <template #actions>
-      <AppButton variant="primary" @click="page.applyFilters">
-        Search
-      </AppButton>
-      <AppButton variant="primary" @click="page.clearFilters">
-        Refresh
-      </AppButton>
-      <NuxtLink v-if="page.canCreatePermission.value" class="primary-link" to="/permissions/create">
-        Create permission
-      </NuxtLink>
     </template>
 
     <template #filters>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="page.localModuleFilter.value"
+          v-model="localFilters.module.value"
           label="Module"
-          :options="page.moduleOptions"
+          :options="moduleOptions"
         />
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="page.localOperationFilter.value"
+          v-model="localFilters.operation.value"
           label="Operation"
-          :options="page.operationOptions"
+          :options="operationOptions"
         />
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="page.localScopeFilter.value"
+          v-model="localFilters.scope.value"
           label="Scope"
-          :options="page.scopeOptions"
+          :options="scopeOptions"
         />
       </div>
     </template>
@@ -92,11 +116,11 @@ defineProps<{
             <th class="w-[12%]">Operation</th>
             <th class="w-[10%]">Scope</th>
             <th class="w-[12%] text-center">Open</th>
-            <th v-if="page.canRemovePermission.value" class="w-[12%] text-center">Remove</th>
+            <th v-if="canRemovePermission" class="w-[12%] text-center">Remove</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="permission in page.pagedPermissions.value" :key="permission.id">
+          <tr v-for="permission in pagedPermissions" :key="permission.id">
             <td class="align-middle">
               <div class="grid gap-1">
                 <p class="table-title">{{ permission.permissionName }}</p>
@@ -104,16 +128,16 @@ defineProps<{
               </div>
             </td>
             <td class="align-middle">
-              <AppBadge>{{ page.enumLabel(permission.module) }}</AppBadge>
+              <AppBadge>{{ enumLabel(permission.module) }}</AppBadge>
             </td>
             <td class="align-middle">
-              <AppBadge>{{ page.enumLabel(permission.subModule) }}</AppBadge>
+              <AppBadge>{{ enumLabel(permission.subModule) }}</AppBadge>
             </td>
             <td class="align-middle">
-              <AppBadge>{{ page.enumLabel(permission.operation) }}</AppBadge>
+              <AppBadge>{{ enumLabel(permission.operation) }}</AppBadge>
             </td>
             <td class="align-middle">
-              <AppBadge>{{ page.enumLabel(permission.scope) }}</AppBadge>
+              <AppBadge>{{ enumLabel(permission.scope) }}</AppBadge>
             </td>
             <td class="align-middle">
               <div class="flex justify-center">
@@ -122,9 +146,9 @@ defineProps<{
                 </NuxtLink>
               </div>
             </td>
-            <td v-if="page.canRemovePermission.value" class="align-middle">
+            <td v-if="canRemovePermission" class="align-middle">
               <div class="flex justify-center">
-                <AppButton class="table-action" variant="danger" @click="page.requestRemove(permission.id)">
+                <AppButton class="table-action" variant="danger" @click="requestRemove(permission.id)">
                   Remove
                 </AppButton>
               </div>

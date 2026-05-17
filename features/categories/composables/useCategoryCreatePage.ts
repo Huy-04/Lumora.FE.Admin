@@ -1,5 +1,10 @@
 import type { CategoryTreeNodeResponse } from "~/features/categories/types";
 
+const MAX_CATEGORY_LEVEL = 2;
+
+const flattenTree = (nodes: CategoryTreeNodeResponse[]): CategoryTreeNodeResponse[] =>
+  nodes.flatMap((node) => [node, ...flattenTree(node.children)]);
+
 export const useCategoryCreatePage = async () => {
   const route = useRoute();
   const categoryApi = useCategoryAdminApi();
@@ -37,12 +42,15 @@ export const useCategoryCreatePage = async () => {
     },
   );
 
-  const activeRootOptions = computed(() => {
-    const options = (categoryCatalog.value ?? [])
-      .filter((category) => category.isActive)
+  const activeParentOptions = computed(() => {
+    const options = flattenTree(categoryCatalog.value ?? [])
+      .filter((category) =>
+        category.isActive
+        && !category.isDeleted
+        && category.level < MAX_CATEGORY_LEVEL)
       .sort((left, right) => left.sortOrder - right.sortOrder)
       .map((category) => ({
-        label: `${category.name} (#${category.sortOrder})`,
+        label: `${"- ".repeat(category.level)}${category.name} (#${category.sortOrder})`,
         value: category.id,
       }));
 
@@ -70,8 +78,8 @@ export const useCategoryCreatePage = async () => {
         return;
       }
 
-      if (!form.parentId && activeRootOptions.value[1]) {
-        form.parentId = activeRootOptions.value[1].value;
+      if (!form.parentId && activeParentOptions.value[1]) {
+        form.parentId = activeParentOptions.value[1].value;
       }
     },
     { immediate: true },
@@ -109,7 +117,7 @@ export const useCategoryCreatePage = async () => {
     errorMessage,
     categoryCatalogError,
     canReadCategories,
-    activeRootOptions,
+    activeParentOptions,
     submit,
   };
 };

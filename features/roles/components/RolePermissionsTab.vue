@@ -14,7 +14,7 @@ const emit = defineEmits<{
 
 const rolesApi = useRolesAdminApi();
 const authz = useAdminAuthorization();
-const canSyncPermissions = computed(() => authz.can([ADMIN_PERMISSION.rolePermissionUpdateAll, ADMIN_PERMISSION.permissionUpdateAll]));
+const canSyncPermissions = computed(() => authz.can([ADMIN_PERMISSION.rolePermissionCreateAll, ADMIN_PERMISSION.rolePermissionRemoveAll]));
 
 const actionPending = ref(false);
 const actionError = ref("");

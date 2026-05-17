@@ -10,12 +10,14 @@ export interface PaymentAction {
 }
 
 export const usePaymentDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const paymentApi = usePaymentAdminApi();
   const authz = useAdminAuthorization();
 
   type PaymentTab = "overview" | "attempts" | "operations";
 
+  // 2. Permissions
   const paymentId = computed(() => String(route.params.id ?? ""));
   const canManagePayments = computed(() => authz.can(ADMIN_PERMISSION.paymentManageAll));
 
@@ -24,11 +26,13 @@ export const usePaymentDetailPage = async () => {
   const requestedAction = ref<PaymentAction | null>(null);
   const activeTab = ref<PaymentTab>("overview");
 
+  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `payment:${paymentId.value}`,
     () => paymentApi.getPaymentById(paymentId.value),
   );
 
+  // 4. Computed derivations
   const payment = computed<PaymentResponse | null>(() => data.value ?? null);
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This payment is not available right now."));
   const canManualResolve = computed(() =>
@@ -73,6 +77,7 @@ export const usePaymentDetailPage = async () => {
     ];
   });
 
+  // 5. Actions/mutations
   const requestAction = (action: PaymentAction) => {
     requestedAction.value = action;
     actionError.value = "";
@@ -107,17 +112,14 @@ export const usePaymentDetailPage = async () => {
     }
   };
 
+  // 6. Watchers
   watch(
-    () => route.query.tab,
-    (value) => {
+    () => [route.query.tab, paymentTabs.value.map((tab) => tab.value).join("|")] as const,
+    ([value]) => {
       activeTab.value = normalizeTab(value);
     },
     { immediate: true },
   );
-
-  watchEffect(() => {
-    activeTab.value = normalizeTab(activeTab.value);
-  });
 
   const selectTab = async (tab: PaymentTab) => {
     const nextTab = normalizeTab(tab);
@@ -132,6 +134,7 @@ export const usePaymentDetailPage = async () => {
     );
   };
 
+  // 7. Return statement
   return {
     actionError,
     actionPending,

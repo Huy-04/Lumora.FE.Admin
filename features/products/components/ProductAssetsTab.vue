@@ -147,6 +147,11 @@ const uploadAsset = async () => {
     return;
   }
 
+  if (selectedFiles.value.length > 10) {
+    actionError.value = "Maximum 10 files allowed per upload. Please select fewer files.";
+    return;
+  }
+
   actionPending.value = "upload";
   actionError.value = "";
 
@@ -274,7 +279,7 @@ watch(
               ref="fileInput"
               class="sr-only"
               type="file"
-              accept="image/*"
+              accept="image/jpeg, image/png, image/webp"
               multiple
               @change="handleFileChange"
             >

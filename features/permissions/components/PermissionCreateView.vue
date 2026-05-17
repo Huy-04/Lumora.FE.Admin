@@ -10,8 +10,8 @@ const { form, subModuleOptions, permissionModuleOptions, permissionOperationOpti
 
 <template>
   <div class="page-shell">
-    <section class="max-w-4xl">
-      <AppPanel eyebrow="Create permission" title="Create permission" description="Add a policy rule using the same module, operation, and scope contract enforced by the backend.">
+    <section class="grid max-w-6xl gap-6">
+      <AppPanel eyebrow="Create permission">
         <form class="form-stack" @submit.prevent="submit">
           <div class="grid gap-4 md:grid-cols-2">
             <AppSelect v-model="form.module" label="Module" :options="permissionModuleOptions" />
@@ -27,11 +27,11 @@ const { form, subModuleOptions, permissionModuleOptions, permissionOperationOpti
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="panel-action-row">
-            <AppButton :loading="pending" type="submit">Create permission</AppButton>
-            <NuxtLink class="secondary-link" to="/permissions">
-              Back to permissions
+          <div class="flex justify-end gap-4 border-t border-line pt-5">
+            <NuxtLink class="secondary-link min-w-[9rem]" to="/permissions">
+              Cancel
             </NuxtLink>
+            <AppButton :loading="pending" type="submit" class="min-w-[12rem]">Create permission</AppButton>
           </div>
         </form>
       </AppPanel>

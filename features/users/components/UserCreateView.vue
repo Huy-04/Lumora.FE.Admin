@@ -10,8 +10,8 @@ const { form, pending, passwordRules, errorMessage, phoneRegionOptions, genderOp
 
 <template>
   <div class="page-shell">
-    <section class="max-w-4xl">
-      <AppPanel eyebrow="Create user" title="Create user" description="Create a user record with the same local-password contract used by the backend API.">
+    <section class="grid max-w-6xl gap-6">
+      <AppPanel eyebrow="Create user">
         <form class="form-stack" @submit.prevent="submit">
           <AppInput v-model="form.fullName" label="Full name" placeholder="John Doe" />
           <AppInput v-model="form.email" label="Email" placeholder="john.doe@lumora.vn" />
@@ -31,11 +31,11 @@ const { form, pending, passwordRules, errorMessage, phoneRegionOptions, genderOp
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="panel-action-row">
-            <AppButton :loading="pending" type="submit">Create user</AppButton>
-            <NuxtLink class="secondary-link" to="/users">
-              Back to users
+          <div class="flex justify-end gap-4 border-t border-line pt-5">
+            <NuxtLink class="secondary-link min-w-[9rem]" to="/users">
+              Cancel
             </NuxtLink>
+            <AppButton :loading="pending" type="submit" class="min-w-[12rem]">Create user</AppButton>
           </div>
         </form>
       </AppPanel>

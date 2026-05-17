@@ -93,7 +93,7 @@ const handleChildDrop = (targetId: string) => {
   >
     <div class="mb-5">
       <p class="text-sm text-smoke">
-        {{ children.length }} child categories linked to this root.
+        {{ children.length }} nested categories linked to this category.
       </p>
     </div>
 
@@ -184,7 +184,7 @@ const handleChildDrop = (targetId: string) => {
     <AppEmptyState
       v-else
       title="No child categories yet"
-      detail="Create the first child category from this root to build out the second level."
+      detail="Create a child category to build the next level of this catalog branch."
     />
 
     <div v-if="canCreateCategory && !category.isDeleted" class="mt-4 flex justify-end border-t border-line/70 pt-4">

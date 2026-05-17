@@ -1,4 +1,5 @@
 export const useEmailVerificationPage = async () => {
+  // 1. Dependency injection
   const authApi = useAuthApi();
   const route = useRoute();
   const nuxtApp = useNuxtApp();
@@ -6,15 +7,18 @@ export const useEmailVerificationPage = async () => {
   const createEmptyOtp = () => Array.from({ length: 6 }, () => "");
   const otpCooldown = useOtpResendCooldown();
 
+  // 2. Form state
   const form = reactive({
     otp: createEmptyOtp(),
   });
 
+  // 3. Submission state
   const pending = ref(false);
   const resendPending = ref(false);
   const successMessage = ref("");
   const errorMessage = ref("");
 
+  // 4. Computed / derived state
   const otpValue = computed(() => form.otp.join("").trim());
   const redirectTarget = computed(() => typeof route.query.redirect === "string" ? route.query.redirect : "");
   const currentUserId = computed(() => session.user.value?.id ?? "");
@@ -31,6 +35,7 @@ export const useEmailVerificationPage = async () => {
     await nuxtApp.runWithContext(() => navigateTo("/auth/login"));
   }
 
+  // 5. Actions
   const submit = async () => {
     pending.value = true;
     successMessage.value = "";
@@ -68,6 +73,7 @@ export const useEmailVerificationPage = async () => {
     }
   };
 
+  // 6. Return statement
   return {
     form,
     pending,
@@ -83,4 +89,4 @@ export const useEmailVerificationPage = async () => {
   };
 };
 
-export type EmailVerificationPage = Awaited<ReturnType<typeof useEmailVerificationPage>>;
+export type AuthEmailVerificationPageState = Awaited<ReturnType<typeof useEmailVerificationPage>>;

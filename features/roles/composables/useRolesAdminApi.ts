@@ -1,4 +1,3 @@
-import { toSearchParams } from "~/Shared/api/queryParams";
 import type {
   AddPermissionRequest,
   RolePermissionResponse,
@@ -8,50 +7,67 @@ import type {
 } from "~/features/roles/types";
 import type { PaginatedResponse } from "~/Shared/types/api";
 
+const roleRoute = (path = "") => `/Roles${path}`;
+const roleChildRoute = (roleId: string, childPath = "") =>
+  `/Roles/${roleId}${childPath}`;
+
 export const useRolesAdminApi = () => {
   const api = useApiClient();
 
   return {
     getRoles: (page = 1, size = 20) =>
-      api.request<PaginatedResponse<RoleResponse>>(`/Roles${toSearchParams({ page, size })}`),
+      api.request<PaginatedResponse<RoleResponse>>(
+        `${roleRoute()}${toSearchParams({ page, size })}`,
+      ),
 
-    getRoleById: (id: string) => api.request<RoleResponse>(`/Roles/${id}`),
+    getRoleById: (id: string) => api.request<RoleResponse>(roleChildRoute(id)),
 
     getRolePermissions: (id: string) =>
-      api.request<RolePermissionResponse[]>(`/Roles/${id}/permissions`),
+      api.request<RolePermissionResponse[]>(
+        roleChildRoute(id, "/permissions"),
+      ),
 
     createRole: (payload: RoleRequest) =>
-      api.request<RoleResponse>("/Roles", {
+      api.request<RoleResponse>(roleRoute(), {
         method: "POST",
         body: payload,
       }),
 
     updateRole: (id: string, payload: RoleRequest) =>
-      api.request<RoleResponse>(`/Roles/${id}`, {
+      api.request<RoleResponse>(roleChildRoute(id), {
         method: "PUT",
         body: payload,
       }),
 
     deleteRole: (id: string) =>
-      api.request<void>(`/Roles/${id}`, {
+      api.request<void>(roleChildRoute(id), {
         method: "DELETE",
       }),
 
     addPermissionToRole: (id: string, payload: AddPermissionRequest) =>
-      api.request<RolePermissionResponse>(`/Roles/${id}/permissions`, {
-        method: "POST",
-        body: payload,
-      }),
+      api.request<RolePermissionResponse>(
+        roleChildRoute(id, "/permissions"),
+        {
+          method: "POST",
+          body: payload,
+        },
+      ),
 
     removePermissionFromRole: (id: string, rolePermissionId: string) =>
-      api.request<void>(`/Roles/${id}/permissions/${rolePermissionId}`, {
-        method: "DELETE",
-      }),
+      api.request<void>(
+        roleChildRoute(id, `/permissions/${rolePermissionId}`),
+        {
+          method: "DELETE",
+        },
+      ),
 
     syncRolePermissions: (id: string, payload: SyncRolePermissionsRequest) =>
-      api.request<RolePermissionResponse[]>(`/Roles/${id}/permissions/sync`, {
-        method: "POST",
-        body: payload,
-      }),
+      api.request<RolePermissionResponse[]>(
+        roleChildRoute(id, "/permissions/sync"),
+        {
+          method: "POST",
+          body: payload,
+        },
+      ),
   };
 };

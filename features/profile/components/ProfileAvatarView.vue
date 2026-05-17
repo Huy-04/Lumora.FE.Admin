@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProfileAvatarPage } from "~/features/profile/composables/useProfileAvatarPage";
+import type { ProfileAvatarPageState } from "~/features/profile/composables/useProfileAvatarPage";
 
 const props = defineProps<{
-  page: ProfileAvatarPage;
+  page: ProfileAvatarPageState;
 }>();
 
 const { pending, error, presetAvatars, hasAvatar, previewUrl, displayName, avatarInitial, isPresetSelected, selectPreset, customUrlInput, applyCustomUrl, removeAvatar, resetDraft, saveSuccess, saveError, savePending, submitAvatar } = props.page;
@@ -102,11 +102,11 @@ const { pending, error, presetAvatars, hasAvatar, previewUrl, displayName, avata
             {{ saveError }}
           </AppNotice>
 
-          <div class="panel-action-row flex flex-wrap items-center gap-3">
-            <AppButton :loading="savePending" type="submit">Save avatar</AppButton>
-            <NuxtLink class="app-button app-button-secondary sm:ml-auto" to="/profile">
-              Back to profile
+          <div class="flex flex-wrap items-center justify-end gap-4 border-t border-line/70 pt-4">
+            <NuxtLink class="secondary-link min-w-[9rem]" to="/profile">
+              Cancel
             </NuxtLink>
+            <AppButton :loading="savePending" type="submit" class="min-w-[12rem]">Save avatar</AppButton>
           </div>
         </form>
       </AppPanel>

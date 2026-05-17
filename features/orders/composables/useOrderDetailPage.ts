@@ -2,7 +2,6 @@ import type { OrderResponse } from "~/features/orders/types";
 
 type OrderActionKey =
   | "confirm"
-  | "start-processing"
   | "mark-in-transit"
   | "deliver"
   | "complete"
@@ -38,14 +37,15 @@ const returnReasonPresets: OrderReasonPreset[] = [
   { label: "Other", value: "" },
 ];
 
+const ORDER_CANCEL_REASON_MIN_LENGTH = 5;
+const ORDER_REASON_MAX_LENGTH = 500;
+
 const canRunAction = (order: OrderResponse, action: OrderActionKey) => {
   switch (action) {
     case "confirm":
-      return order.status === "Pending" && (order.stockReservationStatus === "Pending" || order.stockReservationStatus === "Failed");
-    case "start-processing":
-      return order.status === "Confirmed" && order.stockReservationStatus === "Reserved";
+      return order.status === "Pending";
     case "mark-in-transit":
-      return order.status === "Processing";
+      return order.status === "Processing" && order.stockReservationStatus === "Reserved";
     case "deliver":
       return order.status === "InTransit";
     case "complete":
@@ -60,6 +60,7 @@ const canRunAction = (order: OrderResponse, action: OrderActionKey) => {
 };
 
 export const useOrderDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const orderApi = useOrderAdminApi();
   const authz = useAdminAuthorization();
@@ -68,6 +69,7 @@ export const useOrderDetailPage = async () => {
 
   const orderId = computed(() => String(route.params.id ?? ""));
 
+  // 2. Permissions
   const canModifyOrder = computed(() => authz.can(ADMIN_PERMISSION.orderModifyAll));
   const orderTabs = computed<Array<{ label: string; value: OrderTab }>>(() => [
     { label: "Overview", value: "overview" },
@@ -94,14 +96,19 @@ export const useOrderDetailPage = async () => {
   const actionReason = ref("");
   const selectedReasonPreset = ref("");
 
+  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `order:${orderId.value}`,
     () => orderApi.getOrderById(orderId.value),
   );
 
+  // 4. Computed derivations
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This order is not available right now."));
   const order = computed(() => data.value ?? null);
   const hasStockReservationFailure = computed(() => order.value?.stockReservationStatus === "Failed");
+  const hasProcessingException = computed(() =>
+    order.value?.status === "Processing" && order.value?.stockReservationStatus !== "Reserved",
+  );
 
   const availableActions = computed<OrderAction[]>(() => {
     if (!order.value || !canModifyOrder.value) {
@@ -112,12 +119,7 @@ export const useOrderDetailPage = async () => {
       {
         key: "confirm",
         label: "Confirm",
-        detail: "Reserve inventory synchronously, then move the order to Confirmed.",
-      },
-      {
-        key: "start-processing",
-        label: "Start processing",
-        detail: "Move to Processing after stock is Reserved, then create a local shipment draft as best effort.",
+        detail: "Reserve inventory, move the order to Processing, and create a shipment draft.",
       },
       {
         key: "mark-in-transit",
@@ -153,6 +155,7 @@ export const useOrderDetailPage = async () => {
     return actions.filter((action) => canRunAction(order.value as OrderResponse, action.key));
   });
 
+  // 5. Actions/mutations
   const requestAction = (action: OrderAction) => {
     requestedAction.value = action;
     const presets = action.key === "return-to-sender" ? returnReasonPresets : cancelReasonPresets;
@@ -190,9 +193,33 @@ export const useOrderDetailPage = async () => {
     }
 
     const action = requestedAction.value;
-    if (action.requiresReason && !actionReason.value.trim()) {
-      actionError.value = "Reason is required for this order action.";
-      return;
+    let submittedReason = "";
+
+    if (action.requiresReason) {
+      const rawReason = actionReason.value;
+      const trimmedReason = rawReason.trim();
+
+      if (!trimmedReason) {
+        actionError.value = "Reason is required for this order action.";
+        return;
+      }
+
+      if (rawReason !== trimmedReason) {
+        actionError.value = "Reason must not include leading or trailing whitespace.";
+        return;
+      }
+
+      if (action.key === "cancel" && trimmedReason.length < ORDER_CANCEL_REASON_MIN_LENGTH) {
+        actionError.value = `Cancellation reason must be at least ${ORDER_CANCEL_REASON_MIN_LENGTH} characters.`;
+        return;
+      }
+
+      if (trimmedReason.length > ORDER_REASON_MAX_LENGTH) {
+        actionError.value = "Reason must be at most 500 characters.";
+        return;
+      }
+
+      submittedReason = trimmedReason;
     }
 
     actionPending.value = action.key;
@@ -201,8 +228,6 @@ export const useOrderDetailPage = async () => {
     try {
       if (action.key === "confirm") {
         data.value = await orderApi.confirmOrder(order.value.id);
-      } else if (action.key === "start-processing") {
-        data.value = await orderApi.startProcessingOrder(order.value.id);
       } else if (action.key === "mark-in-transit") {
         data.value = await orderApi.markOrderInTransit(order.value.id);
       } else if (action.key === "deliver") {
@@ -210,9 +235,9 @@ export const useOrderDetailPage = async () => {
       } else if (action.key === "complete") {
         data.value = await orderApi.completeOrder(order.value.id);
       } else if (action.key === "cancel") {
-        data.value = await orderApi.cancelOrder(order.value.id, { reason: actionReason.value.trim() });
+        data.value = await orderApi.cancelOrder(order.value.id, { reason: submittedReason });
       } else if (action.key === "return-to-sender") {
-        data.value = await orderApi.returnOrderToSender(order.value.id, { reason: actionReason.value.trim() });
+        data.value = await orderApi.returnOrderToSender(order.value.id, { reason: submittedReason });
       }
 
       closeAction();
@@ -243,6 +268,7 @@ export const useOrderDetailPage = async () => {
     );
   };
 
+  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -254,6 +280,7 @@ export const useOrderDetailPage = async () => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
+  // 7. Return statement
   return {
     actionError,
     actionPending,
@@ -265,6 +292,7 @@ export const useOrderDetailPage = async () => {
     error,
     executeAction,
     hasStockReservationFailure,
+    hasProcessingException,
     loadErrorMessage,
     order,
     orderId,

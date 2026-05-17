@@ -28,7 +28,7 @@ export const useShipmentAdminApi = () => {
         body: payload,
       }),
 
-    submitShipment: (shipmentId: string, payload: SubmitShipmentRequest) =>
+    submitShipment: (shipmentId: string, payload: SubmitShipmentRequest = {}) =>
       api.request<ShipmentResponse>(shipmentRoute(`/${shipmentId}/submit`), {
         method: "POST",
         body: payload,

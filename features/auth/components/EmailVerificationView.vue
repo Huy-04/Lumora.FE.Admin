@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { EmailVerificationPage } from "~/features/auth/composables/useEmailVerificationPage";
+import type { AuthEmailVerificationPageState } from "~/features/auth/composables/useEmailVerificationPage";
 
 const props = defineProps<{
-  page: EmailVerificationPage;
+  page: AuthEmailVerificationPageState;
 }>();
 
 const { form, pending, resendPending, successMessage, errorMessage, resendHelper, resendRemainingSeconds, currentUserId, resendLabel, submit, resend } = props.page;

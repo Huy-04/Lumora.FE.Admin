@@ -99,3 +99,4 @@ export interface SetReorderPointRequest {
 }
 
 export type InventoryListResponse = PaginatedResponse<InventoryResponse>;
+export type WarehouseListResponse = PaginatedResponse<WarehouseResponse>;

@@ -16,8 +16,9 @@ const emit = defineEmits<{
 }>();
 
 const usersApi = useUsersAdminApi();
+const session = useAuthSession();
 const authz = useAdminAuthorization();
-const canSyncRoles = computed(() => authz.can([ADMIN_PERMISSION.userRoleUpdateAll, ADMIN_PERMISSION.userUpdateAll]));
+const canSyncRoles = computed(() => authz.can([ADMIN_PERMISSION.userRoleCreateAll, ADMIN_PERMISSION.userRoleRemoveAll]));
 
 const syncPending = ref(false);
 const syncError = ref("");
@@ -111,6 +112,10 @@ const syncRoles = async () => {
       .map((entry) => entry.id);
 
     await usersApi.syncUserRoles(props.user.id, { addRoleIds, removeUserRoleIds });
+
+    if (props.user.id === session.user.value?.id) {
+      await session.refresh();
+    }
 
     emit("refresh");
   } catch (requestError) {

@@ -69,6 +69,8 @@ export interface UserAddressResponse {
   street: string;
   isDefault: boolean;
   addressType: string;
+  ghnDistrictId: number;
+  ghnWardCode: string;
 }
 
 export interface UserAddressRequest {
@@ -80,4 +82,6 @@ export interface UserAddressRequest {
   street: string;
   isDefault: boolean;
   addressType: string;
+  ghnDistrictId: number;
+  ghnWardCode: string;
 }

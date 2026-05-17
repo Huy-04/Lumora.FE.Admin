@@ -1,7 +1,9 @@
 export const useProfileAvatarPage = async () => {
+  // 1. Dependency injection
   const authApi = useAuthApi();
   const session = useAuthSession();
 
+  // 2. Static data
   const AVATAR_BASE = "https://gidllmdnupjypafinkvz.supabase.co/storage/v1/object/public/assets/avatar";
 
   const presetAvatars = [
@@ -17,14 +19,17 @@ export const useProfileAvatarPage = async () => {
     },
   ];
 
+  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData("profile-avatar", async () => authApi.getCurrentUser());
 
+  // 4. Local state
   const draftAvatar = ref("");
   const customUrlInput = ref("");
   const savePending = ref(false);
   const saveSuccess = ref("");
   const saveError = ref("");
 
+  // 5. Watchers
   watch(
     () => data.value,
     (user) => {
@@ -38,12 +43,14 @@ export const useProfileAvatarPage = async () => {
     { immediate: true },
   );
 
+  // 6. Computed derivations
   const displayName = computed(() => data.value?.fullName || data.value?.userName || "Profile");
   const avatarInitial = computed(() => displayName.value.trim().charAt(0).toUpperCase() || "?");
   const previewUrl = computed(() => draftAvatar.value.trim());
   const hasAvatar = computed(() => Boolean(previewUrl.value));
   const isPresetSelected = (url: string) => previewUrl.value === url;
 
+  // 7. Actions/mutations
   const selectPreset = (url: string) => {
     draftAvatar.value = url;
     customUrlInput.value = url;
@@ -96,6 +103,7 @@ export const useProfileAvatarPage = async () => {
     }
   };
 
+  // 8. Return statement
   return {
     pending,
     error,
@@ -117,4 +125,4 @@ export const useProfileAvatarPage = async () => {
   };
 };
 
-export type ProfileAvatarPage = Awaited<ReturnType<typeof useProfileAvatarPage>>;
+export type ProfileAvatarPageState = Awaited<ReturnType<typeof useProfileAvatarPage>>;

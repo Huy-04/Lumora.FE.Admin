@@ -11,6 +11,7 @@ const emit = defineEmits<{
 }>();
 
 const authApi = useAuthApi();
+const authSession = useAuthSession();
 const identity = useDeviceIdentity();
 
 const passwordForm = reactive({
@@ -35,9 +36,20 @@ const submitPassword = async () => {
       oldPassword: passwordForm.oldPassword,
       newPassword: passwordForm.newPassword,
     });
-    passwordSuccess.value = "Password changed successfully.";
     passwordForm.oldPassword = "";
     passwordForm.newPassword = "";
+    passwordSuccess.value = "Password changed. All sessions revoked. Redirecting to login...";
+
+    // Clear session state to stop active refresh timers (heartbeat checks hasRefreshContext)
+    authSession.clear();
+
+    // Redirect to login after 3 seconds
+    setTimeout(() => {
+      navigateTo({
+        path: "/auth/login",
+        query: { reason: "security-updated" },
+      });
+    }, 3000);
   } catch (requestError) {
     passwordError.value = getProblemMessage(requestError, "Unable to change password.");
   } finally {

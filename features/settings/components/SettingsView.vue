@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { PhMoon, PhSun } from "@phosphor-icons/vue";
-import type { SettingsPage } from "~/features/settings/composables/useSettingsPage";
+import type { SettingPageState } from "~/features/settings/composables/useSettingsPage";
 
 const props = defineProps<{
-  page: SettingsPage;
+  page: SettingPageState;
 }>();
 
 const { isDark, toggle } = props.page;

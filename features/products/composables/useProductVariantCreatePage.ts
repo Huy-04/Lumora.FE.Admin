@@ -1,4 +1,5 @@
 export const useProductVariantCreatePage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const productApi = useProductAdminApi();
   const authz = useAdminAuthorization();
@@ -7,6 +8,7 @@ export const useProductVariantCreatePage = async () => {
   const productId = computed(() => route.params.productId as string);
   const canUpdateProduct = computed(() => authz.can(ADMIN_PERMISSION.productUpdateAll));
 
+  // 2. Form state
   const form = reactive({
     sku: "",
     name: "",
@@ -18,9 +20,11 @@ export const useProductVariantCreatePage = async () => {
     height: "",
   });
 
+  // 3. Submission state
   const pending = ref(false);
   const errorMessage = ref("");
 
+  // 4. Computed / derived state
   const { data: product, pending: productPending, error: productError } = await useAsyncData(
     () => `product-variant-create:${productId.value}`,
     async () => productApi.getProductById(productId.value),
@@ -28,6 +32,7 @@ export const useProductVariantCreatePage = async () => {
 
   const canCreateVariant = computed(() => canUpdateProduct.value && !product.value?.isDeleted);
 
+  // 5. Actions
   const findCreatedVariantId = async (sku: string) => {
     const variants = await productApi.getProductVariants(productId.value);
     const matchingVariant = variants.find((entry) => entry.sku === sku)
@@ -54,10 +59,13 @@ export const useProductVariantCreatePage = async () => {
     errorMessage.value = "";
 
     try {
-      const normalizedSku = form.sku.trim().toUpperCase();
+      const skuValidationMessage = getProductSkuValidationMessage(form.sku);
+      if (skuValidationMessage) {
+        throw new Error(skuValidationMessage);
+      }
 
       await productApi.addProductVariant(productId.value, {
-        sku: normalizedSku,
+        sku: form.sku,
         name: form.name,
         price: parseRequiredNumber(form.price, "Price"),
         weight: parsePositiveInt(form.weight, "Weight"),
@@ -68,7 +76,7 @@ export const useProductVariantCreatePage = async () => {
         productAssetId: null,
       });
 
-      const createdVariantId = await findCreatedVariantId(normalizedSku);
+      const createdVariantId = await findCreatedVariantId(form.sku);
 
       if (createdVariantId) {
         await navigateTo(`/products/${productId.value}/variants/${createdVariantId}`);
@@ -83,6 +91,7 @@ export const useProductVariantCreatePage = async () => {
     }
   };
 
+  // 6. Return statement
   return {
     productError,
     productPending,

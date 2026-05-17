@@ -18,12 +18,12 @@ import type {
   UpdateProductRequest,
   UpdateVariantRequest,
 } from "~/features/products/types";
-import { toSearchParams } from "~/Shared/api/queryParams";
+
+const productRoute = (path = "") => `/Products${path}`;
+const productChildRoute = (productId: string, childPath = "") => `/Products/${productId}${childPath}`;
 
 export const useProductAdminApi = () => {
   const api = useApiClient();
-  const productRoute = (path = "") => `/Products${path}`;
-  const productChildRoute = (productId: string, childPath = "") => `/Products/${productId}${childPath}`;
 
   return {
     getProducts: (page = 1, size = 50) =>
@@ -81,6 +81,11 @@ export const useProductAdminApi = () => {
     discontinueProduct: (id: string) =>
       api.request<ProductResponse>(productChildRoute(id, "/discontinue"), {
         method: "POST",
+      }),
+
+    republishProduct: (id: string) =>
+      api.request<ProductResponse>(productChildRoute(id, "/republish"), {
+        method: "PATCH",
       }),
 
     restoreProduct: (id: string) =>

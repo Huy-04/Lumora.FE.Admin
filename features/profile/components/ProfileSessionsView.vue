@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProfileSessionsPage } from "~/features/profile/composables/useProfileSessionsPage";
+import type { ProfileSessionsPageState } from "~/features/profile/composables/useProfileSessionsPage";
 
 const props = defineProps<{
-  page: ProfileSessionsPage;
+  page: ProfileSessionsPageState;
 }>();
 
 const { confirmMode, confirmTitle, confirmDetail, actionPending, executeConfirm, closeConfirm, pending, error, currentSession, otherSessions, canRevokeOwnSessions, openConfirm, actionError } = props.page;

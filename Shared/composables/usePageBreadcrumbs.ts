@@ -71,6 +71,8 @@ const staticPageBreadcrumbRoutes: StaticPageBreadcrumbRoute[] = [
   { pattern: /^\/warehouses\/[^/]+$/, items: [{ label: "Warehouses" }] },
   { pattern: /^\/shipments$/, items: [{ label: "Shipments" }] },
   { pattern: /^\/shipments\/[^/]+$/, items: [{ label: "Shipments" }] },
+  { pattern: /^\/system-events$/, items: [{ label: "System Events" }] },
+  { pattern: /^\/system-events\/[^/]+$/, items: [{ label: "System Events" }] },
 ];
 
 export const resolveStaticPageBreadcrumbs = (path: string): PageBreadcrumbItem[] =>

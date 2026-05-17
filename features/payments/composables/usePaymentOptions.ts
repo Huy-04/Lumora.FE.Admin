@@ -12,13 +12,13 @@ export const usePaymentOptions = () => {
   const paymentMethodOptions: Array<{ label: string; value: PaymentMethod | "" }> = [
     { label: "All methods", value: "" },
     { label: "COD", value: "COD" },
-    { label: "VnPay", value: "VnPay" },
+    { label: "PayOs", value: "PayOs" },
   ];
 
   const paymentProviderOptions: Array<{ label: string; value: PaymentProvider | "" }> = [
     { label: "All providers", value: "" },
     { label: "None", value: "None" },
-    { label: "VnPay", value: "VnPay" },
+    { label: "PayOs", value: "PayOs" },
   ];
 
   return {

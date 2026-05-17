@@ -1,16 +1,19 @@
 import type { ProductAssetResponse, ProductImageResponse } from "~/features/products/types";
 
 export const useProductGalleryDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const productApi = useProductAdminApi();
   const authz = useAdminAuthorization();
 
   type GalleryTab = "overview" | "edit";
 
+  // 2. Permissions
   const productId = computed(() => route.params.productId as string);
   const imageId = computed(() => route.params.imageId as string);
   const canUpdateProduct = computed(() => authz.can(ADMIN_PERMISSION.productUpdateAll));
 
+  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `product-gallery-detail:${productId.value}:${imageId.value}`,
     async () => {
@@ -28,6 +31,7 @@ export const useProductGalleryDetailPage = async () => {
     },
   );
 
+  // 4. Computed derivations
   const image = computed<ProductImageResponse | null>(() =>
     data.value?.gallery.images.find((entry) => entry.id === imageId.value) ?? null,
   );
@@ -48,6 +52,7 @@ export const useProductGalleryDetailPage = async () => {
 
   const activeTab = ref<GalleryTab>("overview");
 
+  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -60,6 +65,7 @@ export const useProductGalleryDetailPage = async () => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
+  // 5. Actions/mutations
   const selectTab = async (tab: GalleryTab) => {
     activeTab.value = normalizeTab(tab);
 
@@ -72,6 +78,7 @@ export const useProductGalleryDetailPage = async () => {
     );
   };
 
+  // 7. Return statement
   return {
     error,
     pending,

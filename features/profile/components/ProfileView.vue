@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
-import type { ProfilePage } from "~/features/profile/composables/useProfilePage";
+import type { ProfilePageState } from "~/features/profile/composables/useProfilePage";
+import ProfileAddressesTab from "~/features/profile/components/ProfileAddressesTab.vue";
+import ProfileOverviewTab from "~/features/profile/components/ProfileOverviewTab.vue";
+import ProfileSecurityTab from "~/features/profile/components/ProfileSecurityTab.vue";
 
 const props = defineProps<{
-  page: ProfilePage;
+  page: ProfilePageState;
 }>();
 
-const { data, pending, error, profileTabs, activeTab, selectTab, handleUpdated } = props.page;
+const { data, pending, error, addresses, profileTabs, activeTab, selectTab, handleUpdated } = props.page;
 
 const selectProfileTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
@@ -40,6 +43,12 @@ useScopedPageBreadcrumbs(() =>
       <ProfileOverviewTab
         v-if="activeTab === 'profile'"
         :user="data"
+        @updated="handleUpdated"
+      />
+
+      <ProfileAddressesTab
+        v-if="activeTab === 'addresses'"
+        :addresses="addresses"
         @updated="handleUpdated"
       />
 

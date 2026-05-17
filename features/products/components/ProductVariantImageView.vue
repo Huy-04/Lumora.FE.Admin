@@ -23,7 +23,7 @@ useScopedPageBreadcrumbs(() =>
 
 <template>
   <div class="page-shell">
-    <section v-if="pending" class="max-w-6xl">
+    <section v-if="pending" class="grid max-w-6xl gap-6">
       <div class="soft-card h-[420px] animate-pulse" />
     </section>
 
@@ -35,7 +35,7 @@ useScopedPageBreadcrumbs(() =>
       The selected variant does not exist for this product.
     </AppNotice>
 
-    <section v-else class="max-w-6xl">
+    <section v-else class="grid max-w-6xl gap-6">
       <AppPanel eyebrow="Manage image">
         <form class="grid gap-6" @submit.prevent="submitImage">
           <AppNotice v-if="!(data?.assets.assets?.length ?? 0)" tone="warning" title="No product assets">
@@ -62,8 +62,11 @@ useScopedPageBreadcrumbs(() =>
             {{ saveError }}
           </AppNotice>
 
-          <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
-            <AppButton :loading="savePending" type="submit">Save image</AppButton>
+          <div class="flex flex-wrap items-center justify-end gap-4 border-t border-line/70 pt-4">
+            <NuxtLink class="secondary-link min-w-[9rem]" :to="`/products/${productId}/variants/${variant.id}`">
+              Cancel
+            </NuxtLink>
+            <AppButton :loading="savePending" type="submit" class="min-w-[12rem]">Save image</AppButton>
           </div>
         </form>
       </AppPanel>

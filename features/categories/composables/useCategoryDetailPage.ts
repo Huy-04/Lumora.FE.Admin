@@ -53,13 +53,23 @@ export const useCategoryDetailPage = async () => {
     },
   );
 
+  const realtimeRefresh = useRealtimeRefresh(refresh);
+  useCatalogRealtime((notification) => {
+    if (notification.entity === "category") {
+      realtimeRefresh.scheduleRefresh();
+    }
+  });
+
   const canEditCategory = computed(() => canEditCategoryPermission.value && !data.value?.category.isDeleted);
 
-  const isRootCategory = computed(() => data.value?.category.level === 0);
+  const canHaveChildren = computed(() =>
+    data.value?.category.level !== undefined
+    && data.value.category.level < 2
+    && !data.value.category.isDeleted);
 
   const categoryTabs = computed<Array<{ label: string; value: CategoryTab }>>(() => [
     { label: "Overview", value: "overview" },
-    ...(isRootCategory.value ? [{ label: "Children", value: "children" as const }] : []),
+    ...(canHaveChildren.value ? [{ label: "Children", value: "children" as const }] : []),
     ...(canEditCategory.value ? [{ label: "Edit", value: "edit" as const }] : []),
   ]);
 
@@ -241,15 +251,43 @@ export const useCategoryDetailPage = async () => {
     actionTargetId.value = pendingReorder.value.sourceId;
     actionError.value = "";
 
-    try {
-      await categoryApi.reorderCategories({
-        items: pendingReorder.value.items,
+    // Optimistic UI update: apply new sort orders before server confirms
+    const previousData = data.value ? { ...data.value, tree: [...data.value.tree] } : null;
+    if (data.value && pendingReorder.value.items.length && currentTreeNode.value) {
+      const orderMap = new Map(pendingReorder.value.items.map((item) => [item.categoryId, item.sortOrder]));
+      const updatedChildren = currentTreeNode.value.children.map((child) => {
+        const newSortOrder = orderMap.get(child.id);
+        return newSortOrder !== undefined ? { ...child, sortOrder: newSortOrder } : child;
       });
+      // Update the tree node in-place via data mutation
+      const updateNodeChildren = (nodes: CategoryTreeNodeResponse[], parentId: string, newChildren: CategoryTreeNodeResponse[]): CategoryTreeNodeResponse[] =>
+        nodes.map((node) => {
+          if (node.id === parentId) {
+            return { ...node, children: newChildren };
+          }
+          if (node.children.length) {
+            return { ...node, children: updateNodeChildren(node.children, parentId, newChildren) };
+          }
+          return node;
+        });
+      data.value = {
+        ...data.value,
+        tree: updateNodeChildren(data.value.tree, currentTreeNode.value.id, updatedChildren),
+      };
+    }
 
-      confirmReorderOpen.value = false;
-      pendingReorder.value = null;
+    const reorderPayload = { items: pendingReorder.value.items };
+    confirmReorderOpen.value = false;
+    pendingReorder.value = null;
+
+    try {
+      await categoryApi.reorderCategories(reorderPayload);
       await refresh();
     } catch (requestError) {
+      // Revert optimistic update on failure
+      if (previousData) {
+        data.value = previousData;
+      }
       actionError.value = getProblemMessage(requestError, "Unable to reorder child categories.");
     } finally {
       actionPending.value = "";

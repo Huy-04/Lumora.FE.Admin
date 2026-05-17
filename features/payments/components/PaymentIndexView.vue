@@ -7,7 +7,6 @@ const props = defineProps<{
 
 const {
   applyFilters,
-  canReadPayments,
   clearFilters,
   error,
   firstItemNumber,
@@ -15,14 +14,7 @@ const {
   goToPreviousPage,
   lastItemNumber,
   loadErrorMessage,
-  localCreatedFrom,
-  localCreatedTo,
-  localKeyword,
-  localMethod,
-  localOrderId,
-  localProvider,
-  localStatus,
-  localUserId,
+  localFilters,
   page,
   pageSize,
   pageSizeOptions,
@@ -45,13 +37,15 @@ const statusTone = (status: string) => {
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Payment ledger"
     search-label="Search payments"
+    search-placeholder="Order number, transaction, or failure text"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="payments"
     :pending="pending"
-    :error="!canReadPayments ? 'Missing permission' : error ? 'Error loading data' : null"
-    :error-detail="!canReadPayments ? 'You do not have permission to read payments.' : loadErrorMessage"
+    :error="error ? 'Error loading data' : null"
+    :error-detail="error ? loadErrorMessage : ''"
     :items-length="payments.length"
     empty-title="No payments found"
     empty-detail="Adjust filters or wait for checkout/payment events to create payments."
@@ -61,36 +55,23 @@ const statusTone = (status: string) => {
     :page-size-options="pageSizeOptions"
     :page="page"
     :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
     @previous-page="goToPreviousPage"
     @next-page="goToNextPage"
   >
-    <template #search-input>
-      <AppInput v-if="canReadPayments" v-model="localKeyword" label="" placeholder="Order number, transaction, or failure text" @keyup.enter="applyFilters" />
-    </template>
-
-    <template #actions>
-      <template v-if="canReadPayments">
-        <AppButton variant="primary" @click="applyFilters">Search</AppButton>
-        <AppButton variant="primary" @click="clearFilters">Refresh</AppButton>
-      </template>
-    </template>
-
     <template #filters>
-      <template v-if="canReadPayments">
-        <div class="grid w-full gap-4 md:grid-cols-4">
-          <AppInput v-model="localOrderId" label="Order ID" placeholder="Filter by order id" @keyup.enter="applyFilters" />
-          <AppInput v-model="localUserId" label="User ID" placeholder="Filter by user id" @keyup.enter="applyFilters" />
-          <AppSelect v-model="localStatus" label="Status" :options="paymentStatusOptions" />
-          <AppSelect v-model="localMethod" label="Method" :options="paymentMethodOptions" />
-          <AppSelect v-model="localProvider" label="Provider" :options="paymentProviderOptions" />
-          <AppInput v-model="localCreatedFrom" label="Created from" type="date" />
-          <AppInput v-model="localCreatedTo" label="Created to" type="date" />
-        </div>
-      </template>
+      <div class="grid w-full gap-4 md:grid-cols-3 lg:grid-cols-5">
+        <AppSelect v-model="localFilters.status.value" label="Status" :options="paymentStatusOptions" />
+        <AppSelect v-model="localFilters.method.value" label="Method" :options="paymentMethodOptions" />
+        <AppSelect v-model="localFilters.provider.value" label="Provider" :options="paymentProviderOptions" />
+        <AppInput v-model="localFilters.createdFrom.value" label="Created from" type="date" />
+        <AppInput v-model="localFilters.createdTo.value" label="Created to" type="date" />
+      </div>
     </template>
 
     <template #table>
-      <table v-if="canReadPayments" class="data-table min-w-[1240px]">
+      <table class="data-table min-w-[1240px]">
         <thead>
           <tr>
             <th class="min-w-[210px]">Payment</th>

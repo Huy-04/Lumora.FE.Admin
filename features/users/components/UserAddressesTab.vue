@@ -58,6 +58,12 @@ const executeConfirm = async () => {
 
 <template>
   <AppPanel eyebrow="Addresses">
+    <template v-if="canCreateAddress" #actions>
+      <NuxtLink class="primary-link whitespace-nowrap" :to="`/user-addresses/${userId}/create`">
+        Add address
+      </NuxtLink>
+    </template>
+
     <AppConfirm
       :open="confirmOpen"
       title="Remove address?"
@@ -135,12 +141,5 @@ const executeConfirm = async () => {
       title="No saved addresses"
       detail="Add the first address for this user."
     />
-
-    <div v-if="canCreateAddress" class="mt-4 flex justify-end border-t border-line/70 pt-4">
-      <NuxtLink class="primary-link whitespace-nowrap" :to="`/user-addresses/${userId}/create`">
-        Add address
-      </NuxtLink>
-    </div>
-
   </AppPanel>
 </template>

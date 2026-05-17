@@ -1,7 +1,7 @@
 <script setup lang="ts">
 type PageSizeValue = number | string;
 
-defineProps<{
+const props = defineProps<{
   eyebrow?: string;
   title?: string;
   description?: string;
@@ -11,6 +11,15 @@ defineProps<{
   totalItems?: number | string;
   itemLabel?: string;
   
+  // Search (built-in)
+  searchPlaceholder?: string;
+  modelValue?: string;
+
+  // Actions (built-in)
+  createRoute?: string;
+  createLabel?: string;
+  canCreate?: boolean;
+
   // State
   pending?: boolean;
   error?: string | null;
@@ -34,11 +43,30 @@ defineProps<{
   totalPages?: number;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   'update:pageSize': [value: PageSizeValue];
+  'update:modelValue': [value: string];
   'previousPage': [];
   'nextPage': [];
+  'search': [];
+  'refresh': [];
 }>();
+
+const slots = defineSlots<{
+  modals?: () => any;
+  header?: () => any;
+  'search-input'?: () => any;
+  actions?: () => any;
+  filters?: () => any;
+  notices?: () => any;
+  empty?: () => any;
+  table?: () => any;
+  pagination?: () => any;
+  after?: () => any;
+}>();
+
+/** Whether to use the legacy slot-based header or the new built-in header */
+const useSlotHeader = computed(() => !!slots['search-input'] || !!slots.actions);
 
 const resolvePageSizeValue = (
   value: string,
@@ -47,6 +75,27 @@ const resolvePageSizeValue = (
   const matchedOption = options?.find((option) => String(option.value) === value);
   return matchedOption?.value ?? value;
 };
+
+const showCreate = computed(() => {
+  if (!props.createRoute) return false;
+  return props.canCreate !== false;
+});
+
+function handleSearchInput(event: Event) {
+  emit('update:modelValue', (event.target as HTMLInputElement).value);
+}
+
+function handleSearchAction() {
+  emit('search');
+}
+
+function handleRefreshAction() {
+  emit('refresh');
+}
+
+function handleKeyupEnter() {
+  emit('search');
+}
 </script>
 
 <template>
@@ -55,27 +104,67 @@ const resolvePageSizeValue = (
     
     <AppPanel :eyebrow="eyebrow" :title="title" :description="description">
       <!-- HEADER AND FILTERS -->
-      <div v-if="$slots['search-input'] || $slots.actions || $slots.filters || $slots.header" class="grid gap-5 mb-8">
+      <div v-if="useSlotHeader || searchPlaceholder || $slots.filters || $slots.header" class="grid gap-5 mb-8">
         <slot name="header">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div v-if="$slots['search-input'] || searchLabel" class="flex-1">
-              <div class="mb-2 flex flex-wrap items-center gap-4">
-                <span v-if="searchLabel" class="app-label">{{ searchLabel }}</span>
-                <span v-if="totalItems !== undefined" class="result-count">
-                  Total {{ itemLabel ? itemLabel : 'items' }}: {{ totalItems }}
-                </span>
+          <!-- Legacy slot-based approach (backward compat) -->
+          <template v-if="useSlotHeader">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div v-if="$slots['search-input'] || searchLabel" class="flex-1">
+                <div class="mb-2 flex flex-wrap items-center gap-4">
+                  <span v-if="searchLabel" class="app-label">{{ searchLabel }}</span>
+                  <span v-if="totalItems !== undefined" class="result-count">
+                    Total {{ itemLabel ? itemLabel : 'items' }}: {{ totalItems }}
+                  </span>
+                </div>
+                <slot name="search-input" />
               </div>
-              <slot name="search-input" />
+              
+              <div v-if="$slots.actions" class="flex flex-wrap items-end gap-3 shrink-0">
+                <slot name="actions" />
+              </div>
             </div>
-            
-            <div v-if="$slots.actions" class="flex flex-wrap items-end gap-3 shrink-0">
-              <slot name="actions" />
-            </div>
-          </div>
 
-          <div v-if="$slots.filters" class="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <slot name="filters" />
-          </div>
+            <div v-if="$slots.filters" class="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <slot name="filters" />
+            </div>
+          </template>
+
+          <!-- New built-in approach -->
+          <template v-else-if="searchPlaceholder">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div class="flex-1">
+                <div class="mb-2 flex flex-wrap items-center gap-4">
+                  <span v-if="searchLabel" class="app-label">{{ searchLabel }}</span>
+                  <span v-if="totalItems !== undefined" class="result-count">
+                    Total {{ itemLabel ? itemLabel : 'items' }}: {{ totalItems }}
+                  </span>
+                </div>
+                <AppInput
+                  :model-value="modelValue"
+                  label=""
+                  :placeholder="searchPlaceholder"
+                  @update:model-value="emit('update:modelValue', $event)"
+                  @keyup.enter="handleKeyupEnter"
+                />
+              </div>
+              
+              <div class="flex flex-wrap items-end gap-3 shrink-0">
+                <AppButton variant="primary" @click="handleSearchAction">
+                  Search
+                </AppButton>
+                <AppButton variant="primary" @click="handleRefreshAction">
+                  Refresh
+                </AppButton>
+                <NuxtLink v-if="showCreate" class="primary-link" :to="createRoute!">
+                  {{ createLabel || 'Create' }}
+                </NuxtLink>
+              </div>
+            </div>
+
+            <div v-if="$slots.filters" class="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <slot name="filters" />
+            </div>
+          </template>
         </slot>
       </div>
 

@@ -31,11 +31,16 @@ export const useAuthSession = (): SessionState => {
   const authRefresh = useAuthRefresh();
   const identity = useDeviceIdentity();
   const sessionHint = useSessionHint();
+  const authIndicator = useCookie<string | null>("auth", {
+    sameSite: "lax",
+    default: () => null,
+  });
 
   const clearState = (message: string | null = null) => {
     session.value = null;
     status.value = "guest";
     lastError.value = message;
+    authIndicator.value = null;
     sessionHint.clear();
   };
 
@@ -74,7 +79,7 @@ export const useAuthSession = (): SessionState => {
         sessionHint.markAuthenticated();
         return true;
       } catch {
-        if (allowRefresh && await authRefresh.refresh()) {
+        if (allowRefresh && await authRefresh.refresh({ force: true })) {
           try {
             session.value = await authApi.getMe({
               skipAuthRefresh: true,

@@ -1,19 +1,22 @@
 import type { InventoryResponse } from "~/features/inventory/types";
 
 export const useInventoryDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const inventoryApi = useInventoryAdminApi();
   const authz = useAdminAuthorization();
   const { stockStatusOptions } = useInventoryOptions();
 
-  type InventoryTab = "overview" | "stock" | "remove";
+  type InventoryTab = "overview" | "stock";
 
   const inventoryId = computed(() => String(route.params.id ?? ""));
 
+  // 2. Permissions
   const canUpdateInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryUpdateAll));
   const canRemoveInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryRemoveAll));
   const canReadWarehouses = computed(() => authz.can(ADMIN_PERMISSION.warehouseReadAll));
 
+  // 3. Data fetching
   const actionPending = ref("");
   const actionError = ref("");
   const removeConfirmOpen = ref(false);
@@ -37,20 +40,28 @@ export const useInventoryDetailPage = async () => {
     },
   );
 
+  // 4. Computed derivations
   const inventory = computed<InventoryResponse | null>(() => data.value?.inventory ?? null);
   const warehouses = computed(() => data.value?.warehouses ?? []);
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This inventory record is not available right now."));
+  const isNotFound = computed(() => getProblemStatus(error.value) === 404);
+
+  const realtimeRefresh = useRealtimeRefresh(refresh);
+  useCatalogRealtime((notification) => {
+    if (notification.entity === "inventory" &&
+      (!inventory.value?.productId || notification.entityId === inventory.value.productId)) {
+      realtimeRefresh.scheduleRefresh();
+    }
+  }, { enabled: computed(() => Boolean(inventoryId.value)) });
+
   const inventoryTabs = computed<Array<{ label: string; value: InventoryTab }>>(() => [
     { label: "Overview", value: "overview" },
     { label: "Stock", value: "stock" },
-    ...(canRemoveInventory.value ? [{ label: "Remove", value: "remove" as const }] : []),
   ]);
   const normalizeTab = (value: unknown): InventoryTab => {
-    const resolved = value === "stocks" || value === "stock" || value === "operations"
+    const resolved = value === "stocks" || value === "stock" || value === "operations" || value === "remove"
       ? "stock"
-      : value === "remove"
-        ? "remove"
-        : "overview";
+      : "overview";
     return inventoryTabs.value.some((tab) => tab.value === resolved) ? resolved : "overview";
   };
   const activeTab = ref<InventoryTab>("overview");
@@ -86,6 +97,7 @@ export const useInventoryDetailPage = async () => {
       : String(stock.reorderPoint);
   };
 
+  // 5. Actions/mutations
   const adjustQuantity = async () => {
     if (!stockActionForm.warehouseId) {
       actionError.value = "Select a warehouse stock row first.";
@@ -165,6 +177,7 @@ export const useInventoryDetailPage = async () => {
     }
   };
 
+  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -189,6 +202,7 @@ export const useInventoryDetailPage = async () => {
     );
   };
 
+  // 7. Return statement
   return {
     actionError,
     actionPending,
@@ -199,6 +213,7 @@ export const useInventoryDetailPage = async () => {
     error,
     inventory,
     inventoryTabs,
+    isNotFound,
     loadErrorMessage,
     pending,
     refresh,

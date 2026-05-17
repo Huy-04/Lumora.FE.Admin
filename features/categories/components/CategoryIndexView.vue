@@ -1,79 +1,124 @@
 <script setup lang="ts">
-import type { CategoryIndexPage } from "~/features/categories/composables/useCategoryIndexPage";
+import type { CategoryIndexPageState } from "~/features/categories/composables/useCategoryIndexPage";
 
-defineProps<{
-  page: CategoryIndexPage;
+const props = defineProps<{
+  page: CategoryIndexPageState;
 }>();
+
+const {
+  actionError,
+  actionPending,
+  actionTargetId,
+  activeChildCount,
+  applyFilters,
+  canActivateCategory,
+  canCreateCategory,
+  canDeactivateCategory,
+  canDeleteCategory,
+  canDragRoots,
+  canRestoreCategory,
+  cancelRemove,
+  categoryHasChildrenMessage,
+  clearFilters,
+  confirmCategory,
+  confirmCategoryHasChildren,
+  confirmRemoveAction,
+  confirmRootReorder,
+  dragSourceId,
+  dragTargetId,
+  error,
+  filteredRoots,
+  firstItemNumber,
+  handleRootDragOver,
+  handleRootDragStart,
+  handleRootDrop,
+  lastItemNumber,
+  loadErrorMessage,
+  localFilters,
+  page,
+  pagedRoots,
+  pageSize,
+  pageSizeOptions,
+  pending,
+  pendingReorder,
+  goToNextPage,
+  goToPreviousPage,
+  requestRemove,
+  resetDragState,
+  restoreCategory,
+  statusTone,
+  summaryStats,
+  toggleCategory,
+  totalPages,
+} = props.page;
 </script>
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Category roots"
     search-label="Search categories"
-    :total-items="page.summaryStats.value[0]?.value ?? 0"
+    search-placeholder="Filter root name or slug"
+    create-route="/categories/create"
+    create-label="Create root"
+    :can-create="canCreateCategory"
+    :total-items="summaryStats[0]?.value ?? 0"
     item-label="categories"
-    :pending="page.pending.value"
-    :error="page.error.value ? 'Error loading data' : null"
-    :error-detail="page.error.value ? page.getProblemMessage(page.error.value, 'The category module is unavailable.') : ''"
-    :action-error="page.actionError.value"
+    :pending="pending"
+    :error="error ? 'Error loading data' : null"
+    :error-detail="error ? loadErrorMessage : ''"
+    :action-error="actionError"
     action-error-title="Category action failed"
-    :items-length="page.filteredRoots.value.length"
+    :items-length="filteredRoots.length"
     empty-title="No root categories found"
     empty-detail="Adjust the filters or create a new root category."
-    :first-item-number="page.firstItemNumber.value"
-    :last-item-number="page.lastItemNumber.value"
-    v-model:page-size="page.pageSize.value"
-    :page-size-options="page.pageSizeOptions"
-    :page="page.page.value"
-    :total-pages="page.totalPages.value"
-    @previous-page="page.goToPreviousPage"
-    @next-page="page.goToNextPage"
+    :first-item-number="firstItemNumber"
+    :last-item-number="lastItemNumber"
+    v-model:page-size="pageSize"
+    :page-size-options="pageSizeOptions"
+    :page="page"
+    :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
+    @previous-page="goToPreviousPage"
+    @next-page="goToNextPage"
   >
     <template #modals>
       <AppConfirm
-        :open="page.confirmCategory.value !== null"
-        :title="page.confirmCategory.value
-          ? page.confirmCategoryHasChildren.value
-            ? `Cannot remove ${page.confirmCategory.value.name}`
-            : `Remove ${page.confirmCategory.value.name}?`
+        :open="confirmCategory !== null"
+        :title="confirmCategory
+          ? confirmCategoryHasChildren
+            ? `Cannot remove ${confirmCategory.name}`
+            : `Remove ${confirmCategory.name}?`
           : ''"
-        :detail="page.confirmCategory.value
-          ? page.confirmCategoryHasChildren.value
-            ? page.categoryHasChildrenMessage(page.confirmCategory.value.name)
+        :detail="confirmCategory
+          ? confirmCategoryHasChildren
+            ? categoryHasChildrenMessage(confirmCategory.name)
             : 'This action soft-deletes the root category.'
           : ''"
-        :cancel-label="page.confirmCategoryHasChildren.value ? 'Close' : 'Cancel'"
-        :hide-confirm="page.confirmCategoryHasChildren.value"
-        :confirm-label="page.confirmCategoryHasChildren.value ? '' : 'Remove'"
-        :tone="page.confirmCategoryHasChildren.value ? 'warning' : 'danger'"
-        :loading="page.actionPending.value === 'remove'"
-        @confirm="page.confirmRemoveAction"
-        @cancel="page.cancelRemove"
+        :cancel-label="confirmCategoryHasChildren ? 'Close' : 'Cancel'"
+        :hide-confirm="confirmCategoryHasChildren"
+        :confirm-label="confirmCategoryHasChildren ? '' : 'Remove'"
+        :tone="confirmCategoryHasChildren ? 'warning' : 'danger'"
+        :loading="actionPending === 'remove'"
+        @confirm="confirmRemoveAction"
+        @cancel="cancelRemove"
       />
       <AppConfirm
-        :open="page.pendingReorder.value !== null"
-        :title="page.pendingReorder.value ? `Move ${page.pendingReorder.value.sourceName}?` : ''"
-        :detail="page.pendingReorder.value ? `Place this root category before ${page.pendingReorder.value.targetName}. The full root order will be saved after confirmation.` : ''"
+        :open="pendingReorder !== null"
+        :title="pendingReorder ? `Move ${pendingReorder.sourceName}?` : ''"
+        :detail="pendingReorder ? `Place this root category before ${pendingReorder.targetName}. The full root order will be saved after confirmation.` : ''"
         confirm-label="Save order"
-        :loading="page.actionPending.value === 'reorder'"
-        @confirm="page.confirmRootReorder"
-        @cancel="page.pendingReorder.value = null"
-      />
-    </template>
-
-    <template #search-input>
-      <AppInput
-        v-model="page.localKeyword.value"
-        label=""
-        placeholder="Filter root name or slug"
-        @keyup.enter="page.applyFilters"
+        :loading="actionPending === 'reorder'"
+        @confirm="confirmRootReorder"
+        @cancel="pendingReorder = null"
       />
     </template>
 
     <template #filters>
-      <div class="w-full sm:w-1/3 md:w-1/4">
+      <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="page.localActiveFilter.value"
+          v-model="localFilters.activeFilter.value"
           label="Status"
           :options="[
             { label: 'All root states', value: '' },
@@ -82,18 +127,6 @@ defineProps<{
           ]"
         />
       </div>
-    </template>
-
-    <template #actions>
-      <AppButton variant="primary" @click="page.applyFilters">
-        Search
-      </AppButton>
-      <AppButton variant="primary" @click="page.clearFilters">
-        Refresh
-      </AppButton>
-      <NuxtLink v-if="page.canCreateCategory.value" class="primary-link" to="/categories/create">
-        Create root
-      </NuxtLink>
     </template>
 
     <template #table>
@@ -105,24 +138,24 @@ defineProps<{
             <th class="min-w-[90px]">Sort</th>
             <th class="min-w-[110px]">Status</th>
             <th class="w-[110px] text-center">Open</th>
-            <th v-if="page.canActivateCategory.value || page.canDeactivateCategory.value || page.canRestoreCategory.value" class="w-[120px] text-center">State</th>
-            <th v-if="page.canDeleteCategory.value" class="w-[96px] text-center">Remove</th>
+            <th v-if="canActivateCategory || canDeactivateCategory || canRestoreCategory" class="w-[120px] text-center">State</th>
+            <th v-if="canDeleteCategory" class="w-[96px] text-center">Remove</th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="root in page.pagedRoots.value"
+            v-for="root in pagedRoots"
             :key="root.id"
-            :draggable="page.canDragRoots.value"
+            :draggable="canDragRoots"
             :class="{
-              'cursor-grab': page.canDragRoots.value,
-              'opacity-55': page.dragSourceId.value === root.id,
-              'bg-moss/10': page.dragTargetId.value === root.id,
+              'cursor-grab': canDragRoots,
+              'opacity-55': dragSourceId === root.id,
+              'bg-moss/10': dragTargetId === root.id,
             }"
-            @dragstart="page.handleRootDragStart(root.id)"
-            @dragend="page.resetDragState"
-            @dragover.prevent="page.handleRootDragOver(root.id)"
-            @drop.prevent="page.handleRootDrop(root.id)"
+            @dragstart="handleRootDragStart(root.id)"
+            @dragend="resetDragState"
+            @dragover.prevent="handleRootDragOver(root.id)"
+            @drop.prevent="handleRootDrop(root.id)"
           >
             <td class="align-middle">
               <p class="table-title">{{ root.name }}</p>
@@ -133,12 +166,12 @@ defineProps<{
                 {{ root.children.length }} total
               </p>
               <p class="table-copy">
-                {{ page.activeChildCount(root) }} active child categories
+                {{ activeChildCount(root) }} active child categories
               </p>
             </td>
             <td class="align-middle">{{ root.sortOrder }}</td>
             <td class="align-middle">
-              <AppBadge :tone="page.statusTone(root)">
+              <AppBadge :tone="statusTone(root)">
                 {{ root.isDeleted ? "Deleted" : root.isActive ? "Active" : "Inactive" }}
               </AppBadge>
             </td>
@@ -152,31 +185,31 @@ defineProps<{
                 </NuxtLink>
               </div>
             </td>
-            <td v-if="page.canActivateCategory.value || page.canDeactivateCategory.value || page.canRestoreCategory.value" class="align-middle">
+            <td v-if="canActivateCategory || canDeactivateCategory || canRestoreCategory" class="align-middle">
               <div class="flex justify-center">
                 <AppButton
-                  v-if="root.isDeleted && page.canRestoreCategory.value"
+                  v-if="root.isDeleted && canRestoreCategory"
                   class="table-action"
                   variant="secondary"
-                  :loading="page.actionPending.value === 'remove' && page.actionTargetId.value === root.id"
-                  @click="page.restoreCategory(root)"
+                  :loading="actionPending === 'remove' && actionTargetId === root.id"
+                  @click="restoreCategory(root)"
                 >
                   Restore
                 </AppButton>
                 <AppButton
-                  v-if="!root.isDeleted && (root.isActive ? page.canDeactivateCategory.value : page.canActivateCategory.value)"
+                  v-if="!root.isDeleted && (root.isActive ? canDeactivateCategory : canActivateCategory)"
                   class="table-action"
                   variant="secondary"
-                  :loading="page.actionPending.value === 'toggle' && page.actionTargetId.value === root.id"
-                  @click="page.toggleCategory(root)"
+                  :loading="actionPending === 'toggle' && actionTargetId === root.id"
+                  @click="toggleCategory(root)"
                 >
                   {{ root.isActive ? "Deactivate" : "Activate" }}
                 </AppButton>
               </div>
             </td>
-            <td v-if="page.canDeleteCategory.value" class="align-middle">
+            <td v-if="canDeleteCategory" class="align-middle">
               <div class="flex justify-center">
-                <AppButton v-if="!root.isDeleted" class="table-action whitespace-nowrap" variant="danger" @click="page.requestRemove(root.id)">
+                <AppButton v-if="!root.isDeleted" class="table-action whitespace-nowrap" variant="danger" @click="requestRemove(root.id)">
                   Remove
                 </AppButton>
               </div>

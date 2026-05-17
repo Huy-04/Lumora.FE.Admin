@@ -1,4 +1,5 @@
 export const useResetPasswordPage = async () => {
+  // 1. Dependency injection
   const authApi = useAuthApi();
   const route = useRoute();
   const createEmptyOtp = () => Array.from({ length: 6 }, () => "");
@@ -6,6 +7,7 @@ export const useResetPasswordPage = async () => {
 
   type ResetStep = "request" | "verify" | "complete" | "done";
 
+  // 2. Form state
   const form = reactive({
     email: "",
     resetCode: createEmptyOtp(),
@@ -13,6 +15,7 @@ export const useResetPasswordPage = async () => {
     resetToken: "",
   });
 
+  // 3. Submission state
   const step = ref<ResetStep>("request");
   const pending = ref(false);
   const resendPending = ref(false);
@@ -20,6 +23,7 @@ export const useResetPasswordPage = async () => {
   const errorMessage = ref("");
   const attempted = ref(false);
 
+  // 4. Computed / derived state
   const resetCodeValue = computed(() => form.resetCode.join("").trim());
   const prefilledEmail = computed(() => typeof route.query.email === "string" ? route.query.email : "");
 
@@ -62,6 +66,8 @@ export const useResetPasswordPage = async () => {
     if (!form.newPassword.trim()) return "Enter a new password.";
     return "";
   });
+
+  // 5. Actions
 
   /* ── Step 1: Request reset code ── */
 
@@ -165,7 +171,7 @@ export const useResetPasswordPage = async () => {
     errorMessage.value = "";
 
     try {
-      await authApi.requestPasswordReset({ email: form.email.trim() });
+      await authApi.resendPasswordResetOtp({ email: form.email.trim() });
       otpCooldown.startCooldown(form.email.trim());
       form.resetCode = createEmptyOtp();
       form.resetToken = "";
@@ -178,6 +184,7 @@ export const useResetPasswordPage = async () => {
     }
   };
 
+  // 6. Return statement
   return {
     form,
     step,
@@ -199,4 +206,4 @@ export const useResetPasswordPage = async () => {
   };
 };
 
-export type ResetPasswordPage = Awaited<ReturnType<typeof useResetPasswordPage>>;
+export type AuthResetPasswordPageState = Awaited<ReturnType<typeof useResetPasswordPage>>;

@@ -1,12 +1,12 @@
-import { PhMoon, PhSun } from "@phosphor-icons/vue";
-
 export const useSettingsPage = async () => {
+  // 1. Dependency injection
   const { isDark, toggle } = useTheme();
 
+  // 2. Return statement
   return {
     isDark,
     toggle,
   };
 };
 
-export type SettingsPage = Awaited<ReturnType<typeof useSettingsPage>>;
+export type SettingPageState = Awaited<ReturnType<typeof useSettingsPage>>;

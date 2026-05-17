@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ResetPasswordPage } from "~/features/auth/composables/useResetPasswordPage";
+import type { AuthResetPasswordPageState } from "~/features/auth/composables/useResetPasswordPage";
 
 const props = defineProps<{
-  page: ResetPasswordPage;
+  page: AuthResetPasswordPageState;
 }>();
 
 const { form, step, pending, resendPending, successMessage, errorMessage, emailError, resetCodeError, passwordError, passwordRules, resendHelper, resendRemainingSeconds, resendLabel, requestCode, verifyCode, completeReset, resend } = props.page;

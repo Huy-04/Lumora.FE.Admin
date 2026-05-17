@@ -10,8 +10,8 @@ const { form, pending, errorMessage, submit } = props.page;
 
 <template>
   <div class="page-shell">
-    <section class="max-w-4xl">
-      <AppPanel eyebrow="Create role" title="Create role" description="Add a role record that can be assigned and extended with permissions after creation.">
+    <section class="grid max-w-6xl gap-6">
+      <AppPanel eyebrow="Create role">
         <form class="form-stack" @submit.prevent="submit">
           <AppInput v-model="form.roleName" label="Role name" placeholder="InventoryManager" />
           <AppTextarea
@@ -24,11 +24,11 @@ const { form, pending, errorMessage, submit } = props.page;
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="panel-action-row">
-            <AppButton :loading="pending" type="submit">Create role</AppButton>
-            <NuxtLink class="secondary-link" to="/roles">
-              Back to roles
+          <div class="flex justify-end gap-4 border-t border-line pt-5">
+            <NuxtLink class="secondary-link min-w-[9rem]" to="/roles">
+              Cancel
             </NuxtLink>
+            <AppButton :loading="pending" type="submit" class="min-w-[12rem]">Create role</AppButton>
           </div>
         </form>
       </AppPanel>

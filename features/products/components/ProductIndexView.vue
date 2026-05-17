@@ -41,12 +41,7 @@ const {
   items,
   lastItemNumber,
   loadErrorMessage,
-  localCategoryFilter,
-  localDeletedFilter,
-  localFeatureFilter,
-  localGenderTargetFilter,
-  localKeyword,
-  localStatusFilter,
+  localFilters,
   page,
   pageSize,
   pageSizeOptions,
@@ -56,6 +51,7 @@ const {
   publishBlockedMessage,
   publishProduct,
   removeProduct,
+  republishProduct,
   requestRemove,
   resetDragState,
   restoreProduct,
@@ -69,8 +65,13 @@ const {
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Product records"
     search-label="Search products"
+    search-placeholder="Search by name, slug, or description"
+    create-route="/products/create"
+    create-label="Create product"
+    :can-create="canCreateProduct"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="products"
     :pending="pending"
@@ -87,6 +88,8 @@ const {
     :page-size-options="pageSizeOptions"
     :page="page"
     :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
     @previous-page="goToPreviousPage"
     @next-page="goToNextPage"
   >
@@ -121,54 +124,38 @@ const {
       />
     </template>
 
-    <template #search-input>
-      <AppInput v-model="localKeyword" label="" placeholder="Search by name, slug, or description" @keyup.enter="applyFilters" />
-    </template>
-
-    <template #actions>
-      <AppButton variant="primary" @click="applyFilters">
-        Search
-      </AppButton>
-      <AppButton variant="primary" @click="clearFilters">
-        Refresh
-      </AppButton>
-      <NuxtLink v-if="canCreateProduct" class="primary-link" to="/products/create">
-        Create product
-      </NuxtLink>
-    </template>
-
     <template #filters>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="localStatusFilter"
+          v-model="localFilters.status.value"
           label="Status"
           :options="[{ label: 'All product states', value: '' }, ...productStatusOptions]"
         />
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="localCategoryFilter"
+          v-model="localFilters.category.value"
           label="Category"
           :options="categoryFilterOptions"
         />
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="localGenderTargetFilter"
+          v-model="localFilters.genderTarget.value"
           label="Gender target"
           :options="[{ label: 'All targets', value: '' }, ...genderTargetOptions]"
         />
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="localFeatureFilter"
+          v-model="localFilters.feature.value"
           label="Featured"
           :options="featureFilterOptions"
         />
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="localDeletedFilter"
+          v-model="localFilters.deleted.value"
           label="Record state"
           :options="deletedFilterOptions"
         />
@@ -176,7 +163,6 @@ const {
     </template>
 
     <template #notices>
-      <!-- Ensure the custom notice for drag-n-drop stays inside the notices slot -->
       <AppNotice
         v-if="!canDragProducts && items.length > 1 && !pending && !error && canReorderProduct"
         tone="warning"
@@ -185,7 +171,6 @@ const {
         Select "Active only" in Record state filter to drag and reorder the full product list.
       </AppNotice>
       
-      <!-- We also need to manually handle standard notices because we override the slot -->
       <AppNotice v-if="error" tone="danger" title="Unable to load products">
         {{ loadErrorMessage }}
       </AppNotice>
@@ -282,6 +267,15 @@ const {
                   @click="unpublishProduct(product.id)"
                 >
                   Unpublish
+                </AppButton>
+                <AppButton
+                  v-else-if="!product.isDeleted && canPublishProduct && product.status === 'Discontinued'"
+                  class="table-action"
+                  variant="secondary"
+                  :loading="actionPending === 'status' && actionTargetId === product.id"
+                  @click="republishProduct(product.id)"
+                >
+                  Republish
                 </AppButton>
               </div>
             </td>

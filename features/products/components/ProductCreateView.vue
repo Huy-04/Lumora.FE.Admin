@@ -10,12 +10,8 @@ const { form, canReadCategories, categoryOptions, genderTargetValueOptions, cate
 
 <template>
   <div class="page-shell">
-    <section class="max-w-4xl">
-      <AppPanel
-        eyebrow="Create product"
-        title="Create product"
-        description="Create the core product record first. Product order is assigned automatically, then continue into variants, assets, gallery, and attributes."
-      >
+    <section class="grid max-w-6xl gap-6">
+      <AppPanel eyebrow="Create product">
         <form class="form-stack" @submit.prevent="submit">
           <div class="grid gap-4 md:grid-cols-2">
             <AppSelect
@@ -109,11 +105,11 @@ const { form, canReadCategories, categoryOptions, genderTargetValueOptions, cate
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="panel-action-row">
-            <AppButton :loading="pending" type="submit">Create product</AppButton>
-            <NuxtLink class="secondary-link" to="/products">
-              Back to products
+          <div class="flex justify-end gap-4 border-t border-line pt-5">
+            <NuxtLink class="secondary-link min-w-[9rem]" to="/products">
+              Cancel
             </NuxtLink>
+            <AppButton :loading="pending" type="submit" class="min-w-[12rem]">Create product</AppButton>
           </div>
         </form>
       </AppPanel>

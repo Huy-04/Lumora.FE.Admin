@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { SessionsIndexPage } from "~/features/sessions/composables/useSessionsIndexPage";
+import type { SessionIndexPageState } from "~/features/sessions/composables/useSessionsIndexPage";
 
 defineProps<{
-  page: SessionsIndexPage;
+  page: SessionIndexPageState;
 }>();
 </script>
 
@@ -26,7 +26,7 @@ defineProps<{
         :open="page.confirmSession.value !== null"
         :title="page.confirmTitle.value"
         :detail="page.confirmDetail.value"
-        confirm-label="Revoke"
+        :confirm-label="page.confirmLabel.value"
         tone="danger"
         :loading="page.actionPending.value !== ''"
         @confirm="page.executeSessionConfirm"
@@ -95,7 +95,15 @@ defineProps<{
                     variant="danger"
                     @click="page.revokeUser(session)"
                   >
-                    Revoke user
+                    Revoke All
+                  </AppButton>
+                  <AppButton
+                    :loading="page.actionPending.value === 'force-logout'"
+                    class="table-action !min-w-[0] !px-3"
+                    variant="danger"
+                    @click="page.forceLogout(session)"
+                  >
+                    Force Logout
                   </AppButton>
                 </template>
               </div>

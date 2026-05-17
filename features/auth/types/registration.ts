@@ -10,9 +10,20 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
-  id: string;
-  email: string;
-  userName: string;
-  fullName: string;
-  createdAt: string;
+  status: "PendingVerification" | "Completed";
+  registrationToken: string | null;
+  id: string | null;
+  email: string | null;
+  userName: string | null;
+  fullName: string | null;
+  createdAt: string | null;
+}
+
+export interface ResendRegistrationOtpRequest {
+  registrationToken: string;
+}
+
+export interface VerifyRegistrationRequest {
+  registrationToken: string;
+  otp: string;
 }

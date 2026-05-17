@@ -13,6 +13,7 @@ export interface ProblemDetails {
   detail?: string | null;
   instance?: string;
   traceId?: string;
+  errorCode?: string;
   errorCategory?: string;
   errors?: ProblemErrorDetail[] | ValidationProblemErrors;
 }

@@ -22,7 +22,7 @@ useScopedPageBreadcrumbs(() =>
 
 <template>
   <div class="page-shell">
-    <section class="max-w-6xl">
+    <section class="grid max-w-6xl gap-6">
       <AppNotice v-if="productError" tone="danger" title="Unable to load product">
         {{ getProblemMessage(productError, "The parent product could not be loaded.") }}
       </AppNotice>
@@ -84,8 +84,11 @@ useScopedPageBreadcrumbs(() =>
             {{ errorMessage }}
           </AppNotice>
 
-          <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line/70 pt-4">
-            <AppButton :loading="pending" type="submit" :disabled="!canCreateImage">
+          <div class="flex flex-wrap items-center justify-end gap-4 border-t border-line/70 pt-4">
+            <NuxtLink class="secondary-link min-w-[9rem]" :to="`/products/${productId}?tab=gallery`">
+              Cancel
+            </NuxtLink>
+            <AppButton :loading="pending" type="submit" :disabled="!canCreateImage" class="min-w-[12rem]">
               Create image
             </AppButton>
           </div>

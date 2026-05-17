@@ -5,6 +5,7 @@ const PUBLIC_AUTH_PATHS = new Set([
   "authentication/admin-login",
   "authentication/register",
   "authentication/request-password-reset",
+  "authentication/resend-password-reset-otp",
   "authentication/verify-password-reset-otp",
   "authentication/complete-password-reset",
 ]);
@@ -23,6 +24,15 @@ const HOP_BY_HOP = new Set([
 type StreamedRequestInit = RequestInit & {
   duplex?: "half";
 };
+
+const isLocalHttpRequest = (event: Parameters<typeof getRequestURL>[0]) => {
+  const url = getRequestURL(event);
+  return url.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
+};
+
+const relaxSecureCookieForLocalHttp = (cookie: string) =>
+  cookie.replace(/;\s*Secure/gi, "");
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig(event);
@@ -95,8 +105,12 @@ export default defineEventHandler(async (event) => {
   // Set-Cookie must be forwarded individually (fetch() combines them).
   const setCookies = upstream.headers.getSetCookie?.();
   if (setCookies?.length) {
+    const cookies = import.meta.dev && isLocalHttpRequest(event)
+      ? setCookies.map(relaxSecureCookieForLocalHttp)
+      : setCookies;
+
     // Overwrite the combined header with individual entries.
-    setResponseHeader(event, "set-cookie", setCookies);
+    setResponseHeader(event, "set-cookie", cookies);
   }
 
   return upstream.body;

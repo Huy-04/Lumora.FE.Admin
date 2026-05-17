@@ -1,8 +1,8 @@
 import type { PaginatedResponse } from "~/Shared/types/api";
 
 export type PaymentStatus = "Pending" | "Processing" | "Succeeded" | "Failed";
-export type PaymentMethod = "COD" | "VnPay";
-export type PaymentProvider = "None" | "VnPay";
+export type PaymentMethod = "COD" | "PayOs";
+export type PaymentProvider = "None" | "PayOs";
 export type PaymentAttemptStatus = "Pending" | "RedirectIssued" | "ReturnReceived" | "Succeeded" | "Failed" | "Expired";
 
 export interface PaymentSummaryResponse {

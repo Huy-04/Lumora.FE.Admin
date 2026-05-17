@@ -1,14 +1,18 @@
 export const useWarehouseDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const inventoryApi = useInventoryAdminApi();
+  const ghnApi = useGhnApi();
   const authz = useAdminAuthorization();
 
-  type WarehouseTab = "overview" | "edit" | "ghn-store" | "status";
+  type WarehouseTab = "overview" | "edit" | "ghn-store";
 
   const warehouseId = computed(() => String(route.params.id ?? ""));
 
+  // 2. Permissions
   const canUpdateWarehouse = computed(() => authz.can(ADMIN_PERMISSION.warehouseUpdateAll));
 
+  // 3. Data fetching
   const actionPending = ref("");
   const actionError = ref("");
   const ghnShopId = ref("");
@@ -19,29 +23,97 @@ export const useWarehouseDetailPage = async () => {
     () => inventoryApi.getWarehouseById(warehouseId.value),
   );
 
+  // 4. Computed derivations
   const warehouse = computed(() => data.value ?? null);
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This warehouse is not available right now."));
   const warehouseTabs = computed<Array<{ label: string; value: WarehouseTab }>>(() => [
     { label: "Overview", value: "overview" },
     { label: "Edit", value: "edit" },
     { label: "GHN store", value: "ghn-store" },
-    { label: "Status", value: "status" },
   ]);
   const normalizeTab = (value: unknown): WarehouseTab => {
-    const resolved = value === "address" || value === "edit" || value === "operations"
+    const resolved = value === "address" || value === "edit" || value === "operations" || value === "status"
       ? "edit"
       : value === "ghn-store"
         ? "ghn-store"
-        : value === "status"
-          ? "status"
-          : "overview";
+        : "overview";
     return warehouseTabs.value.some((tab) => tab.value === resolved) ? resolved : "overview";
   };
 
   const form = reactive({
     name: "",
-    address: "",
     phoneNational: "",
+    provinceId: "",
+    districtId: "",
+    wardCode: "",
+    street: "",
+  });
+
+  // GHN address data
+  const provinces = ref<Array<{ label: string; value: string }>>([]);
+  const districts = ref<Array<{ label: string; value: string }>>([]);
+  const wards = ref<Array<{ label: string; value: string }>>([]);
+  const provincesLoading = ref(false);
+  const districtsLoading = ref(false);
+  const wardsLoading = ref(false);
+
+  // Load provinces on mount
+  provincesLoading.value = true;
+  try {
+    const data = await ghnApi.getProvinces();
+    provinces.value = data.map((p) => ({ label: p.provinceName, value: String(p.provinceId) }));
+  } finally {
+    provincesLoading.value = false;
+  }
+
+  // Load districts when province changes
+  watch(
+    () => form.provinceId,
+    async (provinceId) => {
+      form.districtId = "";
+      form.wardCode = "";
+      districts.value = [];
+      wards.value = [];
+
+      if (!provinceId) return;
+
+      districtsLoading.value = true;
+      try {
+        const data = await ghnApi.getDistricts(Number(provinceId));
+        districts.value = data.map((d) => ({ label: d.districtName, value: String(d.districtId) }));
+      } finally {
+        districtsLoading.value = false;
+      }
+    },
+  );
+
+  // Load wards when district changes
+  watch(
+    () => form.districtId,
+    async (districtId) => {
+      form.wardCode = "";
+      wards.value = [];
+
+      if (!districtId) return;
+
+      wardsLoading.value = true;
+      try {
+        const data = await ghnApi.getWards(Number(districtId));
+        wards.value = data.map((w) => ({ label: w.wardName, value: w.wardCode }));
+      } finally {
+        wardsLoading.value = false;
+      }
+    },
+  );
+
+  // Build full address string from selected names
+  const fullAddress = computed(() => {
+    const provinceName = provinces.value.find((p) => p.value === form.provinceId)?.label ?? "";
+    const districtName = districts.value.find((d) => d.value === form.districtId)?.label ?? "";
+    const wardName = wards.value.find((w) => w.value === form.wardCode)?.label ?? "";
+
+    const parts = [form.street, wardName, districtName, provinceName].filter(Boolean);
+    return parts.join(", ");
   });
 
   watchEffect(() => {
@@ -50,16 +122,47 @@ export const useWarehouseDetailPage = async () => {
     }
 
     form.name = warehouse.value.name;
-    form.address = warehouse.value.address;
     form.phoneNational = warehouse.value.phoneNational;
   });
 
+  // 5. Actions/mutations
   const updateWarehouse = async () => {
+    const hasAddressInput = Boolean(
+      form.street.trim()
+      || form.provinceId
+      || form.districtId
+      || form.wardCode,
+    );
+    const hasCompleteAddress = Boolean(
+      form.street.trim()
+      && form.provinceId
+      && form.districtId
+      && form.wardCode,
+    );
+
+    if (hasAddressInput && !hasCompleteAddress) {
+      actionError.value = "Complete street, ward, district, and province before updating the warehouse address.";
+      return;
+    }
+
     actionPending.value = "update";
     actionError.value = "";
 
     try {
-      data.value = await inventoryApi.updateWarehouse(warehouseId.value, { ...form });
+      const payload: {
+        name?: string;
+        address?: string;
+        phoneNational?: string;
+      } = {
+        name: form.name,
+        phoneNational: form.phoneNational,
+      };
+
+      if (hasCompleteAddress) {
+        payload.address = fullAddress.value;
+      }
+
+      data.value = await inventoryApi.updateWarehouse(warehouseId.value, payload);
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to update warehouse.");
     } finally {
@@ -86,6 +189,24 @@ export const useWarehouseDetailPage = async () => {
     }
   };
 
+  const removeWarehouse = async () => {
+    if (!warehouse.value) {
+      return;
+    }
+
+    actionPending.value = "remove";
+    actionError.value = "";
+
+    try {
+      await inventoryApi.removeWarehouse(warehouseId.value);
+      await navigateTo("/warehouses");
+    } catch (requestError) {
+      actionError.value = getProblemMessage(requestError, "Unable to remove warehouse.");
+    } finally {
+      actionPending.value = "";
+    }
+  };
+
   const syncGhnStore = async () => {
     const normalizedGhnShopId = String(ghnShopId.value).trim();
 
@@ -106,6 +227,7 @@ export const useWarehouseDetailPage = async () => {
     }
   };
 
+  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -118,6 +240,7 @@ export const useWarehouseDetailPage = async () => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
+  // 7. Return statement
   const selectTab = async (tab: WarehouseTab) => {
     activeTab.value = normalizeTab(tab);
 
@@ -135,12 +258,18 @@ export const useWarehouseDetailPage = async () => {
     actionPending,
     activeTab,
     canUpdateWarehouse,
+    districts,
+    districtsLoading,
     error,
     form,
+    fullAddress,
     ghnShopId,
     loadErrorMessage,
     pending,
+    provinces,
+    provincesLoading,
     refresh,
+    removeWarehouse,
     selectTab,
     syncGhnStore,
     toggleWarehouse,
@@ -148,6 +277,8 @@ export const useWarehouseDetailPage = async () => {
     warehouse,
     warehouseId,
     warehouseTabs,
+    wards,
+    wardsLoading,
   };
 };
 

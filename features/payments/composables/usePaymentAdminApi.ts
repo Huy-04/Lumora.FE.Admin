@@ -6,7 +6,7 @@ import type {
   SearchPaymentsRequest,
 } from "~/features/payments/types";
 
-const paymentRoute = (path = "") => `/payments${path}`;
+const paymentRoute = (path = "") => `/admin/payments${path}`;
 
 export const usePaymentAdminApi = () => {
   const api = useApiClient();

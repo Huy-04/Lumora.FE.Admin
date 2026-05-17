@@ -1,67 +1,86 @@
 <script setup lang="ts">
-import type { UsersIndexPage } from "~/features/users/composables/useUsersIndexPage";
+import type { UserIndexPageState } from "~/features/users/composables/useUsersIndexPage";
 
-defineProps<{
-  page: UsersIndexPage;
+const props = defineProps<{
+  page: UserIndexPageState;
 }>();
+
+const {
+  actionError,
+  actionPending,
+  applyFilters,
+  canCreateUser,
+  canRemoveUser,
+  cancelRemove,
+  clearFilters,
+  confirmDetail,
+  confirmTitle,
+  confirmUser,
+  data,
+  enumLabel,
+  error,
+  firstItemNumber,
+  goToNextPage,
+  goToPreviousPage,
+  lastItemNumber,
+  localFilters,
+  page,
+  pageSize,
+  pageSizeOptions,
+  pending,
+  removeUser,
+  requestRemove,
+  totalPages,
+} = props.page;
 </script>
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Users API"
     search-label="Search users"
-    :total-items="page.data.value?.items?.length ?? 0"
+    search-placeholder="Search by name, email, username, or phone"
+    create-route="/users/create"
+    create-label="Create user"
+    :can-create="canCreateUser"
+    :total-items="data?.items?.length ?? 0"
     item-label="users"
-    :pending="page.pending.value"
-    :error="page.error.value ? 'Error loading data' : null"
-    :error-detail="page.error.value ? getProblemMessage(page.error.value, 'The user directory is not available right now.') : ''"
-    :action-error="page.actionError.value"
+    :pending="pending"
+    :error="error ? 'Error loading data' : null"
+    :error-detail="error ? getProblemMessage(error, 'The user directory is not available right now.') : ''"
+    :action-error="actionError"
     action-error-title="User action failed"
-    :items-length="page.data.value?.items?.length ?? 0"
+    :items-length="data?.items?.length ?? 0"
     empty-title="No users found"
     empty-detail="Adjust the filters or create a new user."
-    :first-item-number="page.firstItemNumber.value"
-    :last-item-number="page.lastItemNumber.value"
-    v-model:page-size="page.pageSize.value"
-    :page-size-options="page.pageSizeOptions"
-    :page="page.page.value"
-    :total-pages="page.totalPages.value"
-    @previous-page="page.goToPreviousPage"
-    @next-page="page.goToNextPage"
+    :first-item-number="firstItemNumber"
+    :last-item-number="lastItemNumber"
+    v-model:page-size="pageSize"
+    :page-size-options="pageSizeOptions"
+    :page="page"
+    :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
+    @previous-page="goToPreviousPage"
+    @next-page="goToNextPage"
   >
     <template #modals>
       <AppConfirm
-        :open="page.confirmUser.value !== null"
-        :title="page.confirmTitle.value"
-        :detail="page.confirmDetail"
+        :open="confirmUser !== null"
+        :title="confirmTitle"
+        :detail="confirmDetail"
         confirm-label="Remove"
         tone="danger"
-        :loading="page.actionPending.value === 'remove'"
-        @confirm="page.removeUser"
-        @cancel="page.cancelRemove"
+        :loading="actionPending === 'remove'"
+        @confirm="removeUser"
+        @cancel="cancelRemove"
       />
-    </template>
-
-    <template #search-input>
-      <AppInput v-model="page.localKeyword.value" label="" placeholder="Search by name, email, username, or phone" @keyup.enter="page.applyFilters" />
-    </template>
-
-    <template #actions>
-      <AppButton variant="primary" @click="page.applyFilters">
-        Search
-      </AppButton>
-      <AppButton variant="primary" @click="page.clearFilters">
-        Refresh
-      </AppButton>
-      <NuxtLink v-if="page.canCreateUser.value" class="primary-link" to="/users/create">
-        Create user
-      </NuxtLink>
     </template>
 
     <template #filters>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="page.localUserStatus.value"
+          v-model="localFilters.userStatus.value"
           label="User status"
           :options="[
             { label: 'All statuses', value: '' },
@@ -72,7 +91,7 @@ defineProps<{
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="page.localEmailStatus.value"
+          v-model="localFilters.emailStatus.value"
           label="Email status"
           :options="[
             { label: 'All email states', value: '' },
@@ -83,7 +102,7 @@ defineProps<{
       </div>
       <div class="w-full sm:flex-1">
         <AppSelect
-          v-model="page.localPhoneStatus.value"
+          v-model="localFilters.phoneStatus.value"
           label="Phone status"
           :options="[
             { label: 'All phone states', value: '' },
@@ -105,11 +124,11 @@ defineProps<{
             <th class="min-w-[80px]">Email Status</th>
             <th class="min-w-[80px]">Phone Status</th>
             <th class="w-[80px] text-center">Open</th>
-            <th v-if="page.canRemoveUser.value" class="w-[96px] text-center">Remove</th>
+            <th v-if="canRemoveUser" class="w-[96px] text-center">Remove</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="user in page.data.value?.items ?? []" :key="user.id">
+          <tr v-for="user in data?.items ?? []" :key="user.id">
             <td class="align-middle">
               <p class="table-title">{{ user.fullName }}</p>
               <p class="table-copy">{{ user.userName }}</p>
@@ -122,17 +141,17 @@ defineProps<{
             </td>
             <td class="align-middle">
               <AppBadge :tone="user.userStatus === 'Active' ? 'success' : 'warning'">
-                {{ page.enumLabel(user.userStatus) }}
+                {{ enumLabel(user.userStatus) }}
               </AppBadge>
             </td>
             <td class="align-middle">
               <AppBadge :tone="user.emailStatus === 'Verified' ? 'success' : 'warning'">
-                {{ page.enumLabel(user.emailStatus) }}
+                {{ enumLabel(user.emailStatus) }}
               </AppBadge>
             </td>
             <td class="align-middle">
               <AppBadge :tone="user.phoneStatus === 'Verified' ? 'success' : 'warning'">
-                {{ page.enumLabel(user.phoneStatus) }}
+                {{ enumLabel(user.phoneStatus) }}
               </AppBadge>
             </td>
             <td class="align-middle">
@@ -142,9 +161,9 @@ defineProps<{
                 </NuxtLink>
               </div>
             </td>
-            <td v-if="page.canRemoveUser.value" class="align-middle">
+            <td v-if="canRemoveUser" class="align-middle">
               <div class="flex justify-center">
-                <AppButton class="table-action" variant="danger" @click="page.requestRemove(user.id)">
+                <AppButton class="table-action" variant="danger" @click="requestRemove(user.id)">
                   Remove
                 </AppButton>
               </div>

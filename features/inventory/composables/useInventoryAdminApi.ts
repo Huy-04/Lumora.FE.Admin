@@ -1,4 +1,3 @@
-import { toSearchParams } from "~/Shared/api/queryParams";
 import type {
   AddStockRequest,
   AdjustQuantityRequest,
@@ -10,6 +9,7 @@ import type {
   SetStockStatusRequest,
   SyncWarehouseGhnStoreRequest,
   UpdateWarehouseRequest,
+  WarehouseListResponse,
   WarehouseResponse,
 } from "~/features/inventory/types";
 
@@ -20,8 +20,29 @@ export const useInventoryAdminApi = () => {
   const api = useApiClient();
 
   return {
-    getInventories: (page = 1, size = 50) =>
+    getInventories: (page = 1, size = 20) =>
       api.request<InventoryListResponse>(`${inventoryRoute()}${toSearchParams({ page, size })}`),
+
+    searchInventories: (params: {
+      keyword?: string;
+      sku?: string;
+      productId?: string;
+      productVariantId?: string;
+      warehouseId?: string;
+      stockStatus?: number;
+      page?: number;
+      size?: number;
+    }) =>
+      api.request<InventoryListResponse>(`${inventoryRoute("/search")}${toSearchParams({
+        keyword: params.keyword,
+        sku: params.sku,
+        productId: params.productId,
+        productVariantId: params.productVariantId,
+        warehouseId: params.warehouseId,
+        stockStatus: params.stockStatus,
+        page: params.page ?? 1,
+        size: params.size ?? 20,
+      })}`),
 
     getInventoryById: (inventoryId: string) =>
       api.request<InventoryResponse>(inventoryRoute(`/${inventoryId}`)),
@@ -62,6 +83,23 @@ export const useInventoryAdminApi = () => {
         body: payload,
       }),
 
+    searchWarehouses: (params: {
+      keyword?: string;
+      code?: number;
+      status?: string;
+      hasGhnStore?: boolean;
+      page?: number;
+      size?: number;
+    }) =>
+      api.request<WarehouseListResponse>(`${warehouseRoute("/search")}${toSearchParams({
+        keyword: params.keyword,
+        code: params.code,
+        status: params.status,
+        hasGhnStore: params.hasGhnStore,
+        page: params.page ?? 1,
+        size: params.size ?? 20,
+      })}`),
+
     getWarehouses: () =>
       api.request<WarehouseResponse[]>(warehouseRoute()),
 
@@ -81,15 +119,18 @@ export const useInventoryAdminApi = () => {
       }),
 
     activateWarehouse: (warehouseId: string) =>
-      api.request<WarehouseResponse>(warehouseRoute(`/${warehouseId}/activate`), { method: "PUT" }),
+      api.request<WarehouseResponse>(warehouseRoute(`/${warehouseId}/activate`), { method: "POST" }),
 
     deactivateWarehouse: (warehouseId: string) =>
-      api.request<WarehouseResponse>(warehouseRoute(`/${warehouseId}/deactivate`), { method: "PUT" }),
+      api.request<WarehouseResponse>(warehouseRoute(`/${warehouseId}/deactivate`), { method: "POST" }),
 
     syncWarehouseGhnStore: (warehouseId: string, payload: SyncWarehouseGhnStoreRequest) =>
       api.request<WarehouseResponse>(warehouseRoute(`/${warehouseId}/ghn-store/sync`), {
         method: "POST",
         body: payload,
       }),
+
+    removeWarehouse: (warehouseId: string) =>
+      api.request<void>(warehouseRoute(`/${warehouseId}`), { method: "DELETE" }),
   };
 };

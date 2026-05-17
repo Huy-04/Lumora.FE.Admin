@@ -1,7 +1,9 @@
 export const useUserCreatePage = async () => {
+  // 1. Dependency injection
   const usersApi = useUsersAdminApi();
   const { phoneRegionOptions, genderOptions } = useAuthOptions();
 
+  // 2. Form state
   const form = reactive({
     fullName: "",
     email: "",
@@ -13,11 +15,13 @@ export const useUserCreatePage = async () => {
     img: "",
   });
 
+  // 3. Reactive state
   const pending = ref(false);
   const passwordRef = computed(() => form.password);
   const { rules: passwordRules } = usePasswordRules(passwordRef);
   const errorMessage = ref("");
 
+  // 4. Actions/mutations
   const submit = async () => {
     pending.value = true;
     errorMessage.value = "";
@@ -42,6 +46,7 @@ export const useUserCreatePage = async () => {
     }
   };
 
+  // 5. Return statement
   return {
     form,
     pending,

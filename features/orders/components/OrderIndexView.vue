@@ -10,12 +10,7 @@ const {
   clearFilters,
   error,
   loadErrorMessage,
-  localCreatedFrom,
-  localCreatedTo,
-  localKeyword,
-  localPaymentStatus,
-  localStatus,
-  localWarehouseId,
+  localFilters,
   orderStatusOptions,
   orders,
   page,
@@ -28,7 +23,6 @@ const {
   goToPreviousPage,
   lastItemNumber,
   summaryStats,
-  totalOrders,
   totalPages,
   warehouseOptions,
   warehousesPending,
@@ -37,8 +31,10 @@ const {
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Order queue"
     search-label="Search orders"
+    search-placeholder="Order number, recipient, or phone"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="orders"
     :pending="pending"
@@ -53,36 +49,23 @@ const {
     :page-size-options="pageSizeOptions"
     :page="page"
     :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
     @previous-page="goToPreviousPage"
     @next-page="goToNextPage"
   >
-    <template #search-input>
-      <AppInput v-model="localKeyword" label="" placeholder="Order number, recipient, or phone" @keyup.enter="applyFilters" />
-    </template>
-
-    <template #actions>
-      <div class="grid gap-4 sm:grid-cols-1 lg:w-[320px] mr-3">
+    <template #filters>
+      <div class="grid w-full gap-4 md:grid-cols-5">
         <AppSelect
-          v-model="localWarehouseId"
+          v-model="localFilters.warehouseId.value"
           label="Warehouse"
           :disabled="warehousesPending"
           :options="warehouseOptions"
         />
-      </div>
-      <AppButton variant="primary" @click="applyFilters">
-        Search
-      </AppButton>
-      <AppButton variant="primary" @click="clearFilters">
-        Refresh
-      </AppButton>
-    </template>
-
-    <template #filters>
-      <div class="grid w-full gap-4 md:grid-cols-4">
-        <AppSelect v-model="localStatus" label="Order status" :options="orderStatusOptions" />
-        <AppSelect v-model="localPaymentStatus" label="Payment status" :options="paymentStatusOptions" />
-        <AppInput v-model="localCreatedFrom" label="Created from" type="date" />
-        <AppInput v-model="localCreatedTo" label="Created to" type="date" />
+        <AppSelect v-model="localFilters.status.value" label="Order status" :options="orderStatusOptions" />
+        <AppSelect v-model="localFilters.paymentStatus.value" label="Payment status" :options="paymentStatusOptions" />
+        <AppInput v-model="localFilters.createdFrom.value" label="Created from" type="date" />
+        <AppInput v-model="localFilters.createdTo.value" label="Created to" type="date" />
       </div>
     </template>
 

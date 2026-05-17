@@ -14,7 +14,6 @@ const emit = defineEmits<{
 }>();
 
 const productApi = useProductAdminApi();
-const { parseRequiredInt } = useNumericForm();
 
 const confirmVariantId = ref("");
 const actionPending = ref<"" | "remove" | "default" | "status" | "reorder">("");
@@ -151,7 +150,7 @@ const updateStatus = async (variantId: string) => {
 
   try {
     await productApi.changeProductVariantStatus(props.productId, variantId, {
-      status: parseRequiredInt(variant.status === "Active" ? "1" : "0", "Variant status"),
+      status: variant.status === "Active" ? "Inactive" : "Active",
     });
     emit("refresh");
   } catch (requestError) {

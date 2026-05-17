@@ -12,11 +12,16 @@ const {
   actionPending,
   activeTab,
   canUpdateWarehouse,
+  districts,
+  districtsLoading,
   error,
   form,
   ghnShopId,
   loadErrorMessage,
   pending,
+  provinces,
+  provincesLoading,
+  removeWarehouse,
   selectTab,
   syncGhnStore,
   toggleWarehouse,
@@ -24,6 +29,8 @@ const {
   warehouse,
   warehouseId,
   warehouseTabs,
+  wards,
+  wardsLoading,
 } = props.page;
 
 const { formatDateTime } = useAuthPresentation();
@@ -51,6 +58,8 @@ const actionErrorOpen = computed(() => actionError.value.length > 0);
 const closeActionError = () => {
   actionError.value = "";
 };
+
+const removeConfirmOpen = ref(false);
 </script>
 
 <template>
@@ -72,6 +81,17 @@ const closeActionError = () => {
         tone="danger"
         hide-confirm
         @cancel="closeActionError"
+      />
+      <AppConfirm
+        :open="removeConfirmOpen"
+        title="Remove warehouse"
+        detail="This warehouse will be permanently removed. This action cannot be undone."
+        confirm-label="Remove"
+        cancel-label="Cancel"
+        tone="danger"
+        :loading="actionPending === 'remove'"
+        @confirm="removeWarehouse"
+        @cancel="removeConfirmOpen = false"
       />
     </template>
 
@@ -106,7 +126,7 @@ const closeActionError = () => {
             <dd class="text-sm text-smoke">{{ warehouse.phoneNational }}</dd>
           </div>
           <div class="flex items-baseline gap-4 py-3">
-            <dt class="meta-label w-40 shrink-0">Address</dt>
+            <dt class="meta-label w-40 shrink-0">Warehouse address</dt>
             <dd class="text-sm text-smoke">{{ warehouse.address }}</dd>
           </div>
         </AppDetailMetaPanel>
@@ -161,15 +181,78 @@ const closeActionError = () => {
       </div>
 
       <div v-else-if="activeTab === 'edit'" class="grid gap-6 content-start max-w-6xl">
+        <AppPanel eyebrow="Warehouse status">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <p class="text-sm font-semibold text-ink">Current state</p>
+              <AppBadge :tone="warehouse.status === 'Active' ? 'success' : 'default'">
+                {{ warehouse.status }}
+              </AppBadge>
+            </div>
+            <div class="flex shrink-0 items-center gap-3">
+              <AppButton
+                v-if="canUpdateWarehouse && warehouse.status === 'Inactive'"
+                variant="danger"
+                :loading="actionPending === 'remove'"
+                @click="removeConfirmOpen = true"
+              >
+                Remove
+              </AppButton>
+              <AppButton
+                v-if="canUpdateWarehouse"
+                variant="secondary"
+                :loading="actionPending === 'toggle'"
+                @click="toggleWarehouse"
+              >
+                {{ warehouse.status === "Active" ? "Deactivate" : "Activate" }}
+              </AppButton>
+            </div>
+          </div>
+        </AppPanel>
+
         <AppPanel eyebrow="Edit warehouse">
           <form class="grid divide-y divide-line/60" @submit.prevent="updateWarehouse">
             <div class="grid gap-4 py-3 md:grid-cols-2">
               <AppInput v-model="form.name" label="Name" />
               <AppInput v-model="form.phoneNational" label="Phone" />
             </div>
+
             <div class="grid gap-4 py-3">
-              <AppInput v-model="form.address" label="Address" />
+              <p class="text-sm text-smoke">
+                <span class="font-medium text-ink">Current address:</span> {{ warehouse.address }}
+              </p>
             </div>
+
+            <div class="grid gap-4 py-3 md:grid-cols-2">
+              <AppSearchSelect
+                v-model="form.provinceId"
+                label="Province"
+                :options="provinces"
+                :loading="provincesLoading"
+                placeholder="Type to search province"
+              />
+              <AppSearchSelect
+                v-model="form.districtId"
+                label="District"
+                :options="districts"
+                :disabled="!form.provinceId"
+                :loading="districtsLoading"
+                placeholder="Type to search district"
+              />
+            </div>
+
+            <div class="grid gap-4 py-3 md:grid-cols-2">
+              <AppSearchSelect
+                v-model="form.wardCode"
+                label="Ward"
+                :options="wards"
+                :disabled="!form.districtId"
+                :loading="wardsLoading"
+                placeholder="Type to search ward"
+              />
+              <AppInput v-model="form.street" label="Street" placeholder="House number, street name" />
+            </div>
+
             <div class="flex justify-end pt-4">
               <AppButton v-if="canUpdateWarehouse" :loading="actionPending === 'update'" type="submit">
                 Save warehouse
@@ -192,7 +275,7 @@ const closeActionError = () => {
                 <span class="text-sm text-smoke">{{ warehouse.ghnStore.shopPhone }}</span>
               </div>
               <div class="flex items-baseline gap-4 py-3">
-                <span class="meta-label w-40 shrink-0">Address</span>
+                <span class="meta-label w-40 shrink-0">GHN pickup address</span>
                 <span class="text-sm text-smoke">{{ warehouse.ghnStore.pickupAddress }}</span>
               </div>
             </template>
@@ -212,28 +295,7 @@ const closeActionError = () => {
         </AppPanel>
       </div>
 
-      <div v-else class="grid gap-6 content-start max-w-6xl">
-        <AppPanel eyebrow="Warehouse status">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex flex-wrap items-center gap-3">
-              <p class="text-sm font-semibold text-ink">Current state</p>
-              <AppBadge :tone="warehouse.status === 'Active' ? 'success' : 'default'">
-                {{ warehouse.status }}
-              </AppBadge>
-            </div>
-            <div class="flex shrink-0 justify-end">
-              <AppButton
-                v-if="canUpdateWarehouse"
-                variant="secondary"
-                :loading="actionPending === 'toggle'"
-                @click="toggleWarehouse"
-              >
-                {{ warehouse.status === "Active" ? "Deactivate" : "Activate" }}
-              </AppButton>
-            </div>
-          </div>
-        </AppPanel>
-      </div>
+
     </template>
   </AppDetailPage>
 </template>

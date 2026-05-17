@@ -12,16 +12,18 @@ export default defineNuxtPlugin(() => {
   const session = useAuthSession();
   const authRefresh = useAuthRefresh();
   const sessionHint = useSessionHint();
+  const router = useRouter();
   const authIndicator = useCookie<string | null>("auth", {
     sameSite: "lax",
     default: () => null,
   });
   const lastRefreshAt = useState<number>("auth:heartbeat-last-refresh-at", () => 0);
 
-  const hasRestoreHint = () => Boolean(authIndicator.value || sessionHint.hasHint.value);
+  const hasStoredAuthHint = () => Boolean(authIndicator.value || sessionHint.hasHint.value);
+  const hasRefreshContext = () => Boolean(hasStoredAuthHint() || session.isAuthenticated.value);
 
   const syncRefreshClock = () => {
-    if (!hasRestoreHint()) {
+    if (!hasRefreshContext()) {
       lastRefreshAt.value = 0;
       return;
     }
@@ -36,15 +38,10 @@ export default defineNuxtPlugin(() => {
     session.expire("Your session expired after a period of inactivity. Please sign in again.");
     lastRefreshAt.value = 0;
 
-    const router = useRouter();
-    const currentPath = router.currentRoute.value.fullPath;
-    const redirect = currentPath.startsWith("/auth") ? "/" : currentPath;
-
-    await navigateTo({
+    await router.push({
       path: "/auth/login",
       query: {
         reason: "session-expired",
-        redirect,
       },
     });
   };
@@ -52,7 +49,7 @@ export default defineNuxtPlugin(() => {
   const refreshIfDue = async () => {
     syncRefreshClock();
 
-    if (!hasRestoreHint()) {
+    if (!hasRefreshContext()) {
       return;
     }
 
@@ -63,13 +60,15 @@ export default defineNuxtPlugin(() => {
       return;
     }
 
-    const refreshed = await authRefresh.refresh();
+    const refreshed = await authRefresh.refresh({
+      force: session.isAuthenticated.value,
+    });
     if (refreshed) {
       lastRefreshAt.value = Date.now();
       return;
     }
 
-    if (!hasRestoreHint()) {
+    if (!hasStoredAuthHint()) {
       await expireSession();
     }
   };
@@ -80,7 +79,7 @@ export default defineNuxtPlugin(() => {
     }
   };
 
-  watch(() => hasRestoreHint(), syncRefreshClock, { immediate: true });
+  watch(() => hasRefreshContext(), syncRefreshClock, { immediate: true });
 
   window.setInterval(() => {
     void refreshIfDue();

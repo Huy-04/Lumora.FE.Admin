@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ForgotPasswordPage } from "~/features/auth/composables/useForgotPasswordPage";
+import type { AuthForgotPasswordPageState } from "~/features/auth/composables/useForgotPasswordPage";
 
 const props = defineProps<{
-  page: ForgotPasswordPage;
+  page: AuthForgotPasswordPageState;
 }>();
 
 const { form, pending, successMessage, errorMessage, emailError, submit } = props.page;

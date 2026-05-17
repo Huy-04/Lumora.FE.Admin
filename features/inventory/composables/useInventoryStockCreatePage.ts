@@ -1,16 +1,22 @@
 export const useInventoryStockCreatePage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const inventoryApi = useInventoryAdminApi();
   const authz = useAdminAuthorization();
-  const { parseOptionalNumber, parseRequiredInt } = useNumericForm();
+  const { parseRequiredInt } = useNumericForm();
 
   const inventoryId = computed(() => String(route.params.id ?? ""));
   const requestedWarehouseId = computed(() =>
     String(route.params.warehouseId ?? route.query.warehouseId ?? ""),
   );
+  const REORDER_POINT_MAX = 10_000;
+  const QUANTITY_MAX = 999_999;
+
+  // 2. Permissions
   const canUpdateInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryUpdateAll));
   const canReadWarehouses = computed(() => authz.can(ADMIN_PERMISSION.warehouseReadAll));
 
+  // 3. Form state
   const form = reactive({
     warehouseId: "",
     adjustmentDirection: "increase" as "increase" | "decrease",
@@ -22,6 +28,7 @@ export const useInventoryStockCreatePage = async () => {
   const errorMessage = ref("");
   const reorderPointErrorMessage = ref("");
 
+  // 4. Data fetching
   const { data, pending: inventoryPending, error: inventoryError } = await useAsyncData(
     () => `inventory-stock-create:${inventoryId.value}`,
     async () => {
@@ -54,7 +61,7 @@ export const useInventoryStockCreatePage = async () => {
     warehouses.value
       .filter((warehouse) =>
         warehouse.id === requestedWarehouseId.value
-        || (warehouse.status === "Active" && !attachedWarehouseIds.value.has(warehouse.id)),
+        || !attachedWarehouseIds.value.has(warehouse.id),
       )
       .map((warehouse) => ({
         label: warehouse.status === "Active" ? warehouse.name : `${warehouse.name} (Inactive)`,
@@ -65,13 +72,35 @@ export const useInventoryStockCreatePage = async () => {
     canUpdateInventory.value
     && canReadWarehouses.value
     && form.warehouseId.length > 0
-    && selectedWarehouseActive.value,
+    && selectedWarehouse.value !== null,
   );
 
+  // 5. Actions/mutations
   const parsePositiveInt = (value: string, label: string) => {
     const parsed = parseRequiredInt(value, label);
     if (parsed <= 0) {
       throw new Error(`${label} must be greater than 0.`);
+    }
+
+    if (parsed > QUANTITY_MAX) {
+      throw new Error(`${label} must be at most ${QUANTITY_MAX}.`);
+    }
+
+    return parsed;
+  };
+
+  const parseOptionalReorderPoint = (value: string, label: string) => {
+    if (!String(value ?? "").trim()) {
+      return null;
+    }
+
+    const parsed = parseRequiredInt(value, label);
+    if (parsed <= 0) {
+      throw new Error(`${label} must be greater than 0.`);
+    }
+
+    if (parsed > REORDER_POINT_MAX) {
+      throw new Error(`${label} must be at most ${REORDER_POINT_MAX}.`);
     }
 
     return parsed;
@@ -94,7 +123,7 @@ export const useInventoryStockCreatePage = async () => {
   };
 
   const submit = async () => {
-    if (!canAddStock.value) {
+    if (!canAddStock.value || pending.value) {
       return;
     }
 
@@ -111,7 +140,7 @@ export const useInventoryStockCreatePage = async () => {
         await inventoryApi.addStock(inventoryId.value, {
           warehouseId: form.warehouseId,
           quantity: parsePositiveInt(form.quantity, "Quantity"),
-          reorderPoint: parseOptionalNumber(form.reorderPoint, "Reorder point"),
+          reorderPoint: parseOptionalReorderPoint(form.reorderPoint, "Reorder point"),
         });
       }
 
@@ -127,7 +156,7 @@ export const useInventoryStockCreatePage = async () => {
   };
 
   const setReorderPoint = async () => {
-    if (!canAddStock.value || !isExistingStockMode.value) {
+    if (!canAddStock.value || !isExistingStockMode.value || reorderPointPending.value) {
       return;
     }
 
@@ -137,7 +166,7 @@ export const useInventoryStockCreatePage = async () => {
     try {
       const updatedInventory = await inventoryApi.setReorderPoint(inventoryId.value, {
         warehouseId: form.warehouseId,
-        reorderPoint: parseOptionalNumber(form.reorderPoint, "Reorder point"),
+        reorderPoint: parseOptionalReorderPoint(form.reorderPoint, "Reorder point"),
       });
 
       if (data.value) {
@@ -168,6 +197,7 @@ export const useInventoryStockCreatePage = async () => {
     }
   });
 
+  // 6. Return statement
   return {
     canAddStock,
     canReadWarehouses,

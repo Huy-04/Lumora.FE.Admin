@@ -1,4 +1,9 @@
 export default defineNuxtConfig({
+  routeRules: {
+    "/hubs/**": {
+      proxy: `${process.env.NUXT_API_PROXY_TARGET || "https://api.hlbeer.me"}/hubs/**`,
+    },
+  },
   devtools: {
     enabled: false,
   },
@@ -71,6 +76,7 @@ export default defineNuxtConfig({
     apiProxyTarget: process.env.NUXT_API_PROXY_TARGET || "https://api.hlbeer.me",
     public: {
       appName: "Lumora Admin",
+      realtimeBaseUrl: process.env.NUXT_PUBLIC_REALTIME_BASE_URL || "",
     },
   },
 });

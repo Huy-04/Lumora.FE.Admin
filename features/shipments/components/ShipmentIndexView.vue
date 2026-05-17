@@ -7,19 +7,21 @@ const props = defineProps<{
 
 const {
   applyFilters,
+  canModifyShipment,
   carrierOptions,
-  canReadShipment,
   clearFilters,
+  createError,
+  createForm,
+  createPending,
+  createShipmentDraft,
   error,
   firstItemNumber,
   goToNextPage,
   goToPreviousPage,
+  hasActiveFilters,
   lastItemNumber,
   loadErrorMessage,
-  localCarrier,
-  localKeyword,
-  localOrderId,
-  localStatus,
+  localFilters,
   page,
   pageSize,
   pageSizeOptions,
@@ -34,13 +36,15 @@ const {
 
 <template>
   <AppIndexPage
+    v-model="localFilters.keyword.value"
     eyebrow="Shipment queue"
     search-label="Search shipments"
+    search-placeholder="Shipment number, order number, or carrier order code"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="shipments"
     :pending="pending"
-    :error="!canReadShipment ? 'Missing permission' : error ? 'Error loading data' : null"
-    :error-detail="!canReadShipment ? 'You do not have permission to read shipments.' : loadErrorMessage"
+    :error="error ? 'Error loading data' : null"
+    :error-detail="error ? loadErrorMessage : ''"
     :items-length="shipments.length"
     empty-title="No shipments found"
     empty-detail="Adjust filters or create shipment drafts from processing orders."
@@ -50,38 +54,39 @@ const {
     :page-size-options="pageSizeOptions"
     :page="page"
     :total-pages="totalPages"
+    @search="applyFilters"
+    @refresh="clearFilters"
     @previous-page="goToPreviousPage"
     @next-page="goToNextPage"
   >
-    <template #search-input>
-      <AppInput v-if="canReadShipment" v-model="localKeyword" label="" placeholder="Shipment number, order number, or carrier order code" @keyup.enter="applyFilters" />
-    </template>
+    <template #notices>
+      <AppNotice v-if="error" tone="danger" title="Unable to load data">
+        {{ loadErrorMessage }}
+      </AppNotice>
 
-    <template #actions>
-      <template v-if="canReadShipment">
-        <AppButton variant="primary" @click="applyFilters">
-          Search
-        </AppButton>
-        <AppButton variant="primary" @click="clearFilters">
-          Refresh
-        </AppButton>
-      </template>
+      <AppNotice v-if="createError" tone="danger" title="Create shipment failed">
+        {{ createError }}
+      </AppNotice>
     </template>
 
     <template #filters>
-      <template v-if="canReadShipment">
-        <div class="lg:w-[340px] mb-4 sm:mb-0 mr-4">
-          <AppInput v-model="localOrderId" label="Order id" placeholder="Filter by order id" @keyup.enter="applyFilters" />
+      <div class="w-full flex flex-col gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div class="w-full sm:flex-[1.25]">
+            <AppInput v-model="localFilters.orderId.value" label="Order id" placeholder="Filter by order GUID" @keyup.enter="applyFilters" />
+          </div>
+          <div class="w-full sm:flex-1">
+            <AppSelect v-model="localFilters.status.value" label="Shipment status" :options="shipmentStatusOptions" />
+          </div>
+          <div class="w-full sm:flex-1">
+            <AppSelect v-model="localFilters.carrier.value" label="Carrier" :options="carrierOptions" />
+          </div>
         </div>
-        <div class="grid gap-4 md:grid-cols-2 flex-1">
-          <AppSelect v-model="localStatus" label="Shipment status" :options="shipmentStatusOptions" />
-          <AppSelect v-model="localCarrier" label="Carrier" :options="carrierOptions" />
-        </div>
-      </template>
+      </div>
     </template>
 
     <template #table>
-      <table v-if="canReadShipment" class="data-table min-w-[1040px]">
+      <table class="data-table min-w-[1040px]">
         <thead>
           <tr>
             <th class="min-w-[190px]">Shipment</th>
@@ -123,5 +128,26 @@ const {
       </table>
     </template>
 
+    <template #after>
+      <AppPanel v-if="canModifyShipment" eyebrow="Shipment fallback" title="Create shipment draft">
+        <form class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)_auto]" @submit.prevent="createShipmentDraft">
+          <AppInput
+            v-model="createForm.orderId"
+            label="Processing order ID"
+            placeholder="Order GUID"
+          />
+          <AppInput
+            v-model="createForm.shipmentNumber"
+            label="Shipment number"
+            placeholder="Optional"
+          />
+          <div class="flex items-end">
+            <AppButton :loading="createPending" type="submit" class="w-full md:w-auto">
+              Create draft
+            </AppButton>
+          </div>
+        </form>
+      </AppPanel>
+    </template>
   </AppIndexPage>
 </template>

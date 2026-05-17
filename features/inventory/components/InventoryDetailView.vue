@@ -21,6 +21,10 @@ const {
   removeConfirmOpen,
   removeInventory,
   selectTab,
+  setStockActionWarehouse,
+  setStockStatus,
+  stockActionForm,
+  stockStatusOptions,
   warehouseNameById,
   warehouseStatusById,
 } = props.page;
@@ -72,8 +76,6 @@ const stockAlertTone = (alertStatus: string) => {
 
   return "default";
 };
-
-const isWarehouseInactive = (warehouseId: string) => warehouseStatusById(warehouseId) === "Inactive";
 
 useScopedPageBreadcrumbs(() =>
   inventory.value
@@ -185,8 +187,10 @@ useScopedPageBreadcrumbs(() =>
                   <th>Reserved</th>
                   <th>Available</th>
                   <th>Reorder point</th>
+                  <th v-if="canUpdateInventory" class="w-[220px] text-center">Set status</th>
                   <th v-if="canUpdateInventory" class="w-[130px] text-center">Adjust stock</th>
                   <th v-if="canUpdateInventory" class="w-[150px] text-center">Reorder point</th>
+                  <th v-if="canRemoveInventory" class="w-[96px] text-center">Remove</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,22 +205,36 @@ useScopedPageBreadcrumbs(() =>
                   <td>{{ stock.availableQuantity }}</td>
                   <td>{{ stock.reorderPoint ?? "None" }}</td>
                   <td v-if="canUpdateInventory" class="text-center">
+                    <div class="grid min-w-[200px] grid-cols-[minmax(0,1fr)_auto] gap-2">
+                      <AppSelect
+                        :model-value="stockActionForm.warehouseId === stock.warehouseId ? stockActionForm.status : stockStatusOptions.find((entry) => entry.label === stock.status)?.value ?? '0'"
+                        label=""
+                        :options="stockStatusOptions"
+                        @update:model-value="(value) => {
+                          setStockActionWarehouse(stock.warehouseId);
+                          stockActionForm.status = String(value);
+                        }"
+                      />
+                      <AppButton
+                        class="table-action"
+                        variant="secondary"
+                        :loading="actionPending === 'set-status' && stockActionForm.warehouseId === stock.warehouseId"
+                        @click="() => {
+                          setStockActionWarehouse(stock.warehouseId);
+                          setStockStatus();
+                        }"
+                      >
+                        Save
+                      </AppButton>
+                    </div>
+                  </td>
+                  <td v-if="canUpdateInventory" class="text-center">
                     <NuxtLink
-                      v-if="!isWarehouseInactive(stock.warehouseId)"
                       class="secondary-link table-action min-w-[92px]"
                       :to="`/inventory-stocks/${inventory.id}/warehouses/${stock.warehouseId}/add`"
                     >
                       Adjust
                     </NuxtLink>
-                    <AppButton
-                      v-else
-                      class="table-action min-w-[92px]"
-                      variant="secondary"
-                      disabled
-                      title="Activate this warehouse before adjusting stock."
-                    >
-                      Adjust
-                    </AppButton>
                   </td>
                   <td v-if="canUpdateInventory" class="text-center">
                     <NuxtLink
@@ -226,27 +244,24 @@ useScopedPageBreadcrumbs(() =>
                       Set point
                     </NuxtLink>
                   </td>
+                  <td v-if="canRemoveInventory" class="text-center">
+                    <AppButton
+                      class="table-action"
+                      variant="danger"
+                      :loading="actionPending === 'remove-inventory'"
+                      @click="removeConfirmOpen = true"
+                    >
+                      Remove
+                    </AppButton>
+                  </td>
                 </tr>
                 <tr v-if="!inventory.stocks.length">
-                  <td :colspan="canUpdateInventory ? 9 : 7" class="py-10 text-center text-sm text-smoke">
+                  <td :colspan="(canUpdateInventory ? 10 : 7) + (canRemoveInventory ? 1 : 0)" class="py-10 text-center text-sm text-smoke">
                     No stock rows yet.
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        </AppPanel>
-      </div>
-
-      <div v-else class="grid gap-4 content-start max-w-6xl">
-        <AppPanel v-if="canRemoveInventory" eyebrow="Remove inventory">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <p class="max-w-2xl text-sm text-smoke">
-              This only succeeds after all warehouse stock and reservations are cleared.
-            </p>
-            <AppButton variant="danger" @click="removeConfirmOpen = true">
-              Remove inventory
-            </AppButton>
           </div>
         </AppPanel>
       </div>

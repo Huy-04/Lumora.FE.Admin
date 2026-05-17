@@ -5,6 +5,11 @@ contracts and must stay aligned with `Lumora.Docs/Backend/Module`.
 
 ## Auth
 
+> Full auth architecture documentation: [AUTH.md](./AUTH.md)
+
+- Login uses `POST /api/authentication/admin-login` with `X-Device-Id` header; tokens live in HttpOnly cookies managed by BE.
+- Session bootstrap uses `GET /api/authentication/me` to hydrate permissions on page load.
+- Permission refresh is triggered after self-role-edit to keep client permissions in sync.
 - Session rows use `tokenStatus` as the source status.
 - Per-session revoke actions are shown only when `tokenStatus` is `Active`.
 - The admin session list reads from `GET /api/refresh-tokens`.
@@ -53,9 +58,32 @@ contracts and must stay aligned with `Lumora.Docs/Backend/Module`.
 
 - Admin shipment search uses `GET /api/shipments` with keyword, orderId, status, carrier, page, and size query params.
 - Shipment detail reads `GET /api/shipments/{shipmentId}`; order lookup reads `GET /api/shipments/orders/{orderId}`.
-- `Draft` shipments expose submit-to-carrier when the actor can modify shipments.
+- `Draft` shipments expose retry submit in the Tracking tab when the actor can modify shipments. The normal submit path is the backend `ShipmentCreatedEvent` outbox processor.
 - Submitted/tracking UI must show both `carrierOrderCode` and `carrierShopId` so admins can identify the provider order and the GHN shop snapshot used at submission.
-- If `carrierOrderCode` is missing after submit, show the shipment as a provider submission issue rather than a normal trackable shipment.
+- If `carrierOrderCode` is missing while the shipment is still `Draft`, show carrier handoff as pending and use System Events for the processing error.
+
+## Operations
+
+- Admin system event search reads `GET /api/system-events` with keyword, status, eventType, occurredFrom, occurredTo, page, and size filters.
+- Event type is a text exact-match filter. Web Admin does not build event-type options from recent system events.
+- Date filters are sent as UTC full-day boundaries: `occurredFrom` at `00:00:00.000Z` and `occurredTo` at `23:59:59.999Z`.
+- The keyword search covers event id, aggregate id, payload, event type, and error text; Web Admin does not expose a separate Aggregate ID filter.
+- Pending, failed, and processed summary counts are current-page counts; the total events count is the total matching the current search.
+- System event detail reads `GET /api/system-events/{id}` and renders parsed payload values, raw payload, and error text for operational inspection.
+- Web Admin treats System Events as read-only. Retry/replay/delete/payload-edit actions are not exposed.
+- Shipment auto-submit failures surface as failed or retrying outbox messages in System Events, while shipment retry stays on the Shipment Tracking tab.
+- System Events listens to `/hubs/operations` event `system-event.changed` and debounces a REST refetch. List pages refresh for any system-event change; detail pages refresh only when the event id matches the open record.
+
+## Realtime
+
+- Web Admin uses SignalR only as an invalidation hint. All visible data still comes from REST.
+- Catalog realtime connects to same-origin `/hubs/catalog` and listens for `catalog.changed`.
+- Category index/detail refresh on `entity = "category"`.
+- Product index refreshes on `entity = "product"` or `entity = "category"`; product detail refreshes only when `entity = "product"` and `entityId` matches the open product.
+- Inventory index refreshes on `entity = "inventory"` for stock status changes; inventory detail refreshes when the stock-status notification product id matches the open inventory product id.
+- Operations realtime connects to same-origin `/hubs/operations` and listens for `system-event.changed`.
+- The Nuxt app proxies `/hubs/**` to the BE API target so authenticated hubs can keep using HttpOnly auth cookies.
+- Realtime refreshes are debounced and must not render SignalR payloads directly.
 
 ## Payment
 
@@ -71,4 +99,4 @@ contracts and must stay aligned with `Lumora.Docs/Backend/Module`.
 - Web Admin does not call Checkout storefront endpoints directly.
 - Checkout/orchestrator results surface in Admin through Order, Payment, Shipment, and Inventory states.
 - `POST /api/orders/{orderId}/confirm` and `/start-processing` are orchestrated backend flows; Web Admin should call only those public admin endpoints, not internal module public-contract services.
-- Shipment submit, payment manual fallback, and inventory stock views are operational follow-up surfaces after checkout/order orchestration has created durable records.
+- Shipment retry, payment manual fallback, inventory stock views, and System Events are operational follow-up surfaces after checkout/order orchestration has created durable records.

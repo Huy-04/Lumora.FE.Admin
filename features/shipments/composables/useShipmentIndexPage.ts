@@ -1,22 +1,53 @@
 import type { ShipmentCarrier, ShipmentStatus } from "~/features/shipments/types";
 
 export const useShipmentIndexPage = async () => {
+  // 1. Dependency injection
   const shipmentApi = useShipmentAdminApi();
   const authz = useAdminAuthorization();
 
+  // 2. Permissions
   const canReadShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentReadAll));
+  const canModifyShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentModifyAll));
 
-  const localKeyword = ref("");
-  const localOrderId = ref("");
-  const localStatus = ref<ShipmentStatus | "">("");
-  const localCarrier = ref<ShipmentCarrier | "">("");
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const keyword = ref("");
-  const orderId = ref("");
-  const status = ref<ShipmentStatus | "">("");
-  const carrier = ref<ShipmentCarrier | "">("");
-  const page = ref(1);
-  const pageSize = ref("20");
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
+    useFilters(
+      { keyword: "", orderId: "", status: "" as ShipmentStatus | "", carrier: "" as ShipmentCarrier | "" },
+      { onApply: () => { pagination.page.value = 1; } },
+    );
+  const createForm = reactive({
+    orderId: "",
+    shipmentNumber: "",
+  });
+  const createPending = ref(false);
+  const createError = ref("");
+
+  // 5. Data fetching
+  const { data, pending, error, refresh } = await useAsyncData(
+    () => `shipments:${appliedFilters.keyword.value || "all"}:${appliedFilters.orderId.value || "all"}:${appliedFilters.status.value || "all"}:${appliedFilters.carrier.value || "all"}:${pagination.page.value}:${pagination.pageSize.value}`,
+    () => shipmentApi.searchShipments({
+      keyword: appliedFilters.keyword.value || undefined,
+      orderId: appliedFilters.orderId.value || undefined,
+      status: appliedFilters.status.value || undefined,
+      carrier: appliedFilters.carrier.value || undefined,
+      page: pagination.page.value,
+      size: Number(pagination.pageSize.value),
+    }),
+  );
+
+  // 6. Computed derivations
+  const shipments = computed(() => data.value?.items ?? []);
+  const totalShipments = computed(() => data.value?.totalCount ?? 0);
+  const loadErrorMessage = computed(() => getProblemMessage(error.value, "The shipment queue is not available right now."));
+
+  // Wire totalItems to fetched data
+  watch(() => data.value?.totalCount, (count) => {
+    totalItems.value = count ?? 0;
+  }, { immediate: true });
 
   const shipmentStatusOptions = [
     { label: "All statuses", value: "" },
@@ -34,68 +65,6 @@ export const useShipmentIndexPage = async () => {
     { label: "All carriers", value: "" },
     { label: "GHN", value: "GHN" },
   ];
-
-  const pageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-
-  const applyFilters = () => {
-    keyword.value = localKeyword.value.trim();
-    orderId.value = localOrderId.value.trim();
-    status.value = localStatus.value;
-    carrier.value = localCarrier.value;
-    page.value = 1;
-  };
-
-  const clearFilters = () => {
-    localKeyword.value = "";
-    localOrderId.value = "";
-    localStatus.value = "";
-    localCarrier.value = "";
-    applyFilters();
-  };
-
-  const { data, pending, error, refresh } = await useAsyncData(
-    () => `shipments:${keyword.value || "all"}:${orderId.value || "all"}:${status.value || "all"}:${carrier.value || "all"}:${page.value}:${pageSize.value}`,
-    () => shipmentApi.searchShipments({
-      keyword: keyword.value || undefined,
-      orderId: orderId.value || undefined,
-      status: status.value || undefined,
-      carrier: carrier.value || undefined,
-      page: page.value,
-      size: Number(pageSize.value),
-    }),
-  );
-
-  const shipments = computed(() => data.value?.items ?? []);
-  const totalShipments = computed(() => data.value?.totalCount ?? 0);
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalShipments.value / Number(pageSize.value))));
-  const hasFilters = computed(() => Boolean(keyword.value || orderId.value || status.value || carrier.value));
-  const loadErrorMessage = computed(() => getProblemMessage(error.value, "The shipment queue is not available right now."));
-  const firstItemNumber = computed(() => totalShipments.value === 0 ? 0 : (page.value - 1) * Number(pageSize.value) + 1);
-  const lastItemNumber = computed(() => Math.min(page.value * Number(pageSize.value), totalShipments.value));
-
-  const goToPreviousPage = () => {
-    if (page.value <= 1) {
-      return;
-    }
-
-    page.value -= 1;
-  };
-
-  const goToNextPage = () => {
-    if (page.value >= totalPages.value) {
-      return;
-    }
-
-    page.value += 1;
-  };
-
-  watch(pageSize, () => {
-    page.value = 1;
-  });
 
   const summaryStats = computed(() => [
     {
@@ -120,32 +89,62 @@ export const useShipmentIndexPage = async () => {
     },
   ]);
 
+  // 7. Actions/mutations
+  const createShipmentDraft = async () => {
+    if (!canModifyShipment.value || createPending.value) {
+      return;
+    }
+
+    const orderId = createForm.orderId.trim();
+    const shipmentNumber = createForm.shipmentNumber.trim();
+
+    if (!orderId) {
+      createError.value = "Order ID is required.";
+      return;
+    }
+
+    createPending.value = true;
+    createError.value = "";
+
+    try {
+      const created = await shipmentApi.createShipment({
+        orderId,
+        shipmentNumber: shipmentNumber || null,
+      });
+
+      await navigateTo(`/shipments/${created.id}`);
+    } catch (requestError) {
+      createError.value = getProblemMessage(requestError, "Unable to create shipment draft.");
+    } finally {
+      createPending.value = false;
+    }
+  };
+
+  // 8. Watchers
+  // (pagination reset on filter apply and pageSize change handled by usePagination and useFilters)
+
+  // 9. Return statement
   return {
     applyFilters,
-    carrierOptions,
+    canModifyShipment,
     canReadShipment,
+    carrierOptions,
     clearFilters,
+    createError,
+    createForm,
+    createPending,
+    createShipmentDraft,
     error,
-    firstItemNumber,
-    goToNextPage,
-    goToPreviousPage,
-    hasFilters,
-    lastItemNumber,
+    hasActiveFilters,
     loadErrorMessage,
-    localCarrier,
-    localKeyword,
-    localOrderId,
-    localStatus,
-    page,
-    pageSize,
-    pageSizeOptions,
+    localFilters,
     pending,
     refresh,
     shipmentStatusOptions,
     shipments,
     summaryStats,
-    totalPages,
     totalShipments,
+    ...pagination,
   };
 };
 

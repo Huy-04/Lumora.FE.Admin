@@ -1,6 +1,7 @@
 import type { ProductVariantResponse } from "~/features/products/types";
 
 export const useProductVariantDetailPage = async () => {
+  // 1. Dependency injection
   const route = useRoute();
   const productApi = useProductAdminApi();
   const inventoryApi = useInventoryAdminApi();
@@ -8,6 +9,7 @@ export const useProductVariantDetailPage = async () => {
 
   type VariantTab = "overview" | "edit" | "inventory";
 
+  // 2. Permissions
   const productId = computed(() => route.params.productId as string);
   const variantId = computed(() => route.params.variantId as string);
   const canUpdateProduct = computed(() => authz.can(ADMIN_PERMISSION.productUpdateAll));
@@ -16,6 +18,7 @@ export const useProductVariantDetailPage = async () => {
   const inventoryActionPending = ref("");
   const inventoryActionError = ref("");
 
+  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `product-variant-detail:${productId.value}:${variantId.value}`,
     async () => {
@@ -33,6 +36,7 @@ export const useProductVariantDetailPage = async () => {
     },
   );
 
+  // 4. Computed derivations
   const variant = computed<ProductVariantResponse | null>(() =>
     data.value?.variants.find((entry) => entry.id === variantId.value) ?? null,
   );
@@ -52,6 +56,7 @@ export const useProductVariantDetailPage = async () => {
 
   const activeTab = ref<VariantTab>("overview");
 
+  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -64,6 +69,7 @@ export const useProductVariantDetailPage = async () => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
+  // 5. Actions/mutations
   const selectTab = async (tab: VariantTab) => {
     activeTab.value = normalizeTab(tab);
 
@@ -114,6 +120,7 @@ export const useProductVariantDetailPage = async () => {
     }
   };
 
+  // 7. Return statement
   return {
     error,
     pending,

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { LoginPage } from "~/features/auth/composables/useLoginPage";
+import type { AuthLoginPageState } from "~/features/auth/composables/useLoginPage";
 
 const props = defineProps<{
-  page: LoginPage;
+  page: AuthLoginPageState;
 }>();
 
 const { form, pending, errorMessage, sessionExpiredMessage, emailError, passwordError, submit } = props.page;

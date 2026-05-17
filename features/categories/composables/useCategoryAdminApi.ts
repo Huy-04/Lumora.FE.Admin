@@ -7,71 +7,81 @@ import type {
   MoveCategoryRequest,
   ReorderCategoryRequest,
 } from "~/features/categories/types";
-import { toSearchParams } from "~/Shared/api/queryParams";
+
+const categoryRoute = (path = "") => `/categories${path}`;
+const categoryChildRoute = (categoryId: string, childPath = "") =>
+  `/categories/${categoryId}${childPath}`;
 
 export const useCategoryAdminApi = () => {
   const api = useApiClient();
 
   return {
     getCategories: (page = 1, size = 50) =>
-      api.request<PaginatedResponse<CategoryResponse>>(`/Categories${toSearchParams({ page, size })}`),
+      api.request<PaginatedResponse<CategoryResponse>>(
+        `${categoryRoute()}${toSearchParams({ page, size })}`,
+      ),
 
     searchCategories: (params: Record<string, string | number | boolean | undefined | null>) =>
-      api.request<PaginatedResponse<CategoryResponse>>(`/Categories/search${toSearchParams(params)}`),
+      api.request<PaginatedResponse<CategoryResponse>>(
+        `${categoryRoute("/search")}${toSearchParams(params)}`,
+      ),
 
-    getCategoryTree: () => api.request<CategoryTreeNodeResponse[]>("/Categories/tree"),
+    getCategoryTree: () =>
+      api.request<CategoryTreeNodeResponse[]>(categoryRoute("/tree")),
 
-    getAllCategoryTree: () => api.request<CategoryTreeNodeResponse[]>("/Categories/all"),
+    getAllCategoryTree: () =>
+      api.request<CategoryTreeNodeResponse[]>(categoryRoute("/all")),
 
-    getCategoryById: (id: string) => api.request<CategoryResponse>(`/Categories/${id}`),
+    getCategoryById: (id: string) =>
+      api.request<CategoryResponse>(categoryChildRoute(id)),
 
     createCategory: (payload: CategoryRequest) =>
-      api.request<CategoryResponse>("/Categories", {
+      api.request<CategoryResponse>(categoryRoute(), {
         method: "POST",
         body: payload,
       }),
 
     createCategoryChild: (parentId: string, payload: CategoryRequest) =>
-      api.request<CategoryResponse>(`/Categories/${parentId}/children`, {
+      api.request<CategoryResponse>(categoryChildRoute(parentId, "/children"), {
         method: "POST",
         body: payload,
       }),
 
     updateCategory: (id: string, payload: CategoryUpdateRequest) =>
-      api.request<CategoryResponse>(`/Categories/${id}`, {
+      api.request<CategoryResponse>(categoryChildRoute(id), {
         method: "PUT",
         body: payload,
       }),
 
     moveCategory: (id: string, payload: MoveCategoryRequest) =>
-      api.request<CategoryResponse>(`/Categories/${id}/move`, {
+      api.request<CategoryResponse>(categoryChildRoute(id, "/move"), {
         method: "POST",
         body: payload,
       }),
 
     activateCategory: (id: string) =>
-      api.request<CategoryResponse>(`/Categories/${id}/activate`, {
+      api.request<CategoryResponse>(categoryChildRoute(id, "/activate"), {
         method: "POST",
       }),
 
     deactivateCategory: (id: string) =>
-      api.request<CategoryResponse>(`/Categories/${id}/deactivate`, {
+      api.request<CategoryResponse>(categoryChildRoute(id, "/deactivate"), {
         method: "POST",
       }),
 
     reorderCategories: (payload: ReorderCategoryRequest) =>
-      api.request<void>("/Categories/reorder", {
+      api.request<void>(categoryRoute("/reorder"), {
         method: "POST",
         body: payload,
       }),
 
     deleteCategory: (id: string) =>
-      api.request<void>(`/Categories/${id}`, {
+      api.request<void>(categoryChildRoute(id), {
         method: "DELETE",
       }),
 
     restoreCategory: (id: string) =>
-      api.request<CategoryResponse>(`/Categories/${id}/restore`, {
+      api.request<CategoryResponse>(categoryChildRoute(id, "/restore"), {
         method: "POST",
       }),
   };

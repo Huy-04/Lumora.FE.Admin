@@ -53,8 +53,8 @@ export interface SubmitShipmentRequest {
   returnAddress?: string | null;
   returnDistrictId?: number | null;
   returnWardCode?: string | null;
-  pickStationId?: string | null;
-  deliverStationId?: string | null;
+  pickStationId?: number | null;
+  deliverStationId?: number | null;
   pickShift?: number[] | null;
 }
 

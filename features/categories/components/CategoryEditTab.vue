@@ -28,29 +28,56 @@ const form = reactive({
 
 const moveForm = reactive({
   parentId: "",
-  sortOrder: "",
 });
 
 const actionPending = ref(false);
 const actionError = ref("");
 const movePending = ref(false);
 const moveError = ref("");
+const MAX_CATEGORY_LEVEL = 2;
 
 const flattenTree = (nodes: CategoryTreeNodeResponse[]): CategoryTreeNodeResponse[] =>
   nodes.flatMap((node) => [node, ...flattenTree(node.children)]);
 
-const hasChildren = computed(() => props.children.length > 0);
+const findTreeNode = (nodes: CategoryTreeNodeResponse[], id: string): CategoryTreeNodeResponse | null => {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return node;
+    }
 
-const activeRootOptions = computed(() => {
+    const match = findTreeNode(node.children, id);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+};
+
+const containsCategory = (node: CategoryTreeNodeResponse, categoryId: string): boolean =>
+  node.id === categoryId || node.children.some((child) => containsCategory(child, categoryId));
+
+const getMaxDescendantLevel = (node: CategoryTreeNodeResponse): number =>
+  Math.max(node.level, ...node.children.map(getMaxDescendantLevel));
+
+const hasChildren = computed(() => props.children.length > 0);
+const currentTreeNode = computed(() => findTreeNode(props.tree, props.category.id));
+const subtreeDepth = computed(() => {
+  const node = currentTreeNode.value;
+  return node ? getMaxDescendantLevel(node) - node.level : 0;
+});
+
+const parentOptions = computed(() => {
   const options = flattenTree(props.tree)
     .filter((category) =>
-      category.level === 0
-      && category.id !== props.category.id
+      category.id !== props.category.id
+      && !currentTreeNode.value?.children.some((child) => containsCategory(child, category.id))
       && category.isActive
-      && !category.isDeleted)
+      && !category.isDeleted
+      && category.level + 1 + subtreeDepth.value <= MAX_CATEGORY_LEVEL)
     .sort((left, right) => left.sortOrder - right.sortOrder)
     .map((category) => ({
-      label: category.name,
+      label: `${"- ".repeat(category.level)}${category.name}`,
       value: category.id,
     }));
 
@@ -62,17 +89,14 @@ const activeRootOptions = computed(() => {
 
 const parentIdValue = computed(() => props.category.parentId ?? "");
 
-const hasMoveChange = computed(() =>
-  moveForm.parentId !== parentIdValue.value
-  || (moveForm.sortOrder.trim() !== "" && Number(moveForm.sortOrder) !== props.category.sortOrder),
-);
+const hasMoveChange = computed(() => moveForm.parentId !== parentIdValue.value);
 
 const moveHelpText = computed(() => {
   if (hasChildren.value) {
-    return "This category has children, so it can only move between root positions. Moving it under another root would exceed the current two-level catalog depth.";
+    return "This category has nested categories. Parent options are limited so the moved subtree stays within the 3-level catalog depth.";
   }
 
-  return "Move between root scope and an active root parent. Leave sort order empty to append in the target scope.";
+  return "Move between root scope and an active parent that has not reached the 3-level catalog depth. Drag rows in the tree view to change sort order.";
 });
 
 watchEffect(() => {
@@ -87,7 +111,6 @@ watchEffect(() => {
   form.seoTitle = props.category.seoTitle || "";
   form.seoDescription = props.category.seoDescription || "";
   moveForm.parentId = parentIdValue.value;
-  moveForm.sortOrder = "";
 });
 
 const saveCategory = async () => {
@@ -114,12 +137,12 @@ const saveCategory = async () => {
 
 const moveCategory = async () => {
   if (!hasMoveChange.value) {
-    moveError.value = "Choose a new parent or sort order before moving the category.";
+    moveError.value = "Choose a new parent before moving the category.";
     return;
   }
 
-  if (hasChildren.value && moveForm.parentId) {
-    moveError.value = "A category with children cannot be moved under another root in the current two-level catalog.";
+  if (moveForm.parentId && !parentOptions.value.some((option) => option.value === moveForm.parentId)) {
+    moveError.value = "Choose a valid active parent within the 3-level catalog depth.";
     return;
   }
 
@@ -129,7 +152,7 @@ const moveCategory = async () => {
   try {
     await categoryApi.moveCategory(props.category.id, {
       parentId: moveForm.parentId || null,
-      sortOrder: moveForm.sortOrder.trim() ? Number(moveForm.sortOrder) : null,
+      sortOrder: null,
     });
 
     emit("refresh");
@@ -175,18 +198,11 @@ const moveCategory = async () => {
           {{ moveHelpText }}
         </AppNotice>
 
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-4">
           <AppSelect
             v-model="moveForm.parentId"
             label="Parent scope"
-            :options="activeRootOptions"
-            :disabled="hasChildren"
-          />
-          <AppInput
-            v-model="moveForm.sortOrder"
-            label="Sort order"
-            inputmode="numeric"
-            placeholder="Append to end"
+            :options="parentOptions"
           />
         </div>
 

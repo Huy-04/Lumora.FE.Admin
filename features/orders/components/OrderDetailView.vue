@@ -16,6 +16,7 @@ const {
   error,
   executeAction,
   hasStockReservationFailure,
+  hasProcessingException,
   loadErrorMessage,
   order,
   orderId,
@@ -107,6 +108,14 @@ useScopedPageBreadcrumbs(() =>
           Fix inventory availability before retrying confirmation or moving this order forward.
         </AppNotice>
 
+        <AppNotice
+          v-else-if="hasProcessingException"
+          tone="warning"
+          title="Operations exception"
+        >
+          Stock is not yet reserved for this order. Mark-in-transit is unavailable until inventory is allocated.
+        </AppNotice>
+
         <AppPanel eyebrow="Lifecycle actions">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-3">
@@ -169,7 +178,12 @@ useScopedPageBreadcrumbs(() =>
                 </label>
               </div>
             </div>
-            <AppTextarea v-model="actionReason" label="Reason" placeholder="Explain why this action is required" />
+            <AppTextarea
+              v-model="actionReason"
+              label="Reason"
+              placeholder="Explain why this action is required"
+              :maxlength="500"
+            />
             <div class="flex flex-wrap justify-end gap-3">
               <AppButton variant="secondary" :disabled="actionPending !== ''" @click="closeAction">
                 Keep order

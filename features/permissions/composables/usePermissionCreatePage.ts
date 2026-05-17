@@ -1,7 +1,9 @@
 export const usePermissionCreatePage = async () => {
+  // 1. Dependency injection
   const permissionsApi = usePermissionsAdminApi();
   const { permissionModuleOptions, getSubModuleOptions, permissionOperationOptions, permissionScopeOptions } = useAuthOptions();
 
+  // 2. Form state
   const form = reactive({
     module: "Auth",
     subModule: "User",
@@ -10,8 +12,10 @@ export const usePermissionCreatePage = async () => {
     description: "",
   });
 
+  // 3. Computed derivations
   const subModuleOptions = computed(() => getSubModuleOptions(form.module));
 
+  // 4. Watchers
   // When module changes, reset subModule to first valid option
   watch(() => form.module, (newModule) => {
     const opts = getSubModuleOptions(newModule);
@@ -20,9 +24,11 @@ export const usePermissionCreatePage = async () => {
     }
   });
 
+  // 5. UI state
   const pending = ref(false);
   const errorMessage = ref("");
 
+  // 6. Actions/mutations
   const submit = async () => {
     pending.value = true;
     errorMessage.value = "";
@@ -44,6 +50,7 @@ export const usePermissionCreatePage = async () => {
     }
   };
 
+  // 7. Return statement
   return {
     form,
     subModuleOptions,

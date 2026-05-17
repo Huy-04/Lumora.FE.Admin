@@ -1,85 +1,53 @@
 export const useUsersIndexPage = async () => {
+  // 1. Dependency injection
   const usersApi = useUsersAdminApi();
   const authz = useAdminAuthorization();
   const { enumLabel } = useAuthPresentation();
+
+  // 2. Permissions
   const canCreateUser = computed(() => authz.can(ADMIN_PERMISSION.userCreateAll));
   const canRemoveUser = computed(() => authz.can(ADMIN_PERMISSION.userRemoveAll));
 
-  const localKeyword = ref("");
-  const localUserStatus = ref("");
-  const localEmailStatus = ref("");
-  const localPhoneStatus = ref("");
+  // 3. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const keyword = ref("");
-  const userStatus = ref("");
-  const emailStatus = ref("");
-  const phoneStatus = ref("");
+  // 4. Filters
+  const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
+    useFilters(
+      { keyword: "", userStatus: "", emailStatus: "", phoneStatus: "" },
+      { onApply: () => { pagination.page.value = 1; } },
+    );
 
-  const applyFilters = () => {
-    keyword.value = localKeyword.value;
-    userStatus.value = localUserStatus.value;
-    emailStatus.value = localEmailStatus.value;
-    phoneStatus.value = localPhoneStatus.value;
-  };
-
-  const clearFilters = () => {
-    localKeyword.value = "";
-    localUserStatus.value = "";
-    localEmailStatus.value = "";
-    localPhoneStatus.value = "";
-    keyword.value = "";
-    userStatus.value = "";
-    emailStatus.value = "";
-    phoneStatus.value = "";
-  };
-
-  const confirmUserId = ref("");
-  const actionPending = ref<"" | "remove">("");
-  const actionError = ref("");
-
-  const page = ref(1);
-  const pageSize = ref("20");
-  const pageSizeOptions = [
-    { label: "20", value: "20" },
-    { label: "50", value: "50" },
-    { label: "100", value: "100" },
-  ];
-
-  const applyFiltersWithReset = () => {
-    page.value = 1;
-    applyFilters();
-  };
-
+  // 5. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
-    () => `users:${keyword.value || "all"}:${userStatus.value || "all"}:${emailStatus.value || "all"}:${phoneStatus.value || "all"}:${page.value}:${pageSize.value}`,
+    () => `users:${appliedFilters.keyword.value || "all"}:${appliedFilters.userStatus.value || "all"}:${appliedFilters.emailStatus.value || "all"}:${appliedFilters.phoneStatus.value || "all"}:${pagination.page.value}:${pagination.pageSize.value}`,
     () => {
-      const hasFilter = Boolean(keyword.value || userStatus.value || emailStatus.value || phoneStatus.value);
+      const hasFilter = Boolean(
+        appliedFilters.keyword.value || appliedFilters.userStatus.value || appliedFilters.emailStatus.value || appliedFilters.phoneStatus.value,
+      );
 
       if (!hasFilter) {
-        return usersApi.getUsers(page.value, Number(pageSize.value));
+        return usersApi.getUsers(pagination.page.value, Number(pagination.pageSize.value));
       }
 
       return usersApi.searchUsers({
-        keyword: keyword.value || undefined,
-        userStatus: userStatus.value || undefined,
-        emailStatus: emailStatus.value || undefined,
-        phoneStatus: phoneStatus.value || undefined,
-        page: page.value,
-        size: Number(pageSize.value),
+        keyword: appliedFilters.keyword.value || undefined,
+        userStatus: appliedFilters.userStatus.value || undefined,
+        emailStatus: appliedFilters.emailStatus.value || undefined,
+        phoneStatus: appliedFilters.phoneStatus.value || undefined,
+        page: pagination.page.value,
+        size: Number(pagination.pageSize.value),
       });
     },
   );
 
+  // 6. Computed derivations
+  watch(() => data.value?.totalCount, (count) => {
+    totalItems.value = count ?? 0;
+  }, { immediate: true });
+
   const totalUsers = computed(() => data.value?.totalCount ?? 0);
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalUsers.value / Number(pageSize.value))));
-  const firstItemNumber = computed(() => totalUsers.value === 0 ? 0 : (page.value - 1) * Number(pageSize.value) + 1);
-  const lastItemNumber = computed(() => Math.min(page.value * Number(pageSize.value), totalUsers.value));
-
-  const goToNextPage = () => { if (page.value < totalPages.value) page.value += 1; };
-  const goToPreviousPage = () => { if (page.value > 1) page.value -= 1; };
-
-  watch(pageSize, () => { page.value = 1; });
-
   const confirmUser = computed(() => (data.value?.items ?? []).find((user) => user.id === confirmUserId.value) ?? null);
   const confirmTitle = computed(() => confirmUser.value ? `Remove ${confirmUser.value.fullName}?` : "");
   const confirmDetail = "This action removes the account record.";
@@ -110,6 +78,11 @@ export const useUsersIndexPage = async () => {
     ];
   });
 
+  // 7. Actions/mutations
+  const confirmUserId = ref("");
+  const actionPending = ref<"" | "remove">("");
+  const actionError = ref("");
+
   const requestRemove = (userId: string) => {
     confirmUserId.value = userId;
     actionError.value = "";
@@ -138,10 +111,14 @@ export const useUsersIndexPage = async () => {
     }
   };
 
+  // 8. Watchers
+  // (pagination reset on filter apply and pageSize change handled by usePagination and useFilters)
+
+  // 9. Return statement
   return {
     actionError,
     actionPending,
-    applyFilters: applyFiltersWithReset,
+    applyFilters,
     canCreateUser,
     canRemoveUser,
     cancelRemove,
@@ -150,31 +127,18 @@ export const useUsersIndexPage = async () => {
     confirmTitle,
     confirmUser,
     data,
-    emailStatus,
     enumLabel,
     error,
-    firstItemNumber,
-    goToNextPage,
-    goToPreviousPage,
-    keyword,
-    lastItemNumber,
-    localEmailStatus,
-    localKeyword,
-    localPhoneStatus,
-    localUserStatus,
-    page,
-    pageSize,
-    pageSizeOptions,
+    hasActiveFilters,
+    localFilters,
     pending,
-    phoneStatus,
     refresh,
     removeUser,
     requestRemove,
     summaryStats,
-    totalPages,
     totalUsers,
-    userStatus,
+    ...pagination,
   };
 };
 
-export type UsersIndexPage = Awaited<ReturnType<typeof useUsersIndexPage>>;
+export type UserIndexPageState = Awaited<ReturnType<typeof useUsersIndexPage>>;

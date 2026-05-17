@@ -42,6 +42,7 @@ const permissionModuleValues = [
   "Order",
   "Payment",
   "Cart",
+  "Coupon",
 ] as const;
 
 const permissionSubModuleValues = [
@@ -55,6 +56,7 @@ const permissionSubModuleValues = [
   "Category",
   "Product",
   "Cart",
+  "Coupon",
   "Admin",
 ] as const;
 
@@ -66,6 +68,7 @@ const moduleSubModuleMap: Record<string, string[]> = {
   Order: [],
   Payment: [],
   Cart: ["Cart"],
+  Coupon: ["Coupon"],
 };
 
 const permissionOperationValues = ["Read", "Create", "Update", "Remove", "Access"] as const;
