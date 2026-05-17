@@ -4,6 +4,7 @@ export const usePermissionsIndexPage = async () => {
   const authz = useAdminAuthorization();
   const { enumLabel } = useAuthPresentation();
   const { permissionModuleOptions, permissionOperationOptions, permissionScopeOptions } = useAuthOptions();
+  const permissionModules = permissionModuleOptions.map((option) => option.value);
 
   // 2. Permissions
   const canCreatePermission = computed(() => authz.can(ADMIN_PERMISSION.permissionCreateAll));
@@ -22,9 +23,26 @@ export const usePermissionsIndexPage = async () => {
   // 5. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `permissions:${appliedFilters.module.value || "all"}`,
-    () => appliedFilters.module.value
-      ? permissionsApi.getPermissionsByModule(appliedFilters.module.value, 1, 100)
-      : permissionsApi.getPermissions(1, 100),
+    async () => {
+      if (appliedFilters.module.value) {
+        return permissionsApi.getPermissionsByModule(appliedFilters.module.value, 1, 100);
+      }
+
+      const moduleResponses = await Promise.allSettled(
+        permissionModules.map((module) => permissionsApi.getPermissionsByModule(module, 1, 100)),
+      );
+      const items = moduleResponses.flatMap((response) =>
+        response.status === "fulfilled" ? response.value.items : [],
+      );
+
+      return {
+        items,
+        totalCount: items.length,
+        page: 1,
+        size: items.length,
+        totalPages: 1,
+      };
+    },
   );
 
   // 6. Computed derivations

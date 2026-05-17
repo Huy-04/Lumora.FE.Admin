@@ -199,38 +199,30 @@ const isTogglePending = computed(() =>
           </AppNotice>
 
           <form class="form-stack" @submit.prevent="updateCoupon">
-            <div class="grid gap-5">
-              <div class="max-w-2xl">
-                <AppInput v-model="editForm.code" label="Code" :disabled="!canModifyCoupon" :error="editErrors.code" />
-              </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <AppInput v-model="editForm.code" label="Code" :disabled="!canModifyCoupon" :error="editErrors.code" />
+              <AppInput :model-value="String(editForm.percent)" label="Discount percent" type="number" :disabled="!canModifyCoupon" :error="editErrors.percent" @update:model-value="editForm.percent = Number($event)" />
+            </div>
 
-              <div class="max-w-2xl">
-                <AppInput :model-value="String(editForm.percent)" label="Discount percent" type="number" :disabled="!canModifyCoupon" :error="editErrors.percent" @update:model-value="editForm.percent = Number($event)" />
-              </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <AppInput :model-value="String(editForm.maxDiscountAmount)" label="Max discount amount" type="number" :disabled="!canModifyCoupon" :error="editErrors.maxDiscountAmount" @update:model-value="editForm.maxDiscountAmount = Number($event)" />
+              <AppInput :model-value="String(editForm.maxRedemptions)" label="Max redemptions" type="number" :disabled="!canModifyCoupon" :error="editErrors.maxRedemptions" @update:model-value="editForm.maxRedemptions = Number($event)" />
+            </div>
 
-              <div class="max-w-2xl">
-                <AppInput :model-value="String(editForm.maxDiscountAmount)" label="Max discount amount" type="number" :disabled="!canModifyCoupon" :error="editErrors.maxDiscountAmount" @update:model-value="editForm.maxDiscountAmount = Number($event)" />
-              </div>
-
-              <div class="max-w-2xl">
-                <AppInput :model-value="String(editForm.maxRedemptions)" label="Max redemptions" type="number" :disabled="!canModifyCoupon" :error="editErrors.maxRedemptions" @update:model-value="editForm.maxRedemptions = Number($event)" />
-              </div>
-
-              <div class="max-w-2xl">
-                <AppInput v-model="editForm.startsAt" label="Starts at" type="datetime-local" :disabled="!canModifyCoupon" :error="editErrors.startsAt" />
-              </div>
-
-              <div class="max-w-2xl">
-                <AppInput v-model="editForm.expiresAt" label="Expires at" type="datetime-local" :disabled="!canModifyCoupon" :error="editErrors.expiresAt" />
-              </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <AppInput v-model="editForm.startsAt" label="Starts at" type="datetime-local" :disabled="!canModifyCoupon" :error="editErrors.startsAt" />
+              <AppInput v-model="editForm.expiresAt" label="Expires at" type="datetime-local" :disabled="!canModifyCoupon" :error="editErrors.expiresAt" />
             </div>
 
             <AppNotice v-if="actionError && actionPending === ''" tone="danger" title="Update failed" class="mt-4">
               {{ actionError }}
             </AppNotice>
 
-            <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-5">
-              <AppButton v-if="canModifyCoupon" :loading="actionPending === 'update'" type="submit">Save changes</AppButton>
+            <div class="flex flex-wrap items-center justify-end gap-4 border-t border-line pt-5">
+              <NuxtLink class="secondary-link min-w-[9rem]" :to="`/coupons/${coupon.id}`">
+                Cancel
+              </NuxtLink>
+              <AppButton v-if="canModifyCoupon" :loading="actionPending === 'update'" type="submit" class="min-w-[12rem]">Save changes</AppButton>
             </div>
           </form>
         </AppPanel>

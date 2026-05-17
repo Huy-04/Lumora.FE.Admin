@@ -118,6 +118,7 @@ const routeAccessRules: RouteAccessRule[] = [
   { pattern: /^\/warehouses\/create$/, requirements: [ADMIN_PERMISSION.warehouseCreateAll] },
   { pattern: /^\/warehouses\/[^/]+$/, requirements: [ADMIN_PERMISSION.warehouseReadAll] },
   { pattern: /^\/shipments$/, requirements: [ADMIN_PERMISSION.shipmentReadAll] },
+  { pattern: /^\/shipments\/create$/, requirements: [ADMIN_PERMISSION.shipmentModifyAll] },
   { pattern: /^\/shipments\/[^/]+$/, requirements: [ADMIN_PERMISSION.shipmentReadAll] },
   { pattern: /^\/reviews$/, requirements: [ADMIN_PERMISSION.reviewReadAll] },
   { pattern: /^\/reviews\/[^/]+$/, requirements: [ADMIN_PERMISSION.reviewReadAll] },

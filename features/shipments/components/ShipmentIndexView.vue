@@ -7,13 +7,9 @@ const props = defineProps<{
 
 const {
   applyFilters,
-  canModifyShipment,
+  canCreateShipment,
   carrierOptions,
   clearFilters,
-  createError,
-  createForm,
-  createPending,
-  createShipmentDraft,
   error,
   firstItemNumber,
   goToNextPage,
@@ -39,7 +35,10 @@ const {
     v-model="localFilters.keyword.value"
     eyebrow="Shipment queue"
     search-label="Search shipments"
-    search-placeholder="Shipment number, order number, or carrier order code"
+    search-placeholder="Shipment number, order number, order ID, or carrier order code"
+    create-route="/shipments/create"
+    create-label="Create shipment"
+    :can-create="canCreateShipment"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="shipments"
     :pending="pending"
@@ -63,18 +62,11 @@ const {
       <AppNotice v-if="error" tone="danger" title="Unable to load data">
         {{ loadErrorMessage }}
       </AppNotice>
-
-      <AppNotice v-if="createError" tone="danger" title="Create shipment failed">
-        {{ createError }}
-      </AppNotice>
     </template>
 
     <template #filters>
       <div class="w-full flex flex-col gap-4">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div class="w-full sm:flex-[1.25]">
-            <AppInput v-model="localFilters.orderId.value" label="Order id" placeholder="Filter by order GUID" @keyup.enter="applyFilters" />
-          </div>
           <div class="w-full sm:flex-1">
             <AppSelect v-model="localFilters.status.value" label="Shipment status" :options="shipmentStatusOptions" />
           </div>
@@ -126,28 +118,6 @@ const {
           </tr>
         </tbody>
       </table>
-    </template>
-
-    <template #after>
-      <AppPanel v-if="canModifyShipment" eyebrow="Shipment fallback" title="Create shipment draft">
-        <form class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)_auto]" @submit.prevent="createShipmentDraft">
-          <AppInput
-            v-model="createForm.orderId"
-            label="Processing order ID"
-            placeholder="Order GUID"
-          />
-          <AppInput
-            v-model="createForm.shipmentNumber"
-            label="Shipment number"
-            placeholder="Optional"
-          />
-          <div class="flex items-end">
-            <AppButton :loading="createPending" type="submit" class="w-full md:w-auto">
-              Create draft
-            </AppButton>
-          </div>
-        </form>
-      </AppPanel>
     </template>
   </AppIndexPage>
 </template>

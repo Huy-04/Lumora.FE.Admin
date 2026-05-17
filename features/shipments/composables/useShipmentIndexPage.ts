@@ -1,5 +1,7 @@
 import type { ShipmentCarrier, ShipmentStatus } from "~/features/shipments/types";
 
+const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export const useShipmentIndexPage = async () => {
   // 1. Dependency injection
   const shipmentApi = useShipmentAdminApi();
@@ -7,7 +9,7 @@ export const useShipmentIndexPage = async () => {
 
   // 2. Permissions
   const canReadShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentReadAll));
-  const canModifyShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentModifyAll));
+  const canCreateShipment = computed(() => authz.can(ADMIN_PERMISSION.shipmentModifyAll));
 
   // 3. Pagination
   const totalItems = ref(0);
@@ -16,22 +18,26 @@ export const useShipmentIndexPage = async () => {
   // 4. Filters
   const { localFilters, appliedFilters, applyFilters, clearFilters, hasActiveFilters } =
     useFilters(
-      { keyword: "", orderId: "", status: "" as ShipmentStatus | "", carrier: "" as ShipmentCarrier | "" },
+      { keyword: "", status: "" as ShipmentStatus | "", carrier: "" as ShipmentCarrier | "" },
       { onApply: () => { pagination.page.value = 1; } },
     );
-  const createForm = reactive({
-    orderId: "",
-    shipmentNumber: "",
+
+  const searchTerms = computed(() => {
+    const keyword = appliedFilters.keyword.value.trim();
+    const isOrderId = guidPattern.test(keyword);
+
+    return {
+      keyword: keyword && !isOrderId ? keyword : undefined,
+      orderId: isOrderId ? keyword : undefined,
+    };
   });
-  const createPending = ref(false);
-  const createError = ref("");
 
   // 5. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
-    () => `shipments:${appliedFilters.keyword.value || "all"}:${appliedFilters.orderId.value || "all"}:${appliedFilters.status.value || "all"}:${appliedFilters.carrier.value || "all"}:${pagination.page.value}:${pagination.pageSize.value}`,
+    () => `shipments:${searchTerms.value.keyword || "all"}:${searchTerms.value.orderId || "all"}:${appliedFilters.status.value || "all"}:${appliedFilters.carrier.value || "all"}:${pagination.page.value}:${pagination.pageSize.value}`,
     () => shipmentApi.searchShipments({
-      keyword: appliedFilters.keyword.value || undefined,
-      orderId: appliedFilters.orderId.value || undefined,
+      keyword: searchTerms.value.keyword,
+      orderId: searchTerms.value.orderId,
       status: appliedFilters.status.value || undefined,
       carrier: appliedFilters.carrier.value || undefined,
       page: pagination.page.value,
@@ -89,51 +95,16 @@ export const useShipmentIndexPage = async () => {
     },
   ]);
 
-  // 7. Actions/mutations
-  const createShipmentDraft = async () => {
-    if (!canModifyShipment.value || createPending.value) {
-      return;
-    }
-
-    const orderId = createForm.orderId.trim();
-    const shipmentNumber = createForm.shipmentNumber.trim();
-
-    if (!orderId) {
-      createError.value = "Order ID is required.";
-      return;
-    }
-
-    createPending.value = true;
-    createError.value = "";
-
-    try {
-      const created = await shipmentApi.createShipment({
-        orderId,
-        shipmentNumber: shipmentNumber || null,
-      });
-
-      await navigateTo(`/shipments/${created.id}`);
-    } catch (requestError) {
-      createError.value = getProblemMessage(requestError, "Unable to create shipment draft.");
-    } finally {
-      createPending.value = false;
-    }
-  };
-
-  // 8. Watchers
+  // 7. Watchers
   // (pagination reset on filter apply and pageSize change handled by usePagination and useFilters)
 
-  // 9. Return statement
+  // 8. Return statement
   return {
     applyFilters,
-    canModifyShipment,
+    canCreateShipment,
     canReadShipment,
     carrierOptions,
     clearFilters,
-    createError,
-    createForm,
-    createPending,
-    createShipmentDraft,
     error,
     hasActiveFilters,
     loadErrorMessage,

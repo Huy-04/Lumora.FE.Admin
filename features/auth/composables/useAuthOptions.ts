@@ -42,6 +42,11 @@ const permissionModuleValues = [
   "Order",
   "Payment",
   "Cart",
+  "Review",
+  "Operations",
+  "Warehouse",
+  "Inventory",
+  "Shipment",
   "Coupon",
 ] as const;
 
@@ -55,7 +60,14 @@ const permissionSubModuleValues = [
   "RolePermission",
   "Category",
   "Product",
+  "Order",
+  "Payment",
   "Cart",
+  "Review",
+  "SystemEvents",
+  "Warehouse",
+  "Inventory",
+  "Shipment",
   "Coupon",
   "Admin",
 ] as const;
@@ -65,9 +77,14 @@ const moduleSubModuleMap: Record<string, string[]> = {
   Auth: ["User", "Role", "Permission", "UserAddress", "RefreshToken", "UserRole", "RolePermission", "Admin"],
   Category: ["Category"],
   Product: ["Product"],
-  Order: [],
-  Payment: [],
+  Order: ["Order"],
+  Payment: ["Payment"],
   Cart: ["Cart"],
+  Review: ["Review"],
+  Operations: ["SystemEvents"],
+  Warehouse: ["Warehouse"],
+  Inventory: ["Inventory"],
+  Shipment: ["Shipment"],
   Coupon: ["Coupon"],
 };
 
