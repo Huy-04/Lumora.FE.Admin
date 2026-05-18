@@ -11,6 +11,7 @@ import {
   PhTruck,
   PhUsersThree,
   PhBuildings,
+  PhChatCenteredText,
   PhCreditCard,
 } from "@phosphor-icons/vue";
 
@@ -94,6 +95,13 @@ export const useAdminNavigation = () => {
       collapsible: true,
       items: [
         { label: "Shipments", to: "/shipments", icon: PhTruck },
+      ],
+    },
+    {
+      label: "Review",
+      collapsible: true,
+      items: [
+        { label: "Reviews", to: "/reviews", icon: PhChatCenteredText },
       ],
     },
     {
