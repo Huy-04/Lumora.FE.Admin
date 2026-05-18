@@ -210,6 +210,29 @@ export const useCouponDetailPage = async () => {
     }
   };
 
+  const deleteCoupon = async () => {
+    if (!coupon.value || !canModifyCoupon.value) return;
+
+    actionPending.value = "delete";
+    actionError.value = "";
+
+    try {
+      await couponApi.deleteCoupon(couponId.value);
+      await navigateTo("/coupons");
+    } catch (requestError) {
+      const status = getProblemStatus(requestError);
+      if (status === 404) {
+        actionError.value = "Coupon not found.";
+      } else if (status === 409) {
+        actionError.value = "Cannot delete a coupon that has been used. Deactivate it instead.";
+      } else {
+        actionError.value = getProblemMessage(requestError, "Unable to delete coupon.");
+      }
+    } finally {
+      actionPending.value = "";
+    }
+  };
+
   // 7. Return statement
   return {
     actionError,
@@ -230,6 +253,7 @@ export const useCouponDetailPage = async () => {
     selectTab,
     activateCoupon,
     deactivateCoupon,
+    deleteCoupon,
     updateCoupon,
   };
 };

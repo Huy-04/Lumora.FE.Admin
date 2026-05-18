@@ -25,6 +25,7 @@ const {
   selectTab,
   activateCoupon,
   deactivateCoupon,
+  deleteCoupon,
   updateCoupon,
 } = props.page;
 
@@ -76,6 +77,19 @@ const handleToggleActive = () => {
 const isTogglePending = computed(() =>
   actionPending.value === "activate" || actionPending.value === "deactivate",
 );
+
+const isDeletePending = computed(() => actionPending.value === "delete");
+
+const canDelete = computed(() =>
+  canModifyCoupon.value && coupon.value && coupon.value.usedCount === 0,
+);
+
+const showDeleteConfirm = ref(false);
+
+const handleDelete = () => {
+  showDeleteConfirm.value = false;
+  deleteCoupon();
+};
 </script>
 
 <template>
@@ -114,6 +128,15 @@ const isTogglePending = computed(() =>
               @click="handleToggleActive"
             >
               {{ toggleLabel }}
+            </AppButton>
+            <AppButton
+              v-if="canDelete"
+              :loading="isDeletePending"
+              :disabled="isDeletePending || isTogglePending"
+              variant="danger"
+              @click="showDeleteConfirm = true"
+            >
+              Delete
             </AppButton>
           </div>
           <AppNotice v-if="actionError && (actionPending === '' || isTogglePending)" tone="danger" title="Action failed" class="mt-4">
@@ -229,4 +252,15 @@ const isTogglePending = computed(() =>
       </div>
     </template>
   </AppDetailPage>
+
+  <!-- Delete confirmation dialog -->
+  <AppDialog v-if="showDeleteConfirm" title="Delete coupon" @close="showDeleteConfirm = false">
+    <p class="text-sm text-smoke">
+      Are you sure you want to delete coupon <strong>{{ coupon?.code }}</strong>? This action cannot be undone.
+    </p>
+    <template #actions>
+      <AppButton variant="secondary" @click="showDeleteConfirm = false">Cancel</AppButton>
+      <AppButton variant="danger" @click="handleDelete">Delete</AppButton>
+    </template>
+  </AppDialog>
 </template>

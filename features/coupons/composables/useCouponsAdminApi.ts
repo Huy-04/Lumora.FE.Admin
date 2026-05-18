@@ -36,5 +36,10 @@ export const useCouponsAdminApi = () => {
       api.request<CouponResponse>(couponRoute(`/${id}/deactivate`), {
         method: "POST",
       }),
+
+    deleteCoupon: (id: string) =>
+      api.request<void>(couponRoute(`/${id}`), {
+        method: "DELETE",
+      }),
   };
 };
