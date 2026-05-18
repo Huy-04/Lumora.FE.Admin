@@ -254,13 +254,15 @@ const handleDelete = () => {
   </AppDetailPage>
 
   <!-- Delete confirmation dialog -->
-  <AppDialog v-if="showDeleteConfirm" title="Delete coupon" @close="showDeleteConfirm = false">
-    <p class="text-sm text-smoke">
-      Are you sure you want to delete coupon <strong>{{ coupon?.code }}</strong>? This action cannot be undone.
-    </p>
-    <template #actions>
-      <AppButton variant="secondary" @click="showDeleteConfirm = false">Cancel</AppButton>
-      <AppButton variant="danger" @click="handleDelete">Delete</AppButton>
-    </template>
-  </AppDialog>
+  <AppConfirm
+    :open="showDeleteConfirm"
+    title="Delete coupon"
+    :detail="`This coupon (${coupon?.code}) will be permanently removed. This action cannot be undone.`"
+    confirm-label="Delete"
+    cancel-label="Cancel"
+    tone="danger"
+    :loading="isDeletePending"
+    @confirm="handleDelete"
+    @cancel="showDeleteConfirm = false"
+  />
 </template>
