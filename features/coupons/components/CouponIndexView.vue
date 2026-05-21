@@ -6,16 +6,8 @@ const props = defineProps<{
 }>();
 
 const {
-  actionError,
-  actionPending,
-  actionTargetId,
   applyFilters,
-  cancelRemove,
-  canRemoveCoupon,
   clearFilters,
-  confirmCoupon,
-  confirmDetail,
-  confirmTitle,
   error,
   firstItemNumber,
   goToNextPage,
@@ -28,8 +20,6 @@ const {
   pageSize,
   pageSizeOptions,
   pending,
-  removeCoupon,
-  requestRemove,
   totalItems,
   totalPages,
 } = props.page;
@@ -85,8 +75,6 @@ const sortDirectionOptions = [
     :pending="pending"
     :error="error ? 'Error loading data' : null"
     :error-detail="error ? loadErrorMessage : ''"
-    :action-error="actionError"
-    action-error-title="Coupon action failed"
     :items-length="items.length"
     empty-title="No coupons found"
     empty-detail="Adjust the filters or create the first coupon."
@@ -101,19 +89,6 @@ const sortDirectionOptions = [
     @previous-page="goToPreviousPage"
     @next-page="goToNextPage"
   >
-    <template #modals>
-      <AppConfirm
-        :open="confirmCoupon !== null"
-        :title="confirmTitle"
-        :detail="confirmDetail"
-        confirm-label="Remove"
-        tone="danger"
-        :loading="actionPending === 'remove'"
-        @confirm="removeCoupon"
-        @cancel="cancelRemove"
-      />
-    </template>
-
     <template #filters>
       <div class="grid w-full gap-4 md:grid-cols-5">
         <AppSelect
@@ -147,7 +122,6 @@ const sortDirectionOptions = [
             <th class="min-w-[160px]">Starts at</th>
             <th class="min-w-[160px]">Expires at</th>
             <th class="w-[96px] text-center">Open</th>
-            <th v-if="canRemoveCoupon" class="w-[112px] text-center">Remove</th>
           </tr>
         </thead>
         <tbody>
@@ -169,20 +143,6 @@ const sortDirectionOptions = [
                 <NuxtLink class="secondary-link table-action" :to="`/coupons/${coupon.id}`">
                   Open
                 </NuxtLink>
-              </div>
-            </td>
-            <td v-if="canRemoveCoupon">
-              <div class="flex justify-center">
-                <AppButton
-                  class="table-action"
-                  variant="danger"
-                  :disabled="coupon.usedCount > 0"
-                  :loading="actionPending === 'remove' && actionTargetId === coupon.id"
-                  :title="coupon.usedCount > 0 ? 'Used coupons cannot be removed' : 'Remove coupon'"
-                  @click="requestRemove(coupon.id)"
-                >
-                  Remove
-                </AppButton>
               </div>
             </td>
           </tr>

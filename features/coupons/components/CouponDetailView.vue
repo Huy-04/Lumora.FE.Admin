@@ -21,11 +21,9 @@ const {
   isNotFound,
   loadErrorMessage,
   pending,
-  refresh,
   selectTab,
   activateCoupon,
   deactivateCoupon,
-  deleteCoupon,
   updateCoupon,
 } = props.page;
 
@@ -77,19 +75,6 @@ const handleToggleActive = () => {
 const isTogglePending = computed(() =>
   actionPending.value === "activate" || actionPending.value === "deactivate",
 );
-
-const isDeletePending = computed(() => actionPending.value === "delete");
-
-const canDelete = computed(() =>
-  canModifyCoupon.value && coupon.value && coupon.value.usedCount === 0,
-);
-
-const showDeleteConfirm = ref(false);
-
-const handleDelete = () => {
-  showDeleteConfirm.value = false;
-  deleteCoupon();
-};
 </script>
 
 <template>
@@ -105,7 +90,7 @@ const handleDelete = () => {
     <!-- 404 Not Found state -->
     <template v-if="isNotFound">
       <AppNotice tone="danger" title="Coupon not found">
-        The requested coupon does not exist or has been removed.
+        The requested coupon does not exist or is unavailable.
       </AppNotice>
     </template>
 
@@ -128,15 +113,6 @@ const handleDelete = () => {
               @click="handleToggleActive"
             >
               {{ toggleLabel }}
-            </AppButton>
-            <AppButton
-              v-if="canDelete"
-              :loading="isDeletePending"
-              :disabled="isDeletePending || isTogglePending"
-              variant="danger"
-              @click="showDeleteConfirm = true"
-            >
-              Delete
             </AppButton>
           </div>
           <AppNotice v-if="actionError && (actionPending === '' || isTogglePending)" tone="danger" title="Action failed" class="mt-4">
@@ -252,17 +228,4 @@ const handleDelete = () => {
       </div>
     </template>
   </AppDetailPage>
-
-  <!-- Delete confirmation dialog -->
-  <AppConfirm
-    :open="showDeleteConfirm"
-    title="Delete coupon"
-    :detail="`This coupon (${coupon?.code}) will be permanently removed. This action cannot be undone.`"
-    confirm-label="Delete"
-    cancel-label="Cancel"
-    tone="danger"
-    :loading="isDeletePending"
-    @confirm="handleDelete"
-    @cancel="showDeleteConfirm = false"
-  />
 </template>
