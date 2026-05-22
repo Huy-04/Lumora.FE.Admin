@@ -7,7 +7,7 @@ const props = defineProps<{
   page: DashboardPageState;
 }>();
 
-const { stats, pending, error, trendRanges, selectedTrendRange, trendPending, trendError, loadOrderTrends, setTrendRange } = props.page;
+const { stats, pending, error, fromDate, toDate, trendFilterError, trendPending, trendError, loadOrderTrends, applyTrendFilter } = props.page;
 
 const isAccessDenied = computed(() => getProblemStatus(error.value) === 403);
 
@@ -80,16 +80,13 @@ const trendGridLines = computed(() => [1, 0.75, 0.5, 0.25, 0].map((ratio) => {
   };
 }));
 
-const selectedTrendRangeLabel = computed(() =>
-  trendRanges.find(range => range.value === selectedTrendRange.value)?.label ?? "7D",
-);
-
 const formatTrendLabel = (point: { date: string; label?: string }) => {
   if (point.label) return point.label;
   return new Date(point.date).toLocaleDateString("en", { weekday: "short" });
 };
 
 const formatMoney = (value: number) => `${Math.round(value).toLocaleString()} VND`;
+const selectedTrendRangeLabel = computed(() => `${fromDate.value} to ${toDate.value}`);
 
 const statCards = computed(() => [
   {
@@ -185,20 +182,15 @@ const manageCards = [
               <h3 class="dashboard-chart-title">Orders Trend</h3>
               <p class="dashboard-chart-subtitle">{{ trendTotal }} orders in {{ selectedTrendRangeLabel }}</p>
             </div>
-            <div class="dashboard-range-control" aria-label="Order trend range">
-              <button
-                v-for="range in trendRanges"
-                :key="range.value"
-                type="button"
-                class="dashboard-range-button"
-                :class="selectedTrendRange === range.value ? 'dashboard-range-button-active' : ''"
-                :disabled="trendPending"
-                @click="setTrendRange(range.value)"
-              >
-                {{ range.label }}
-              </button>
+            <div class="dashboard-range-control items-end" aria-label="Order trend range">
+              <AppInput v-model="fromDate" label="From" type="date" />
+              <AppInput v-model="toDate" label="To" type="date" />
+              <AppButton variant="primary" :disabled="trendPending || Boolean(trendFilterError)" @click="applyTrendFilter">
+                Apply
+              </AppButton>
             </div>
           </div>
+          <p v-if="trendFilterError" class="text-sm text-danger">{{ trendFilterError }}</p>
           <div class="dashboard-line-chart mt-4">
             <!-- 7.1: Trend error state with retry -->
             <div v-if="trendError" class="grid place-items-center gap-3 py-10 text-center">
@@ -469,58 +461,6 @@ const manageCards = [
               <span class="dashboard-bar-value">{{ stats.products.discontinued }}</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div v-if="!pending && stats.recentOrders.length" class="dashboard-chart-card">
-        <div class="flex items-center justify-between gap-4">
-          <h3 class="dashboard-chart-title">Recent Orders</h3>
-          <NuxtLink to="/orders" class="dashboard-view-link">
-            View all
-          </NuxtLink>
-        </div>
-        <div class="mt-4 table-shell overflow-x-auto">
-          <table class="data-table dashboard-table">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Recipient</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="order in stats.recentOrders" :key="order.id">
-                <td>
-                  <NuxtLink class="text-sm font-medium text-ink hover:underline" :to="`/orders/${order.id}`">
-                    {{ order.orderNumber }}
-                  </NuxtLink>
-                </td>
-                <td class="text-sm text-smoke">{{ order.recipientName }}</td>
-                <td class="text-sm font-medium text-ink">{{ order.totalAmount.toLocaleString() }}</td>
-                <td>
-                  <AppBadge :tone="order.status === 'Completed' ? 'success' : order.status === 'Cancelled' ? 'danger' : order.status === 'Pending' ? 'warning' : 'default'">
-                    {{ order.status }}
-                  </AppBadge>
-                </td>
-                <td class="text-xs text-smoke">{{ new Date(order.createdAt).toLocaleDateString() }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 7.3: Empty recent orders state -->
-      <div v-else-if="!pending && !stats.recentOrders.length" class="dashboard-chart-card">
-        <div class="flex items-center justify-between gap-4">
-          <h3 class="dashboard-chart-title">Recent Orders</h3>
-          <NuxtLink to="/orders" class="dashboard-view-link">
-            View all
-          </NuxtLink>
-        </div>
-        <div class="grid place-items-center gap-2 py-10 text-center">
-          <p class="text-sm text-smoke">No recent orders yet</p>
         </div>
       </div>
 

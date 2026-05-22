@@ -1,64 +1,62 @@
-const dashboardTrendRanges = [
-  { value: "1d", label: "1D", days: 1, bucket: "day" },
-  { value: "3d", label: "3D", days: 3, bucket: "day" },
-  { value: "5d", label: "5D", days: 5, bucket: "day" },
-  { value: "7d", label: "7D", days: 7, bucket: "day" },
-  { value: "30d", label: "30D", days: 30, bucket: "day" },
-  { value: "3y", label: "3Y", months: 36, bucket: "month" },
-] as const;
-
-type DashboardTrendRange = typeof dashboardTrendRanges[number]["value"];
 type DashboardTrendPoint = { date: string; label: string; count: number };
 
 const toTrendDate = (date: string) => new Date(`${date}T00:00:00`);
 
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const useDashboardPage = async () => {
-  // 1. Dependency injection
   const session = useAuthSession();
   const dashboardApi = useDashboardAdminApi();
 
-  // 6. Computed derivations
   const currentUser = computed(() => session.user.value);
 
-  const selectedTrendRange = ref<DashboardTrendRange>("7d");
+  const today = new Date();
+  const defaultToDate = formatDateInput(today);
+  const defaultFromDate = formatDateInput(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6));
+
+  const fromDate = ref(defaultFromDate);
+  const toDate = ref(defaultToDate);
   const orderTrend = ref<DashboardTrendPoint[]>([]);
-  const orderTrendByRange = ref<Partial<Record<DashboardTrendRange, DashboardTrendPoint[]>>>({});
   const trendPending = ref(false);
   const trendError = ref<unknown>(null);
   let trendRequestId = 0;
 
-  const mapTrendPoints = (range: DashboardTrendRange, points: Array<{ date: string; count: number }>) => {
-    const selectedRange = dashboardTrendRanges.find(r => r.value === range) ?? dashboardTrendRanges[3];
-
-    return points.map(point => {
+  const mapTrendPoints = (points: Array<{ date: string; count: number }>) =>
+    points.map(point => {
       const date = toTrendDate(point.date);
-
       return {
         date: point.date,
-        label: selectedRange.bucket === "month"
-          ? date.toLocaleDateString("en", { month: "short" })
-          : date.toLocaleDateString("en", { weekday: "short" }),
+        label: date.toLocaleDateString("en", { month: "short", day: "numeric" }),
         count: point.count,
       };
     });
-  };
 
-  // 7. Actions/mutations
+  const trendFilterError = computed(() => {
+    if (!fromDate.value || !toDate.value) return "Select both from and to dates.";
+    if (fromDate.value > toDate.value) return "From date must be before or equal to to date.";
+    return null;
+  });
+
   const loadOrderTrends = async () => {
+    if (trendFilterError.value) {
+      trendError.value = new Error(trendFilterError.value);
+      orderTrend.value = [];
+      return;
+    }
+
     const requestId = ++trendRequestId;
     trendPending.value = true;
     trendError.value = null;
 
     try {
-      const response = await dashboardApi.getOrderTrends();
+      const response = await dashboardApi.getOrderTrends(fromDate.value, toDate.value);
       if (requestId === trendRequestId) {
-        orderTrendByRange.value = Object.fromEntries(
-          response.ranges.map(item => [
-            item.range,
-            mapTrendPoints(item.range as DashboardTrendRange, item.points),
-          ]),
-        ) as Partial<Record<DashboardTrendRange, DashboardTrendPoint[]>>;
-        orderTrend.value = orderTrendByRange.value[selectedTrendRange.value] ?? [];
+        orderTrend.value = mapTrendPoints(response.ranges[0]?.points ?? []);
       }
     } catch (error) {
       if (requestId === trendRequestId) {
@@ -72,7 +70,6 @@ export const useDashboardPage = async () => {
     }
   };
 
-  // 5. Data fetching
   const summaryAsyncData = useAsyncData("dashboard-summary", async () => {
     return await dashboardApi.getSummary();
   });
@@ -89,7 +86,6 @@ export const useDashboardPage = async () => {
       shipments: { total: 0, draft: 0, submitted: 0, pickedUp: 0, inTransit: 0, delivered: 0, returned: 0, cancelled: 0, failed: 0 },
       products: { total: 0, published: 0, draft: 0, discontinued: 0 },
       revenue: { total: 0, today: 0, thisMonth: 0, averageOrderValue: 0, paidOrders: 0 },
-      recentOrders: [],
     };
 
     return {
@@ -105,13 +101,10 @@ export const useDashboardPage = async () => {
     await Promise.all([refreshSummary(), loadOrderTrends()]);
   };
 
-  const setTrendRange = (range: DashboardTrendRange) => {
-    if (selectedTrendRange.value === range) return;
-    selectedTrendRange.value = range;
-    orderTrend.value = orderTrendByRange.value[range] ?? [];
+  const applyTrendFilter = async () => {
+    await loadOrderTrends();
   };
 
-  // 9. Return statement
   return {
     currentUser,
     stats,
@@ -119,12 +112,13 @@ export const useDashboardPage = async () => {
     refreshing,
     error,
     refresh,
-    trendRanges: dashboardTrendRanges,
-    selectedTrendRange,
+    fromDate,
+    toDate,
+    trendFilterError,
     trendPending,
     trendError,
     loadOrderTrends,
-    setTrendRange,
+    applyTrendFilter,
   };
 };
 

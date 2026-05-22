@@ -12,7 +12,9 @@ export const useDashboardAdminApi = () => {
     getSummary: () =>
       api.request<DashboardSummaryResponse>(dashboardRoute("/summary")),
 
-    getOrderTrends: () =>
-      api.request<DashboardOrderTrendsResponse>(dashboardRoute("/order-trends")),
+    getOrderTrends: (from: string, to: string) =>
+      api.request<DashboardOrderTrendsResponse>(dashboardRoute("/order-trends"), {
+        query: { from, to },
+      }),
   };
 };

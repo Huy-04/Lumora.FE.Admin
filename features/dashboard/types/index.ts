@@ -44,22 +44,12 @@ export interface DashboardRevenueSummaryResponse {
   paidOrders: number;
 }
 
-export interface DashboardRecentOrderResponse {
-  id: string;
-  orderNumber: string;
-  recipientName: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-}
-
 export interface DashboardSummaryResponse {
   orders: DashboardOrderSummaryResponse;
   payments: DashboardPaymentSummaryResponse;
   shipments: DashboardShipmentSummaryResponse;
   products: DashboardProductSummaryResponse;
   revenue: DashboardRevenueSummaryResponse;
-  recentOrders: DashboardRecentOrderResponse[];
 }
 
 export interface DashboardOrderTrendPointResponse {
