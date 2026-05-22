@@ -6,10 +6,10 @@ const props = defineProps<{
   page: RoleDetailPage;
 }>();
 
-const { roleId, roleTabs, activeTab, data, pending, error, refresh } = props.page;
+const { roleId, roleTabs, activeTab, data, pending, error, refresh, selectTab } = props.page;
 
 const selectRoleTab = (tab: string) => {
-  activeTab.value = tab as typeof activeTab.value;
+  selectTab(tab as typeof activeTab.value);
 };
 
 const activeTabLabel = computed(() =>

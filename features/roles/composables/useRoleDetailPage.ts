@@ -19,10 +19,10 @@ export const useRoleDetailPage = async () => {
     ...(canViewRolePermissions.value ? [{ label: "Permissions", value: "permissions" as const }] : []),
   ]);
 
-  const normalizeTab = (value: RoleTab): RoleTab =>
-    roleTabs.value.some((tab) => tab.value === value) ? value : "overview";
+  const normalizeTab = (value: unknown): RoleTab =>
+    roleTabs.value.some((tab) => tab.value === value) ? (value as RoleTab) : "overview";
 
-  const activeTab = ref<RoleTab>(normalizeTab("overview"));
+  const activeTab = ref<RoleTab>(normalizeTab(route.query.tab));
 
   // 4. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
@@ -42,14 +42,37 @@ export const useRoleDetailPage = async () => {
         catalog: catalog.items,
       };
     },
+    { watch: [canViewRolePermissions] }
   );
 
   // 5. Watchers
+  watch(
+    () => route.query.tab,
+    (value) => {
+      activeTab.value = normalizeTab(value);
+    },
+  );
+
   watchEffect(() => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
   // 6. Return statement
+  const selectTab = async (tab: RoleTab) => {
+    if (!roleTabs.value.some((item) => item.value === tab)) {
+      return;
+    }
+
+    activeTab.value = tab;
+    await navigateTo(
+      {
+        path: `/roles/${roleId.value}`,
+        query: { tab },
+      },
+      { replace: true },
+    );
+  };
+
   return {
     roleId,
     canViewRolePermissions,
@@ -59,6 +82,7 @@ export const useRoleDetailPage = async () => {
     pending,
     error,
     refresh,
+    selectTab,
   };
 };
 
