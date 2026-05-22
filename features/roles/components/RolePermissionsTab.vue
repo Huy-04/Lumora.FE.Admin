@@ -149,6 +149,11 @@ const syncPermissions = async () => {
     empty-title="No permissions in catalog"
     empty-detail="Create permissions first, then return here to assign them."
   >
+    <div style="background: red; color: white; padding: 10px; margin-bottom: 20px;">
+      DEBUG CATALOG LENGTH: {{ catalog?.length }}<br>
+      DEBUG IS ARRAY: {{ Array.isArray(catalog) }}<br>
+      DEBUG JSON: {{ JSON.stringify(catalog).substring(0, 200) }}
+    </div>
     <AppConfirm
       :open="actionErrorOpen"
       title="Update failed"
