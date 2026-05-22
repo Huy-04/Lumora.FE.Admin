@@ -1513,13 +1513,10 @@
   }
 
   .dashboard-range-control {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.18rem;
-    padding: 0.2rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--surface-quiet) 62%, transparent);
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .dashboard-range-button {
@@ -1602,9 +1599,10 @@
   }
 
   .dashboard-line-chart {
-    min-height: 13.4rem;
+    height: 13.4rem;
     overflow-x: auto;
     overflow-y: hidden;
+    flex-shrink: 0;
   }
 
   .dashboard-line-svg {
@@ -1703,8 +1701,6 @@
 
     .dashboard-range-control {
       width: 100%;
-      justify-content: space-between;
-      overflow-x: auto;
     }
 
     .dashboard-range-button {
@@ -1714,7 +1710,7 @@
 
     .dashboard-line-chart {
       overflow-x: auto;
-      min-height: 12.5rem;
+      height: 12.5rem;
     }
 
     .dashboard-line-svg {
