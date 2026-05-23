@@ -25,6 +25,9 @@ type StreamedRequestInit = RequestInit & {
   duplex?: "half";
 };
 
+const isJsonContentType = (contentType: string | null) =>
+  Boolean(contentType && /(?:application\/json|application\/problem\+json|.+\+json)(?:;|$)/i.test(contentType));
+
 const isLocalHttpRequest = (event: Parameters<typeof getRequestURL>[0]) => {
   const url = getRequestURL(event);
   return url.protocol === "http:" &&
@@ -33,6 +36,96 @@ const isLocalHttpRequest = (event: Parameters<typeof getRequestURL>[0]) => {
 
 const relaxSecureCookieForLocalHttp = (cookie: string) =>
   cookie.replace(/;\s*Secure/gi, "");
+
+const tryCloseBrackets = (prefix: string): string | null => {
+  const opens: string[] = [];
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < prefix.length; i++) {
+    const ch = prefix[i];
+    if (escape) { escape = false; continue; }
+    if (ch === "\\" && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{" || ch === "[") opens.push(ch);
+    if (ch === "}") { if (opens.length && opens[opens.length - 1] === "{") opens.pop(); else return null; }
+    if (ch === "]") { if (opens.length && opens[opens.length - 1] === "[") opens.pop(); else return null; }
+  }
+
+  if (inString) return null;
+
+  return prefix + opens.reverse().map((c) => c === "{" ? "}" : "]").join("");
+};
+
+const tryRecoverJson = (rawText: string): unknown | null => {
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    // Continue to recovery.
+  }
+
+  const trimmed = rawText.trim();
+
+  if (trimmed.startsWith("[")) {
+    const lastComma = trimmed.lastIndexOf("},");
+    const lastBrace = trimmed.lastIndexOf("}");
+
+    if (lastBrace !== -1) {
+      const cutPoint = lastComma !== -1 ? lastComma + 1 : lastBrace + 1;
+      const candidate = trimmed.slice(0, cutPoint) + "]";
+
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        const closed = tryCloseBrackets(candidate);
+        if (closed) {
+          try { return JSON.parse(closed); } catch { /* fall through */ }
+        }
+      }
+    }
+  }
+
+  if (trimmed.startsWith("{")) {
+    const strategies: Array<() => string | null> = [
+      () => {
+        const idx = trimmed.lastIndexOf("},");
+        return idx !== -1 ? trimmed.slice(0, idx + 1) : null;
+      },
+      () => {
+        const idx = trimmed.lastIndexOf(',"');
+        return idx !== -1 ? trimmed.slice(0, idx) : null;
+      },
+      () => {
+        const idx = trimmed.lastIndexOf("}");
+        return idx !== -1 ? trimmed.slice(0, idx + 1) : null;
+      },
+      () => {
+        const idx = trimmed.lastIndexOf("],");
+        return idx !== -1 ? trimmed.slice(0, idx + 1) : null;
+      },
+      () => {
+        const idx = trimmed.lastIndexOf("]");
+        return idx !== -1 ? trimmed.slice(0, idx + 1) : null;
+      },
+    ];
+
+    for (const strategy of strategies) {
+      const prefix = strategy();
+      if (prefix === null) continue;
+
+      const closed = tryCloseBrackets(prefix);
+      if (closed === null) continue;
+
+      try {
+        return JSON.parse(closed);
+      } catch {
+      }
+    }
+  }
+
+  return null;
+};
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig(event);
@@ -92,8 +185,7 @@ export default defineEventHandler(async (event) => {
   // Forward status
   setResponseStatus(event, upstream.status, upstream.statusText);
 
-  // Forward headers — special handling for Set-Cookie to avoid
-  // the Fetch spec combining them into a single comma-separated value.
+  // Forward headers
   for (const [key, value] of upstream.headers.entries()) {
     if (HOP_BY_HOP.has(key.toLowerCase())) {
       continue;
@@ -109,8 +201,34 @@ export default defineEventHandler(async (event) => {
       ? setCookies.map(relaxSecureCookieForLocalHttp)
       : setCookies;
 
-    // Overwrite the combined header with individual entries.
     setResponseHeader(event, "set-cookie", cookies);
+  }
+
+  if (method === "HEAD" || upstream.status === 204 || upstream.status === 304) {
+    return null;
+  }
+
+  const contentType = upstream.headers.get("content-type");
+
+  if (isJsonContentType(contentType)) {
+    const rawText = await upstream.text();
+    if (normalizedPath.startsWith("permissions")) {
+    }
+
+    const recovered = tryRecoverJson(rawText);
+    if (recovered !== null) {
+      return recovered;
+    }
+
+    setResponseStatus(event, 502, "Bad Gateway");
+    setResponseHeader(event, "content-type", "application/problem+json; charset=utf-8");
+
+    return {
+      type: "about:blank",
+      title: "UpstreamJsonError",
+      status: 502,
+      detail: "The upstream server returned an invalid JSON response.",
+    };
   }
 
   return upstream.body;

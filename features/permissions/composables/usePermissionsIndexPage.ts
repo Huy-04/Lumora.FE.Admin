@@ -25,11 +25,11 @@ export const usePermissionsIndexPage = async () => {
     () => `permissions:${appliedFilters.module.value || "all"}`,
     async () => {
       if (appliedFilters.module.value) {
-        return permissionsApi.getPermissionsByModule(appliedFilters.module.value, 1, 100);
+        return permissionsApi.getPermissionsByModule(appliedFilters.module.value, 1, 50);
       }
 
       const moduleResponses = await Promise.allSettled(
-        permissionModules.map((module) => permissionsApi.getPermissionsByModule(module, 1, 100)),
+        permissionModules.map((module) => permissionsApi.getPermissionsByModule(module, 1, 50)),
       );
       const items = moduleResponses.flatMap((response) =>
         response.status === "fulfilled" ? response.value.items : [],

@@ -1,7 +1,7 @@
 export const usePermissionCreatePage = async () => {
   // 1. Dependency injection
   const permissionsApi = usePermissionsAdminApi();
-  const { permissionModuleOptions, getSubModuleOptions, permissionOperationOptions, permissionScopeOptions } = useAuthOptions();
+  const { permissionModuleOptions, getSubModuleOptions, getOperationOptions, permissionScopeOptions } = useAuthOptions();
 
   // 2. Form state
   const form = reactive({
@@ -14,6 +14,7 @@ export const usePermissionCreatePage = async () => {
 
   // 3. Computed derivations
   const subModuleOptions = computed(() => getSubModuleOptions(form.module));
+  const operationOptions = computed(() => getOperationOptions(form.subModule));
 
   // 4. Watchers
   // When module changes, reset subModule to first valid option
@@ -21,6 +22,16 @@ export const usePermissionCreatePage = async () => {
     const opts = getSubModuleOptions(newModule);
     if (opts.length && !opts.some((o) => o.value === form.subModule)) {
       form.subModule = opts[0].value;
+    }
+    if (!getOperationOptions(form.subModule).some((o) => o.value === form.operation)) {
+      form.operation = getOperationOptions(form.subModule)[0]?.value ?? "Read";
+    }
+  });
+
+  // When subModule changes, reset operation to first valid option
+  watch(() => form.subModule, (newSubModule) => {
+    if (!getOperationOptions(newSubModule).some((o) => o.value === form.operation)) {
+      form.operation = getOperationOptions(newSubModule)[0]?.value ?? "Read";
     }
   });
 
@@ -54,8 +65,8 @@ export const usePermissionCreatePage = async () => {
   return {
     form,
     subModuleOptions,
+    operationOptions,
     permissionModuleOptions,
-    permissionOperationOptions,
     permissionScopeOptions,
     pending,
     errorMessage,

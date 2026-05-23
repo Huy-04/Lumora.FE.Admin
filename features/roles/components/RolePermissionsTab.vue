@@ -18,7 +18,8 @@ const canSyncPermissions = computed(() => authz.can([ADMIN_PERMISSION.rolePermis
 
 const actionPending = ref(false);
 const actionError = ref("");
-const moduleFilter = ref("");
+const permissionFilter = ref("");
+const visiblePermissionsOpen = ref(true);
 
 const actionErrorOpen = computed(() => actionError.value.length > 0);
 
@@ -36,58 +37,46 @@ watchEffect(() => {
   checked.value = new Set(assignedIds.value);
 });
 
-const moduleGroups = computed(() => {
-  const catalog = props.catalog ?? [];
-  const modules: Record<string, Record<string, typeof catalog>> = {};
+const catalog = computed(() => props.catalog ?? []);
 
-  for (const permission of catalog) {
-    if (!modules[permission.module]) modules[permission.module] = {};
-    if (!modules[permission.module][permission.subModule]) modules[permission.module][permission.subModule] = [];
-    modules[permission.module][permission.subModule].push(permission);
+const permissionFilterGroups = computed(() => {
+  const moduleMap = new Map<string, { label: string; options: Array<{ label: string; value: string }> }>();
+
+  for (const permission of catalog.value) {
+    const group = moduleMap.get(permission.module) ?? { label: permission.module, options: [] };
+    const value = `${permission.module}.${permission.subModule}`;
+    if (!group.options.some((o) => o.value === value)) {
+      group.options.push({
+        label: permission.subModule,
+        value,
+      });
+    }
+    moduleMap.set(permission.module, group);
   }
 
-  return Object.entries(modules)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([module, subGroups]) => ({
-      module,
-      subGroups: Object.entries(subGroups)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([subModule, permissions]) => ({ subModule, perms: permissions })),
-    }));
+  return [...moduleMap.values()].sort((a, b) => a.label.localeCompare(b.label));
 });
 
-const filteredGroups = computed(() => {
-  if (!moduleFilter.value) return moduleGroups.value;
-  return moduleGroups.value.filter((group) => group.module === moduleFilter.value);
-});
+const visiblePermissions = computed(() =>
+  catalog.value.length > 0
+    ? filteredPermissions.value
+    : (props.permissions ?? []).map((permission) => ({
+        id: permission.permissionId,
+        permissionName: permission.permissionName,
+        module: permission.module,
+        subModule: permission.subModule,
+        operation: permission.operation,
+        scope: "Assigned",
+        description: permission.description,
+      })),
+);
 
-const flatPerms = (subGroups: Array<{ perms: typeof props.catalog }>) =>
-  subGroups.flatMap((group) => group.perms);
+const filteredPermissions = computed(() => {
+  if (!permissionFilter.value) {
+    return catalog.value;
+  }
 
-const countChecked = (permissions: Array<{ id: string }>) =>
-  permissions.filter((permission) => checked.value.has(permission.id)).length;
-
-const moduleTabOptions = computed(() => {
-  const allPermissions = moduleGroups.value.flatMap((group) => flatPerms(group.subGroups));
-
-  return [
-    {
-      label: "All",
-      value: "",
-      checkedCount: countChecked(allPermissions),
-      totalCount: allPermissions.length,
-    },
-    ...moduleGroups.value.map((group) => {
-      const permissions = flatPerms(group.subGroups);
-
-      return {
-        label: group.module,
-        value: group.module,
-        checkedCount: countChecked(permissions),
-        totalCount: permissions.length,
-      };
-    }),
-  ];
+  return catalog.value.filter((permission) => `${permission.module}.${permission.subModule}` === permissionFilter.value);
 });
 
 const togglePermission = (permissionId: string) => {
@@ -145,15 +134,11 @@ const syncPermissions = async () => {
 <template>
   <AppAssignmentPanel
     eyebrow="Permissions"
-    :has-items="moduleGroups.length > 0"
+    :has-items="visiblePermissions.length > 0"
     empty-title="No permissions in catalog"
     empty-detail="Create permissions first, then return here to assign them."
+    toolbar-columns="lg:grid-cols-[minmax(16rem,20rem)]"
   >
-    <div style="background: red; color: white; padding: 10px; margin-bottom: 20px;">
-      DEBUG CATALOG LENGTH: {{ catalog?.length }}<br>
-      DEBUG IS ARRAY: {{ Array.isArray(catalog) }}<br>
-      DEBUG JSON: {{ JSON.stringify(catalog).substring(0, 200) }}
-    </div>
     <AppConfirm
       :open="actionErrorOpen"
       title="Update failed"
@@ -165,78 +150,59 @@ const syncPermissions = async () => {
     />
 
     <template #controls>
-      <AppAssignmentTabs v-model="moduleFilter" label="Module" :tabs="moduleTabOptions" />
+      <AppSelect v-if="catalog.length > 0" v-model="permissionFilter" label="Filter by module" :groups="permissionFilterGroups" />
+    </template>
+
+    <template #notices>
+      <AppNotice v-if="catalog.length === 0 && permissions.length > 0" tone="info" title="Permission catalog unavailable">
+        The full permission catalog could not be loaded. Only currently assigned permissions are shown.
+      </AppNotice>
     </template>
 
     <template #actions>
-      <AppButton v-if="canSyncPermissions" :loading="actionPending" @click="syncPermissions">
+      <AppButton v-if="canSyncPermissions && catalog.length > 0" :loading="actionPending" @click="syncPermissions">
         Save permissions
       </AppButton>
     </template>
 
-    <div class="grid max-h-[560px] gap-4 overflow-y-auto pr-1">
-      <AppAssignmentGroup
-        v-for="group in filteredGroups"
-        :key="group.module"
-        :title="group.module"
-        :count-label="`${countChecked(flatPerms(group.subGroups))}/${flatPerms(group.subGroups).length}`"
-        :checked="groupAllChecked(flatPerms(group.subGroups))"
-        :indeterminate="groupPartialChecked(flatPerms(group.subGroups))"
-        :collapsible="false"
-        @toggle-all="toggleGroup(flatPerms(group.subGroups))"
-      >
-        <div class="overflow-x-auto">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th class="w-[64px] text-center">Use</th>
-                <th class="min-w-[220px]">Permission</th>
-                <th class="min-w-[160px]">Sub module</th>
-                <th class="min-w-[120px]">Operation</th>
-                <th class="min-w-[120px]">Scope</th>
-                <th class="w-[132px] text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="permission in flatPerms(group.subGroups)"
-                :key="permission.id"
-                class="cursor-pointer"
-                @click="togglePermission(permission.id)"
-              >
-                <td class="align-middle text-center">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 cursor-pointer rounded accent-ink"
-                    :checked="checked.has(permission.id)"
-                    @click.stop
-                    @change="togglePermission(permission.id)"
-                  />
-                </td>
-                <td class="align-middle">
-                  <p class="table-title">{{ permission.permissionName }}</p>
-                  <p v-if="permission.description" class="table-copy">{{ permission.description }}</p>
-                </td>
-                <td class="align-middle">
-                  <p class="text-sm font-medium text-ink">{{ permission.subModule }}</p>
-                </td>
-                <td class="align-middle">
-                  <AppBadge>{{ permission.operation }}</AppBadge>
-                </td>
-                <td class="align-middle">
-                  <p class="text-sm text-smoke">{{ permission.scope }}</p>
-                </td>
-                <td class="align-middle text-center">
-                  <AppBadge :tone="checked.has(permission.id) ? 'success' : 'default'">
-                    {{ checked.has(permission.id) ? "Assigned" : "Available" }}
-                  </AppBadge>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </AppAssignmentGroup>
-    </div>
-
+    <AppAssignmentGroup
+      v-model:open="visiblePermissionsOpen"
+      :title="catalog.length > 0 ? 'Visible permissions' : 'Assigned permissions'"
+      :count-label="`${visiblePermissions.filter((permission) => checked.has(permission.id)).length}/${visiblePermissions.length}`"
+      :checked="groupAllChecked(visiblePermissions)"
+      :indeterminate="groupPartialChecked(visiblePermissions)"
+      content-id="visible-permissions-list"
+      @toggle-all="toggleGroup(visiblePermissions)"
+    >
+      <div class="max-h-[520px] divide-y divide-line/50 overflow-y-auto">
+        <label
+          v-for="permission in visiblePermissions"
+          :key="permission.id"
+          class="grid cursor-pointer gap-3 px-5 py-4 transition-colors hover:bg-line/20 md:grid-cols-[minmax(0,1fr)_auto] md:items-center dark:hover:bg-white/6"
+        >
+          <div class="flex min-w-0 items-start gap-3">
+            <input
+              type="checkbox"
+              class="mt-1 h-4 w-4 cursor-pointer rounded accent-ink"
+              :checked="checked.has(permission.id)"
+              :disabled="catalog.length === 0"
+              @change="togglePermission(permission.id)"
+            />
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-ink">{{ permission.permissionName }}</p>
+              <p class="mt-1 text-sm text-smoke">{{ permission.module }} / {{ permission.subModule }}</p>
+              <p v-if="permission.description" class="mt-1 max-w-3xl truncate text-sm text-smoke">{{ permission.description }}</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 justify-self-start md:justify-self-end">
+            <AppBadge>{{ permission.operation }}</AppBadge>
+            <AppBadge>{{ permission.scope }}</AppBadge>
+            <AppBadge :tone="checked.has(permission.id) ? 'success' : 'default'">
+              {{ checked.has(permission.id) ? "Assigned" : "Available" }}
+            </AppBadge>
+          </div>
+        </label>
+      </div>
+    </AppAssignmentGroup>
   </AppAssignmentPanel>
 </template>

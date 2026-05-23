@@ -10,7 +10,7 @@ const emit = defineEmits<{
 }>();
 
 const permissionsApi = usePermissionsAdminApi();
-const { permissionModuleOptions, getSubModuleOptions, permissionOperationOptions, permissionScopeOptions } = useAuthOptions();
+const { permissionModuleOptions, getSubModuleOptions, getOperationOptions, permissionScopeOptions } = useAuthOptions();
 
 const form = reactive({
   module: "Auth",
@@ -21,12 +21,23 @@ const form = reactive({
 });
 
 const subModuleOptions = computed(() => getSubModuleOptions(form.module));
+const operationOptions = computed(() => getOperationOptions(form.subModule));
 
 // When module changes, reset subModule to first valid option
 watch(() => form.module, (newModule) => {
   const opts = getSubModuleOptions(newModule);
   if (opts.length && !opts.some((o) => o.value === form.subModule)) {
     form.subModule = opts[0].value;
+  }
+  if (!getOperationOptions(form.subModule).some((o) => o.value === form.operation)) {
+    form.operation = getOperationOptions(form.subModule)[0]?.value ?? "Read";
+  }
+});
+
+// When subModule changes, reset operation to first valid option
+watch(() => form.subModule, (newSubModule) => {
+  if (!getOperationOptions(newSubModule).some((o) => o.value === form.operation)) {
+    form.operation = getOperationOptions(newSubModule)[0]?.value ?? "Read";
   }
 });
 
@@ -78,7 +89,7 @@ const savePermission = async () => {
           <AppSelect v-model="form.subModule" label="SubModule" :options="subModuleOptions" />
         </div>
         <div class="grid gap-4 md:grid-cols-2">
-          <AppSelect v-model="form.operation" label="Operation" :options="permissionOperationOptions" />
+          <AppSelect v-model="form.operation" label="Operation" :options="operationOptions" />
           <AppSelect v-model="form.scope" label="Scope" :options="permissionScopeOptions" />
         </div>
 

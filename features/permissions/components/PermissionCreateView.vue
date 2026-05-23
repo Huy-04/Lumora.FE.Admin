@@ -5,7 +5,7 @@ const props = defineProps<{
   page: PermissionCreatePage;
 }>();
 
-const { form, subModuleOptions, permissionModuleOptions, permissionOperationOptions, permissionScopeOptions, pending, errorMessage, submit } = props.page;
+const { form, subModuleOptions, permissionModuleOptions, operationOptions, permissionScopeOptions, pending, errorMessage, submit } = props.page;
 </script>
 
 <template>
@@ -18,7 +18,7 @@ const { form, subModuleOptions, permissionModuleOptions, permissionOperationOpti
             <AppSelect v-model="form.subModule" label="SubModule" :options="subModuleOptions" />
           </div>
           <div class="grid gap-4 md:grid-cols-2">
-            <AppSelect v-model="form.operation" label="Operation" :options="permissionOperationOptions" />
+            <AppSelect v-model="form.operation" label="Operation" :options="operationOptions" />
             <AppSelect v-model="form.scope" label="Scope" :options="permissionScopeOptions" />
           </div>
           <AppTextarea v-model="form.description" label="Description" placeholder="Describe where this permission is used." />

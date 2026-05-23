@@ -148,7 +148,7 @@ const manageCards = [
       </div>
       <h2 class="text-lg font-semibold text-ink">Access Denied</h2>
       <p class="max-w-md text-sm text-smoke">
-        You do not have the required permission <code class="rounded bg-surface px-1.5 py-0.5 text-xs font-medium text-ink">Dashboard.Summary.Read</code> to view the dashboard.
+        You do not have the required permission <code class="rounded bg-surface px-1.5 py-0.5 text-xs font-medium text-ink">Auth.Admin.Access.All</code> to view the dashboard.
       </p>
       <NuxtLink to="/products" class="mt-2 text-sm font-medium text-brass hover:underline">
         Go to Products

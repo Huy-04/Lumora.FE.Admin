@@ -43,7 +43,6 @@ const permissionModuleValues = [
   "Payment",
   "Cart",
   "Review",
-  "Dashboard",
   "Operations",
   "Warehouse",
   "Inventory",
@@ -65,7 +64,6 @@ const permissionSubModuleValues = [
   "Payment",
   "Cart",
   "Review",
-  "Dashboard",
   "SystemEvents",
   "Warehouse",
   "Inventory",
@@ -74,7 +72,7 @@ const permissionSubModuleValues = [
   "Admin",
 ] as const;
 
-/** Map Module → allowed SubModules */
+/** Map Module ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ allowed SubModules */
 const moduleSubModuleMap: Record<string, string[]> = {
   Auth: ["User", "Role", "Permission", "UserAddress", "RefreshToken", "UserRole", "RolePermission", "Admin"],
   Category: ["Category"],
@@ -83,7 +81,6 @@ const moduleSubModuleMap: Record<string, string[]> = {
   Payment: ["Payment"],
   Cart: ["Cart"],
   Review: ["Review"],
-  Dashboard: ["Dashboard"],
   Operations: ["SystemEvents"],
   Warehouse: ["Warehouse"],
   Inventory: ["Inventory"],
@@ -92,6 +89,9 @@ const moduleSubModuleMap: Record<string, string[]> = {
 };
 
 const permissionOperationValues = ["Read", "Create", "Update", "Remove", "Access"] as const;
+
+const adminOnlyOperations = ["Access"] as const;
+const generalOperations = ["Read", "Create", "Update", "Remove"] as const;
 const permissionScopeValues = ["All", "Self"] as const;
 const genderValues = ["Unknown", "Male", "Female"] as const;
 const userStatusValues = ["Active", "Inactive"] as const;
@@ -109,6 +109,12 @@ export const useAuthOptions = () => ({
     return toOptions(allowed as readonly string[]);
   },
   permissionOperationOptions: toOptions(permissionOperationValues),
+  getOperationOptions: (subModule: string) => {
+    const ops = subModule === "Admin"
+      ? [...adminOnlyOperations]
+      : [...generalOperations];
+    return toOptions(ops);
+  },
   permissionScopeOptions: toOptions(permissionScopeValues),
   genderOptions: toOptions(genderValues),
   userStatusOptions: toOptions(userStatusValues),

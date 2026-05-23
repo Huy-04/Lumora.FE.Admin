@@ -3,7 +3,8 @@ defineProps<{
   id?: string;
   label: string;
   modelValue?: string;
-  options: ReadonlyArray<{ label: string; value: string }>;
+  options?: ReadonlyArray<{ label: string; value: string }>;
+  groups?: ReadonlyArray<{ label: string; options: ReadonlyArray<{ label: string; value: string }> }>;
   helper?: string;
   disabled?: boolean;
   name?: string;
@@ -37,9 +38,19 @@ const emit = defineEmits<{
       <option v-if="placeholder" disabled value="">
         {{ placeholder }}
       </option>
-      <option v-for="option in options" :key="option.value" :value="option.value">
-        {{ option.label }}
-      </option>
+      <template v-if="groups && groups.length">
+        <option v-if="!placeholder" value="">All</option>
+        <optgroup v-for="group in groups" :key="group.label" :label="group.label">
+          <option v-for="option in group.options" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </optgroup>
+      </template>
+      <template v-else>
+        <option v-for="option in options" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </template>
     </select>
     <span v-if="error" class="app-field-error">{{ error }}</span>
     <span v-else-if="helper" class="app-field-helper">{{ helper }}</span>

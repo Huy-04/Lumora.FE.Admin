@@ -55,7 +55,7 @@ export const useUserDetailPage = async () => {
         canViewUserRoles.value ? usersApi.getUserRoles(userId.value) : Promise.resolve([]),
         canViewUserAddresses.value ? usersApi.getUserAddresses(userId.value) : Promise.resolve([]),
         canViewUserSessions.value ? sessionsApi.getSessionsByUserId(userId.value) : Promise.resolve([]),
-        canViewUserRoles.value ? rolesApi.getRoles(1, 100).then((response) => response.items) : Promise.resolve([]),
+        canViewUserRoles.value ? rolesApi.getRoles(1, 50).then((response) => response.items) : Promise.resolve([]),
       ]);
 
       return {
