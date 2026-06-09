@@ -28,6 +28,10 @@ desktop.ini
 
 .gitnexus
 
+# Local Harness/docs artifacts
+docs/
+scripts/
+
 # Harness durable layer
 harness.db
 harness.db-wal

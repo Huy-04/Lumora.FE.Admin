@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/repair-vue-tsc-fixture.mjs && nuxt dev",
-    "build": "node scripts/repair-vue-tsc-fixture.mjs && nuxt build",
-    "preview": "node scripts/repair-vue-tsc-fixture.mjs && nuxt preview",
-    "prepare": "node scripts/repair-vue-tsc-fixture.mjs && nuxt prepare"
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "prepare": "nuxt prepare"
   },
   "dependencies": {
     "@microsoft/signalr": "^10.0.0",
