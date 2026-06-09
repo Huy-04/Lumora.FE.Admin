@@ -42,8 +42,8 @@ function reviewDetailLink(review: { id: string }) {
   <AppIndexPage
     v-model="localFilters.productId.value"
     eyebrow="Moderation"
-    search-label="Search reviews"
-    search-placeholder="Product ID or User ID"
+    search-label="Search by product ID"
+    search-placeholder="Enter a product ID"
     :total-items="summaryStats[0]?.value ?? 0"
     item-label="reviews"
     :pending="pending"

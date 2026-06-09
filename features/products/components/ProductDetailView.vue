@@ -6,7 +6,7 @@ const props = defineProps<{
   page: ProductDetailPage;
 }>();
 
-const { error, pending, data, categoryLabel, productSectionWarnings, productTabs, activeTab, selectTab, canRestoreProduct, productId, canManageProductContent, canReorderProduct, canReadCategories, categoryOptions, refresh } = props.page;
+const { error, pending, data, canUseCategoryCatalog, categoryLabel, productSectionWarnings, productTabs, activeTab, selectTab, canRestoreProduct, productId, canManageProductContent, canReorderProduct, canReadCategories, categoryOptions, refresh } = props.page;
 
 const selectProductTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
@@ -93,6 +93,7 @@ useScopedPageBreadcrumbs(() =>
         :product="data.product"
         :category-options="categoryOptions"
         :can-read-categories="canReadCategories"
+        :can-use-category-catalog="canUseCategoryCatalog"
         @refresh="refresh"
       />
     </template>

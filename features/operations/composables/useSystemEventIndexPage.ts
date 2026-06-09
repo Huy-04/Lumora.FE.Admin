@@ -28,6 +28,7 @@ export const useSystemEventIndexPage = async () => {
         keyword: "",
         status: "" as SystemEventStatus | "",
         eventType: "",
+        aggregateId: "",
         occurredFrom: "",
         occurredTo: "",
       },
@@ -50,7 +51,7 @@ export const useSystemEventIndexPage = async () => {
     value ? `${value}T23:59:59.999Z` : undefined;
 
   const { data, pending, error, refresh } = await useAsyncData(
-    () => `system-events:${appliedFilters.keyword.value || "all"}:${appliedFilters.status.value || "all"}:${appliedFilters.eventType.value || "all"}:${appliedFilters.occurredFrom.value || "none"}:${appliedFilters.occurredTo.value || "none"}:${pagination.page.value}:${pagination.pageSize.value}`,
+    () => `system-events:${appliedFilters.keyword.value || "all"}:${appliedFilters.status.value || "all"}:${appliedFilters.eventType.value || "all"}:${appliedFilters.aggregateId.value || "none"}:${appliedFilters.occurredFrom.value || "none"}:${appliedFilters.occurredTo.value || "none"}:${pagination.page.value}:${pagination.pageSize.value}`,
     () => {
       if (!canReadSystemEvents.value) {
         return Promise.resolve(emptySystemEvents());
@@ -60,6 +61,7 @@ export const useSystemEventIndexPage = async () => {
         keyword: appliedFilters.keyword.value || undefined,
         status: appliedFilters.status.value || undefined,
         eventType: appliedFilters.eventType.value || undefined,
+        aggregateId: appliedFilters.aggregateId.value || undefined,
         occurredFrom: toUtcDayStart(appliedFilters.occurredFrom.value),
         occurredTo: toUtcDayEnd(appliedFilters.occurredTo.value),
         page: pagination.page.value,

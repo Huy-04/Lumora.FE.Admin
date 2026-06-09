@@ -52,7 +52,7 @@ contracts and must stay aligned with `Lumora.Docs/Backend/Module`.
 - Manual stock status uses backend codes `Active = 0`, `OutOfStock = 1`, `Locked = 2` for `PUT /api/inventories/{inventoryId}/status`.
 - Stock row alert badges use response `alertStatus` (`InStock`, `LowStock`, `OutOfStock`), not manual operational `status`.
 - Warehouse response uses a single `address` field; Web Admin create/update forms send `address` as one string.
-- Warehouse search filters are keyword, code, status, hasGhnStore, page, and size. Web Admin may use `GET /api/warehouses` for the unfiltered operational picker/list.
+- Warehouse index uses `GET /api/warehouses/search` with keyword, status, page, and size. Web Admin may use `GET /api/warehouses` for unfiltered operational picker/list support.
 
 ## Shipment
 
@@ -64,10 +64,10 @@ contracts and must stay aligned with `Lumora.Docs/Backend/Module`.
 
 ## Operations
 
-- Admin system event search reads `GET /api/system-events` with keyword, status, eventType, occurredFrom, occurredTo, page, and size filters.
+- Admin system event search reads `GET /api/system-events` with keyword, status, eventType, aggregateId, occurredFrom, occurredTo, page, and size filters.
 - Event type is a text exact-match filter. Web Admin does not build event-type options from recent system events.
 - Date filters are sent as UTC full-day boundaries: `occurredFrom` at `00:00:00.000Z` and `occurredTo` at `23:59:59.999Z`.
-- The keyword search covers event id, aggregate id, payload, event type, and error text; Web Admin does not expose a separate Aggregate ID filter.
+- The keyword search covers event id, aggregate id, payload, event type, and error text. Web Admin also exposes exact Aggregate ID filtering through `aggregateId`.
 - Pending, failed, and processed summary counts are current-page counts; the total events count is the total matching the current search.
 - System event detail reads `GET /api/system-events/{id}` and renders parsed payload values, raw payload, and error text for operational inspection.
 - Web Admin treats System Events as read-only. Retry/replay/delete/payload-edit actions are not exposed.
@@ -87,10 +87,10 @@ contracts and must stay aligned with `Lumora.Docs/Backend/Module`.
 
 ## Payment
 
-- Admin payment search reads `GET /api/payments/search` with keyword, userId, orderId, status, method, provider, createdFrom, createdTo, page, and size filters.
-- Payment detail reads `GET /api/payments/{paymentId}` and renders provider attempts from `attempts`.
-- Order lookup uses `GET /api/payments/orders/{orderId}` when a by-order flow is needed.
-- Manual success/fail actions call `POST /api/payments/orders/{orderId}/manual-success` or `/manual-failed`; Web Admin treats them as admin fallback operations, not normal customer payment.
+- Admin payment search reads `GET /api/admin/payments/search` with keyword, userId, orderId, status, method, provider, createdFrom, createdTo, page, and size filters.
+- Payment detail reads `GET /api/admin/payments/{paymentId}` and renders provider attempts from `attempts`.
+- Order lookup uses `GET /api/admin/payments/orders/{orderId}` when a by-order flow is needed.
+- Manual success/fail actions call `POST /api/admin/payments/orders/{orderId}/manual-success` or `/manual-failed`; Web Admin treats them as admin fallback operations, not normal customer payment.
 - Manual actions are exposed only while payment status is `Pending` or `Processing`; `Succeeded` and `Failed` are terminal in Web Admin.
 - Backend currently authorizes admin payment reads/management through Order read/modify permissions, so Web Admin route guards use the same permission surface.
 

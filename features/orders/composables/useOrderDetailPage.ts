@@ -2,6 +2,7 @@ import type { OrderResponse } from "~/features/orders/types";
 
 type OrderActionKey =
   | "confirm"
+  | "start-processing"
   | "mark-in-transit"
   | "deliver"
   | "complete"
@@ -21,29 +22,12 @@ export interface OrderReasonPreset {
   value: string;
 }
 
-const cancelReasonPresets: OrderReasonPreset[] = [
-  { label: "Customer requested cancellation", value: "Customer requested cancellation." },
-  { label: "Payment failed or expired", value: "Payment failed or expired." },
-  { label: "Inventory unavailable", value: "Inventory unavailable." },
-  { label: "Duplicate order", value: "Duplicate order." },
-  { label: "Other", value: "" },
-];
-
-const returnReasonPresets: OrderReasonPreset[] = [
-  { label: "Recipient unavailable", value: "Recipient unavailable." },
-  { label: "Incorrect address", value: "Incorrect address." },
-  { label: "Recipient refused delivery", value: "Recipient refused delivery." },
-  { label: "Carrier delivery failed", value: "Carrier delivery failed." },
-  { label: "Other", value: "" },
-];
-
-const ORDER_CANCEL_REASON_MIN_LENGTH = 5;
-const ORDER_REASON_MAX_LENGTH = 500;
-
 const canRunAction = (order: OrderResponse, action: OrderActionKey) => {
   switch (action) {
     case "confirm":
       return order.status === "Pending";
+    case "start-processing":
+      return order.status === "Confirmed" && order.stockReservationStatus === "Reserved";
     case "mark-in-transit":
       return order.status === "Processing" && order.stockReservationStatus === "Reserved";
     case "deliver":
@@ -60,7 +44,6 @@ const canRunAction = (order: OrderResponse, action: OrderActionKey) => {
 };
 
 export const useOrderDetailPage = async () => {
-  // 1. Dependency injection
   const route = useRoute();
   const orderApi = useOrderAdminApi();
   const authz = useAdminAuthorization();
@@ -68,8 +51,6 @@ export const useOrderDetailPage = async () => {
   type OrderTab = "overview" | "items" | "lifecycle";
 
   const orderId = computed(() => String(route.params.id ?? ""));
-
-  // 2. Permissions
   const canModifyOrder = computed(() => authz.can(ADMIN_PERMISSION.orderModifyAll));
   const orderTabs = computed<Array<{ label: string; value: OrderTab }>>(() => [
     { label: "Overview", value: "overview" },
@@ -90,19 +71,12 @@ export const useOrderDetailPage = async () => {
   };
 
   const activeTab = ref<OrderTab>(normalizeTab(route.query.tab));
-  const actionPending = ref<OrderActionKey | "">("");
-  const actionError = ref("");
-  const requestedAction = ref<OrderAction | null>(null);
-  const actionReason = ref("");
-  const selectedReasonPreset = ref("");
 
-  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `order:${orderId.value}`,
     () => orderApi.getOrderById(orderId.value),
   );
 
-  // 4. Computed derivations
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This order is not available right now."));
   const order = computed(() => data.value ?? null);
   const hasStockReservationFailure = computed(() => order.value?.stockReservationStatus === "Failed");
@@ -120,6 +94,11 @@ export const useOrderDetailPage = async () => {
         key: "confirm",
         label: "Confirm",
         detail: "Reserve inventory, move the order to Processing, and create a shipment draft.",
+      },
+      {
+        key: "start-processing",
+        label: "Start processing",
+        detail: "Move a confirmed and reserved order into Processing and retry shipment-draft creation.",
       },
       {
         key: "mark-in-transit",
@@ -155,99 +134,7 @@ export const useOrderDetailPage = async () => {
     return actions.filter((action) => canRunAction(order.value as OrderResponse, action.key));
   });
 
-  // 5. Actions/mutations
-  const requestAction = (action: OrderAction) => {
-    requestedAction.value = action;
-    const presets = action.key === "return-to-sender" ? returnReasonPresets : cancelReasonPresets;
-    selectedReasonPreset.value = action.requiresReason ? presets[0]?.label ?? "" : "";
-    actionReason.value = action.requiresReason ? presets[0]?.value ?? "" : "";
-    actionError.value = "";
-  };
-
-  const closeAction = () => {
-    requestedAction.value = null;
-    actionReason.value = "";
-    selectedReasonPreset.value = "";
-  };
-
-  const reasonPresets = computed(() => {
-    if (requestedAction.value?.key === "return-to-sender") {
-      return returnReasonPresets;
-    }
-
-    if (requestedAction.value?.key === "cancel") {
-      return cancelReasonPresets;
-    }
-
-    return [];
-  });
-
-  const selectReasonPreset = (preset: OrderReasonPreset) => {
-    selectedReasonPreset.value = preset.label;
-    actionReason.value = preset.value;
-  };
-
-  const executeAction = async () => {
-    if (!requestedAction.value || !order.value) {
-      return;
-    }
-
-    const action = requestedAction.value;
-    let submittedReason = "";
-
-    if (action.requiresReason) {
-      const rawReason = actionReason.value;
-      const trimmedReason = rawReason.trim();
-
-      if (!trimmedReason) {
-        actionError.value = "Reason is required for this order action.";
-        return;
-      }
-
-      if (rawReason !== trimmedReason) {
-        actionError.value = "Reason must not include leading or trailing whitespace.";
-        return;
-      }
-
-      if (action.key === "cancel" && trimmedReason.length < ORDER_CANCEL_REASON_MIN_LENGTH) {
-        actionError.value = `Cancellation reason must be at least ${ORDER_CANCEL_REASON_MIN_LENGTH} characters.`;
-        return;
-      }
-
-      if (trimmedReason.length > ORDER_REASON_MAX_LENGTH) {
-        actionError.value = "Reason must be at most 500 characters.";
-        return;
-      }
-
-      submittedReason = trimmedReason;
-    }
-
-    actionPending.value = action.key;
-    actionError.value = "";
-
-    try {
-      if (action.key === "confirm") {
-        data.value = await orderApi.confirmOrder(order.value.id);
-      } else if (action.key === "mark-in-transit") {
-        data.value = await orderApi.markOrderInTransit(order.value.id);
-      } else if (action.key === "deliver") {
-        data.value = await orderApi.deliverOrder(order.value.id);
-      } else if (action.key === "complete") {
-        data.value = await orderApi.completeOrder(order.value.id);
-      } else if (action.key === "cancel") {
-        data.value = await orderApi.cancelOrder(order.value.id, { reason: submittedReason });
-      } else if (action.key === "return-to-sender") {
-        data.value = await orderApi.returnOrderToSender(order.value.id, { reason: submittedReason });
-      }
-
-      closeAction();
-      await refresh();
-    } catch (requestError) {
-      actionError.value = getProblemMessage(requestError, `Unable to ${action.label.toLowerCase()} this order.`);
-    } finally {
-      actionPending.value = "";
-    }
-  };
+  const orderActions = useOrderDetailActions(orderApi, data, refresh);
 
   const totalQuantity = computed(() => order.value?.items.reduce((total, item) => total + item.quantity, 0) ?? 0);
 
@@ -268,7 +155,6 @@ export const useOrderDetailPage = async () => {
     );
   };
 
-  // 6. Watchers
   watch(
     () => route.query.tab,
     (value) => {
@@ -280,17 +166,11 @@ export const useOrderDetailPage = async () => {
     activeTab.value = normalizeTab(activeTab.value);
   });
 
-  // 7. Return statement
   return {
-    actionError,
-    actionPending,
-    actionReason,
     activeTab,
     availableActions,
     canModifyOrder,
-    closeAction,
     error,
-    executeAction,
     hasStockReservationFailure,
     hasProcessingException,
     loadErrorMessage,
@@ -299,13 +179,9 @@ export const useOrderDetailPage = async () => {
     orderTabs,
     pending,
     refresh,
-    requestedAction,
-    requestAction,
-    reasonPresets,
-    selectReasonPreset,
     selectTab,
-    selectedReasonPreset,
     totalQuantity,
+    ...orderActions,
   };
 };
 

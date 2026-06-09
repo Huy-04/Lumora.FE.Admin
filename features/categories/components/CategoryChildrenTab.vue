@@ -9,6 +9,11 @@ const props = defineProps<{
   children: CategoryTreeNodeResponse[];
   actionPending?: boolean;
   actionTargetId?: string;
+  canAddChild?: boolean;
+  addChildDisabledReason?: string;
+  childStateGuardReason?: string;
+  getChildToggleDisabledReason?: (child: CategoryTreeNodeResponse) => string;
+  getChildRestoreDisabledReason?: (child: CategoryTreeNodeResponse) => string;
 }>();
 
 const emit = defineEmits<{
@@ -44,6 +49,12 @@ const resetDragState = () => {
   dragSourceId.value = "";
   dragTargetId.value = "";
 };
+
+const childToggleDisabledReason = (child: CategoryTreeNodeResponse) =>
+  props.getChildToggleDisabledReason?.(child) ?? "";
+
+const childRestoreDisabledReason = (child: CategoryTreeNodeResponse) =>
+  props.getChildRestoreDisabledReason?.(child) ?? "";
 
 const handleChildDragStart = (childId: string) => {
   if (!canDragChildren.value) {
@@ -147,7 +158,9 @@ const handleChildDrop = (targetId: string) => {
                   v-if="child.isDeleted && canRestoreCategory"
                   class="table-action"
                   variant="secondary"
+                  :disabled="Boolean(childRestoreDisabledReason(child))"
                   :loading="props.actionPending && props.actionTargetId === child.id"
+                  :title="childRestoreDisabledReason(child) || undefined"
                   @click="emit('requestRestore', child)"
                 >
                   Restore
@@ -156,7 +169,9 @@ const handleChildDrop = (targetId: string) => {
                   v-if="!child.isDeleted && (child.isActive ? canDeactivateCategory : canActivateCategory)"
                   class="table-action"
                   variant="secondary"
+                  :disabled="Boolean(childToggleDisabledReason(child))"
                   :loading="props.actionPending && props.actionTargetId === child.id"
+                  :title="childToggleDisabledReason(child) || undefined"
                   @click="emit('requestToggle', child)"
                 >
                   {{ child.isActive ? "Deactivate" : "Activate" }}
@@ -187,13 +202,41 @@ const handleChildDrop = (targetId: string) => {
       detail="Create a child category to build the next level of this catalog branch."
     />
 
-    <div v-if="canCreateCategory && !category.isDeleted" class="mt-4 flex justify-end border-t border-line/70 pt-4">
-      <NuxtLink
-        class="secondary-link"
-        :to="`/categories/create?parentId=${category.id}`"
+    <AppNotice
+      v-if="props.childStateGuardReason"
+      class="mt-4"
+      tone="warning"
+      title="Some child state actions are unavailable"
+    >
+      {{ props.childStateGuardReason }}
+    </AppNotice>
+
+    <div v-if="canCreateCategory" class="mt-4 border-t border-line/70 pt-4">
+      <div class="flex justify-end">
+        <NuxtLink
+          v-if="props.canAddChild"
+          class="secondary-link"
+          :to="`/categories/create?parentId=${category.id}`"
+        >
+          Add child
+        </NuxtLink>
+        <AppButton
+          v-else
+          variant="secondary"
+          disabled
+        >
+          Add child
+        </AppButton>
+      </div>
+
+      <AppNotice
+        v-if="!props.canAddChild && props.addChildDisabledReason"
+        class="mt-3"
+        tone="warning"
+        title="Child creation unavailable"
       >
-        Add child
-      </NuxtLink>
+        {{ props.addChildDisabledReason }}
+      </AppNotice>
     </div>
   </AppPanel>
 </template>

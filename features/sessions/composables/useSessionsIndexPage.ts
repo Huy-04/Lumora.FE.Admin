@@ -41,27 +41,29 @@ export const useSessionsIndexPage = async () => {
 
   const summaryStats = computed(() => {
     const items = data.value ?? [];
+    const distinctUsers = new Set(items.map((s) => s.userId)).size;
+    const distinctDevices = new Set(items.map((s) => `${s.userId}:${s.deviceId}`)).size;
 
     return [
       {
-        label: "Total sessions",
+        label: "Active sessions",
         value: `${items.length}`,
-        detail: "All device-linked refresh sessions on record.",
-      },
-      {
-        label: "Active",
-        value: `${items.filter((s) => s.tokenStatus === "Active").length}`,
-        detail: "Sessions currently valid and unexpired.",
-      },
-      {
-        label: "Expired",
-        value: `${items.filter((s) => s.tokenStatus !== "Active").length}`,
-        detail: "Sessions that have expired or been revoked.",
+        detail: "Currently valid refresh sessions returned by the backend.",
       },
       {
         label: "Users",
-        value: `${new Set(items.map((s) => s.userId)).size}`,
-        detail: "Distinct user accounts with at least one session.",
+        value: `${distinctUsers}`,
+        detail: "Distinct user accounts with at least one active session.",
+      },
+      {
+        label: "Devices",
+        value: `${distinctDevices}`,
+        detail: "Distinct device identities represented in the active session list.",
+      },
+      {
+        label: "Revocable",
+        value: `${items.filter((s) => s.tokenStatus === "Active").length}`,
+        detail: "Sessions that can be revoked directly from this surface.",
       },
     ];
   });

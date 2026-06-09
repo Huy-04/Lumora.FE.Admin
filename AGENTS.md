@@ -41,3 +41,24 @@ This project is indexed by GitNexus as **Lumora.FE.Admin** (3871 symbols, 5197 r
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+<!-- HARNESS:BEGIN -->
+## Harness
+
+This repo uses Harness. Before work, read:
+
+- `README.md`
+- `docs/HARNESS.md`
+- `docs/FEATURE_INTAKE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/CONTEXT_RULES.md`
+- `scripts/harness.cmd query matrix` on Windows
+
+Use the repo-local Harness CLI entrypoint for this environment:
+
+- Windows PowerShell / `cmd.exe`: `scripts/harness.cmd`
+- POSIX shell: `scripts/harness`
+
+The Windows entrypoint uses the prebuilt Rust binary at
+`scripts/bin/harness-cli.exe`.
+<!-- HARNESS:END -->

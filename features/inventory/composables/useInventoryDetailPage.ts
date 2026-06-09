@@ -12,7 +12,7 @@ export const useInventoryDetailPage = async () => {
   const inventoryId = computed(() => String(route.params.id ?? ""));
 
   // 2. Permissions
-  const canUpdateInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryUpdateAll));
+  const canUpdateInventory = computed(() => authz.canUpdateAnyInventoryStock());
   const canRemoveInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryRemoveAll));
   const canReadWarehouses = computed(() => authz.can(ADMIN_PERMISSION.warehouseReadAll));
 
@@ -32,17 +32,28 @@ export const useInventoryDetailPage = async () => {
     () => `inventory-detail:${inventoryId.value}`,
     async () => {
       const inventory = await inventoryApi.getInventoryById(inventoryId.value);
-      const warehouses = canReadWarehouses.value
-        ? await inventoryApi.getWarehouses()
-        : [];
+      let warehouses = [] as Awaited<ReturnType<typeof inventoryApi.getWarehouses>>;
+      let warehouseCatalogWarning = "";
 
-      return { inventory, warehouses };
+      if (canReadWarehouses.value) {
+        try {
+          warehouses = await inventoryApi.getWarehouses();
+        } catch (requestError) {
+          warehouseCatalogWarning = getProblemMessage(
+            requestError,
+            "Warehouse catalog is unavailable right now. Stock details still work, but warehouse labels may be limited.",
+          );
+        }
+      }
+
+      return { inventory, warehouseCatalogWarning, warehouses };
     },
   );
 
   // 4. Computed derivations
   const inventory = computed<InventoryResponse | null>(() => data.value?.inventory ?? null);
   const warehouses = computed(() => data.value?.warehouses ?? []);
+  const warehouseCatalogWarning = computed(() => data.value?.warehouseCatalogWarning ?? "");
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "This inventory record is not available right now."));
   const isNotFound = computed(() => getProblemStatus(error.value) === 404);
 
@@ -66,15 +77,13 @@ export const useInventoryDetailPage = async () => {
   };
   const activeTab = ref<InventoryTab>("overview");
   const warehouseNameById = (warehouseId: string) =>
-    warehouses.value.find((warehouse) => warehouse.id === warehouseId)?.name ?? "Unknown warehouse";
+    warehouses.value.find((warehouse) => warehouse.id === warehouseId)?.name ?? `Warehouse ${warehouseId}`;
   const warehouseStatusById = (warehouseId: string) =>
     warehouses.value.find((warehouse) => warehouse.id === warehouseId)?.status ?? null;
-  const warehouseOptions = computed(() =>
-    warehouses.value.map((warehouse) => ({
-      label: warehouse.name,
-      value: warehouse.id,
-    })),
-  );
+  const warehouseCodeById = (warehouseId: string) =>
+    warehouses.value.find((warehouse) => warehouse.id === warehouseId)?.code ?? null;
+  const canUpdateStockWarehouse = (warehouseId: string) =>
+    authz.canUpdateInventoryStockForWarehouseCode(warehouseCodeById(warehouseId));
   const stockActionWarehouseOptions = computed(() =>
     inventory.value?.stocks.map((stock) => ({
       label: warehouseNameById(stock.warehouseId),
@@ -84,6 +93,7 @@ export const useInventoryDetailPage = async () => {
   const applyInventoryUpdate = (nextInventory: InventoryResponse) => {
     data.value = {
       inventory: nextInventory,
+      warehouseCatalogWarning: warehouseCatalogWarning.value,
       warehouses: warehouses.value,
     };
   };
@@ -101,6 +111,11 @@ export const useInventoryDetailPage = async () => {
   const adjustQuantity = async () => {
     if (!stockActionForm.warehouseId) {
       actionError.value = "Select a warehouse stock row first.";
+      return;
+    }
+
+    if (!canUpdateStockWarehouse(stockActionForm.warehouseId)) {
+      actionError.value = "Inventory update permission for this warehouse is required.";
       return;
     }
 
@@ -126,6 +141,11 @@ export const useInventoryDetailPage = async () => {
       return;
     }
 
+    if (!canUpdateStockWarehouse(stockActionForm.warehouseId)) {
+      actionError.value = "Inventory update permission for this warehouse is required.";
+      return;
+    }
+
     actionPending.value = "set-status";
     actionError.value = "";
 
@@ -144,6 +164,11 @@ export const useInventoryDetailPage = async () => {
   const setReorderPoint = async () => {
     if (!stockActionForm.warehouseId) {
       actionError.value = "Select a warehouse stock row first.";
+      return;
+    }
+
+    if (!canUpdateStockWarehouse(stockActionForm.warehouseId)) {
+      actionError.value = "Inventory update permission for this warehouse is required.";
       return;
     }
 
@@ -209,6 +234,7 @@ export const useInventoryDetailPage = async () => {
     activeTab,
     adjustQuantity,
     canRemoveInventory,
+    canUpdateStockWarehouse,
     canUpdateInventory,
     error,
     inventory,
@@ -226,6 +252,7 @@ export const useInventoryDetailPage = async () => {
     stockActionForm,
     stockActionWarehouseOptions,
     stockStatusOptions,
+    warehouseCatalogWarning,
     warehouseNameById,
     warehouseStatusById,
     warehousesPending: pending,

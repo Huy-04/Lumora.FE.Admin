@@ -1,4 +1,5 @@
 import type { PaymentMethod, PaymentProvider, PaymentStatus, PaymentSearchResponse } from "~/features/payments/types";
+import { toUtcDateFilter } from "~/features/payments/utils/dateTime";
 
 export const usePaymentIndexPage = async () => {
   // 1. Dependency injection
@@ -48,8 +49,8 @@ export const usePaymentIndexPage = async () => {
         status: appliedFilters.status.value || undefined,
         method: appliedFilters.method.value || undefined,
         provider: appliedFilters.provider.value || undefined,
-        createdFrom: appliedFilters.createdFrom.value || undefined,
-        createdTo: appliedFilters.createdTo.value || undefined,
+        createdFrom: toUtcDateFilter(appliedFilters.createdFrom.value, "start"),
+        createdTo: toUtcDateFilter(appliedFilters.createdTo.value, "end"),
         page: pagination.page.value,
         size: Number(pagination.pageSize.value),
       });

@@ -1,6 +1,5 @@
 import type { CategoryTreeNodeResponse } from "~/features/categories/types";
-
-const MAX_CATEGORY_LEVEL = 2;
+import { CATEGORY_MAX_LEVEL } from "~/features/categories/constants";
 
 const flattenTree = (nodes: CategoryTreeNodeResponse[]): CategoryTreeNodeResponse[] =>
   nodes.flatMap((node) => [node, ...flattenTree(node.children)]);
@@ -30,6 +29,7 @@ export const useCategoryCreatePage = async () => {
 
   const pending = ref(false);
   const errorMessage = ref("");
+  const parentValidationMessage = ref("");
 
   const { data: categoryCatalog, error: categoryCatalogError } = await useAsyncData(
     "categories-create-catalog",
@@ -47,7 +47,7 @@ export const useCategoryCreatePage = async () => {
       .filter((category) =>
         category.isActive
         && !category.isDeleted
-        && category.level < MAX_CATEGORY_LEVEL)
+        && category.level < CATEGORY_MAX_LEVEL)
       .sort((left, right) => left.sortOrder - right.sortOrder)
       .map((category) => ({
         label: `${"- ".repeat(category.level)}${category.name} (#${category.sortOrder})`,
@@ -56,6 +56,17 @@ export const useCategoryCreatePage = async () => {
 
     return [{ label: "Select parent category", value: "" }, ...options];
   });
+
+  const hasCatalogBackedParentOptions = computed(() => canReadCategories.value);
+
+  const isAllowedParentId = (parentId: string) =>
+    activeParentOptions.value.some((option) => option.value === parentId && option.value !== "");
+
+  const isChildParentSelectionValid = computed(() =>
+    form.mode !== "child"
+    || !hasCatalogBackedParentOptions.value
+    || isAllowedParentId(form.parentId),
+  );
 
   watch(
     () => initialParentId.value,
@@ -66,6 +77,34 @@ export const useCategoryCreatePage = async () => {
 
       form.mode = "child";
       form.parentId = parentId;
+    },
+    { immediate: true },
+  );
+
+  watch(
+    [() => form.mode, () => form.parentId, () => activeParentOptions.value],
+    ([mode, parentId]) => {
+      if (mode !== "child") {
+        parentValidationMessage.value = "";
+        return;
+      }
+
+      if (!hasCatalogBackedParentOptions.value) {
+        parentValidationMessage.value = "";
+        return;
+      }
+
+      if (!parentId) {
+        return;
+      }
+
+      if (!isAllowedParentId(parentId)) {
+        parentValidationMessage.value = "The requested parent category is unavailable for child creation. Choose another active parent category before continuing.";
+        form.parentId = "";
+        return;
+      }
+
+      parentValidationMessage.value = "";
     },
     { immediate: true },
   );
@@ -86,6 +125,16 @@ export const useCategoryCreatePage = async () => {
   );
 
   const submit = async () => {
+    if (form.mode === "child" && !isChildParentSelectionValid.value) {
+      errorMessage.value = "Choose a valid active parent category before creating a child category.";
+      return;
+    }
+
+    if (form.mode === "child" && !form.parentId.trim()) {
+      errorMessage.value = "Choose an active parent category before creating a child category.";
+      return;
+    }
+
     pending.value = true;
     errorMessage.value = "";
 
@@ -115,9 +164,11 @@ export const useCategoryCreatePage = async () => {
     form,
     pending,
     errorMessage,
+    parentValidationMessage,
     categoryCatalogError,
     canReadCategories,
     activeParentOptions,
+    isChildParentSelectionValid,
     submit,
   };
 };

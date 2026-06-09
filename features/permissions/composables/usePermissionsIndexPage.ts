@@ -4,7 +4,6 @@ export const usePermissionsIndexPage = async () => {
   const authz = useAdminAuthorization();
   const { enumLabel } = useAuthPresentation();
   const { permissionModuleOptions, permissionOperationOptions, permissionScopeOptions } = useAuthOptions();
-  const permissionModules = permissionModuleOptions.map((option) => option.value);
 
   // 2. Permissions
   const canCreatePermission = computed(() => authz.can(ADMIN_PERMISSION.permissionCreateAll));
@@ -24,24 +23,7 @@ export const usePermissionsIndexPage = async () => {
   const { data, pending, error, refresh } = await useAsyncData(
     () => `permissions:${appliedFilters.module.value || "all"}`,
     async () => {
-      if (appliedFilters.module.value) {
-        return permissionsApi.getPermissionsByModule(appliedFilters.module.value, 1, 50);
-      }
-
-      const moduleResponses = await Promise.allSettled(
-        permissionModules.map((module) => permissionsApi.getPermissionsByModule(module, 1, 50)),
-      );
-      const items = moduleResponses.flatMap((response) =>
-        response.status === "fulfilled" ? response.value.items : [],
-      );
-
-      return {
-        items,
-        totalCount: items.length,
-        page: 1,
-        size: items.length,
-        totalPages: 1,
-      };
+      return permissionsApi.getPermissions(1, 100);
     },
   );
 
@@ -58,10 +40,11 @@ export const usePermissionsIndexPage = async () => {
       const matchesSearch = !keyword
         || permission.permissionName.toLowerCase().includes(keyword)
         || (permission.description || "").toLowerCase().includes(keyword);
+      const matchesModule = !appliedFilters.module.value || permission.module === appliedFilters.module.value;
       const matchesOperation = !appliedFilters.operation.value || permission.operation === appliedFilters.operation.value;
       const matchesScope = !appliedFilters.scope.value || permission.scope === appliedFilters.scope.value;
 
-      return matchesSearch && matchesOperation && matchesScope;
+      return matchesSearch && matchesModule && matchesOperation && matchesScope;
     });
   });
 

@@ -61,9 +61,10 @@ const statusTone = (status: string) => {
     @next-page="goToNextPage"
   >
     <template #filters>
-      <div class="grid w-full gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div class="grid w-full gap-4 md:grid-cols-2 lg:grid-cols-5">
         <AppSelect v-model="localFilters.status.value" label="Status" :options="statusOptions" />
         <AppInput v-model="localFilters.eventType.value" label="Event type" placeholder="Exact event type" />
+        <AppInput v-model="localFilters.aggregateId.value" label="Aggregate ID" placeholder="Exact aggregate ID" />
         <AppInput v-model="localFilters.occurredFrom.value" label="Occurred from" type="date" />
         <AppInput v-model="localFilters.occurredTo.value" label="Occurred to" type="date" />
       </div>

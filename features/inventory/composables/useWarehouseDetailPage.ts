@@ -11,6 +11,7 @@ export const useWarehouseDetailPage = async () => {
 
   // 2. Permissions
   const canUpdateWarehouse = computed(() => authz.can(ADMIN_PERMISSION.warehouseUpdateAll));
+  const canRemoveWarehouse = computed(() => authz.can(ADMIN_PERMISSION.warehouseRemoveAll));
 
   // 3. Data fetching
   const actionPending = ref("");
@@ -47,6 +48,7 @@ export const useWarehouseDetailPage = async () => {
     districtId: "",
     wardCode: "",
     street: "",
+    manualAddress: "",
   });
 
   // GHN address data
@@ -56,12 +58,28 @@ export const useWarehouseDetailPage = async () => {
   const provincesLoading = ref(false);
   const districtsLoading = ref(false);
   const wardsLoading = ref(false);
+  const addressDirectoryError = ref("");
+  const canUseAddressDirectory = computed(() => addressDirectoryError.value.length === 0);
+
+  const switchToManualAddress = (requestError: unknown) => {
+    addressDirectoryError.value = getProblemMessage(
+      requestError,
+      "GHN address directory is unavailable. Enter the warehouse address manually.",
+    );
+    form.provinceId = "";
+    form.districtId = "";
+    form.wardCode = "";
+    districts.value = [];
+    wards.value = [];
+  };
 
   // Load provinces on mount
   provincesLoading.value = true;
   try {
     const data = await ghnApi.getProvinces();
     provinces.value = data.map((p) => ({ label: p.provinceName, value: String(p.provinceId) }));
+  } catch (requestError) {
+    switchToManualAddress(requestError);
   } finally {
     provincesLoading.value = false;
   }
@@ -81,6 +99,8 @@ export const useWarehouseDetailPage = async () => {
       try {
         const data = await ghnApi.getDistricts(Number(provinceId));
         districts.value = data.map((d) => ({ label: d.districtName, value: String(d.districtId) }));
+      } catch (requestError) {
+        switchToManualAddress(requestError);
       } finally {
         districtsLoading.value = false;
       }
@@ -100,6 +120,8 @@ export const useWarehouseDetailPage = async () => {
       try {
         const data = await ghnApi.getWards(Number(districtId));
         wards.value = data.map((w) => ({ label: w.wardName, value: w.wardCode }));
+      } catch (requestError) {
+        switchToManualAddress(requestError);
       } finally {
         wardsLoading.value = false;
       }
@@ -108,6 +130,10 @@ export const useWarehouseDetailPage = async () => {
 
   // Build full address string from selected names
   const fullAddress = computed(() => {
+    if (!canUseAddressDirectory.value) {
+      return form.manualAddress.trim();
+    }
+
     const provinceName = provinces.value.find((p) => p.value === form.provinceId)?.label ?? "";
     const districtName = districts.value.find((d) => d.value === form.districtId)?.label ?? "";
     const wardName = wards.value.find((w) => w.value === form.wardCode)?.label ?? "";
@@ -123,10 +149,12 @@ export const useWarehouseDetailPage = async () => {
 
     form.name = warehouse.value.name;
     form.phoneNational = warehouse.value.phoneNational;
+    form.manualAddress = warehouse.value.address;
   });
 
   // 5. Actions/mutations
   const updateWarehouse = async () => {
+    const normalizedManualAddress = form.manualAddress.trim();
     const hasAddressInput = Boolean(
       form.street.trim()
       || form.provinceId
@@ -140,9 +168,11 @@ export const useWarehouseDetailPage = async () => {
       && form.wardCode,
     );
 
-    if (hasAddressInput && !hasCompleteAddress) {
-      actionError.value = "Complete street, ward, district, and province before updating the warehouse address.";
-      return;
+    if (canUseAddressDirectory.value) {
+      if (hasAddressInput && !hasCompleteAddress) {
+        actionError.value = "Complete street, ward, district, and province before updating the warehouse address.";
+        return;
+      }
     }
 
     actionPending.value = "update";
@@ -160,6 +190,8 @@ export const useWarehouseDetailPage = async () => {
 
       if (hasCompleteAddress) {
         payload.address = fullAddress.value;
+      } else if (!canUseAddressDirectory.value && normalizedManualAddress && normalizedManualAddress !== warehouse.value?.address) {
+        payload.address = normalizedManualAddress;
       }
 
       data.value = await inventoryApi.updateWarehouse(warehouseId.value, payload);
@@ -254,9 +286,12 @@ export const useWarehouseDetailPage = async () => {
   };
 
   return {
+    addressDirectoryError,
     actionError,
     actionPending,
     activeTab,
+    canRemoveWarehouse,
+    canUseAddressDirectory,
     canUpdateWarehouse,
     districts,
     districtsLoading,

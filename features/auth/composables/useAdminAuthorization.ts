@@ -57,7 +57,9 @@ export const ADMIN_PERMISSION = {
   inventoryReadAll: "Inventory.Inventory.Read.All",
   inventoryCreateAll: "Inventory.Inventory.Create.All",
   inventoryUpdateAll: "Inventory.Inventory.Update.All",
-  // NOTE: Location-based inventory scopes (HN, HCM, DN) removed — pending BE team confirmation if custom scopes are needed
+  inventoryUpdateHN: "Inventory.Inventory.Update.HN",
+  inventoryUpdateHCM: "Inventory.Inventory.Update.HCM",
+  inventoryUpdateDN: "Inventory.Inventory.Update.DN",
   inventoryRemoveAll: "Inventory.Inventory.Remove.All",
   shipmentReadAll: "Shipment.Shipment.Read.All",
   shipmentReadSelf: "Shipment.Shipment.Read.Self",
@@ -75,6 +77,19 @@ export const ADMIN_PERMISSION = {
 } as const;
 
 type PermissionRequirement = string | readonly string[];
+
+const inventoryStockUpdateRequirements = [
+  ADMIN_PERMISSION.inventoryUpdateAll,
+  ADMIN_PERMISSION.inventoryUpdateHN,
+  ADMIN_PERMISSION.inventoryUpdateHCM,
+  ADMIN_PERMISSION.inventoryUpdateDN,
+] as const;
+
+const inventoryWarehouseUpdatePermissionByCode = new Map<number, string>([
+  [0, ADMIN_PERMISSION.inventoryUpdateHN],
+  [1, ADMIN_PERMISSION.inventoryUpdateHCM],
+  [2, ADMIN_PERMISSION.inventoryUpdateDN],
+]);
 
 interface RouteAccessRule {
   pattern: RegExp;
@@ -111,9 +126,9 @@ const routeAccessRules: RouteAccessRule[] = [
   { pattern: /^\/inventory$/, requirements: [ADMIN_PERMISSION.inventoryReadAll] },
   { pattern: /^\/inventory\/create$/, requirements: [ADMIN_PERMISSION.inventoryCreateAll] },
   { pattern: /^\/inventory\/[^/]+$/, requirements: [ADMIN_PERMISSION.inventoryReadAll] },
-  { pattern: /^\/inventory-stocks\/[^/]+\/create$/, requirements: [ADMIN_PERMISSION.inventoryUpdateAll] },
-  { pattern: /^\/inventory-stocks\/[^/]+\/warehouses\/[^/]+\/add$/, requirements: [ADMIN_PERMISSION.inventoryUpdateAll] },
-  { pattern: /^\/inventory-stocks\/[^/]+\/warehouses\/[^/]+\/reorder-point$/, requirements: [ADMIN_PERMISSION.inventoryUpdateAll] },
+  { pattern: /^\/inventory-stocks\/[^/]+\/create$/, requirements: [inventoryStockUpdateRequirements] },
+  { pattern: /^\/inventory-stocks\/[^/]+\/warehouses\/[^/]+\/add$/, requirements: [inventoryStockUpdateRequirements] },
+  { pattern: /^\/inventory-stocks\/[^/]+\/warehouses\/[^/]+\/reorder-point$/, requirements: [inventoryStockUpdateRequirements] },
   { pattern: /^\/warehouses$/, requirements: [ADMIN_PERMISSION.warehouseReadAll] },
   { pattern: /^\/warehouses\/create$/, requirements: [ADMIN_PERMISSION.warehouseCreateAll] },
   { pattern: /^\/warehouses\/[^/]+$/, requirements: [ADMIN_PERMISSION.warehouseReadAll] },
@@ -124,7 +139,7 @@ const routeAccessRules: RouteAccessRule[] = [
   { pattern: /^\/reviews\/[^/]+$/, requirements: [ADMIN_PERMISSION.reviewReadAll] },
   { pattern: /^\/system-events$/, requirements: [[ADMIN_PERMISSION.systemEventReadAll, ADMIN_PERMISSION.adminAccessAll]] },
   { pattern: /^\/system-events\/[^/]+$/, requirements: [[ADMIN_PERMISSION.systemEventReadAll, ADMIN_PERMISSION.adminAccessAll]] },
-  { pattern: /^\/sessions$/, requirements: [ADMIN_PERMISSION.userReadAll, ADMIN_PERMISSION.refreshTokenReadAll] },
+  { pattern: /^\/sessions$/, requirements: [ADMIN_PERMISSION.refreshTokenReadAll] },
   { pattern: /^\/profile\/sessions$/, requirements: [[ADMIN_PERMISSION.refreshTokenReadAll, ADMIN_PERMISSION.refreshTokenReadSelf]] },
   { pattern: /^\/user-addresses\/[^/]+\/create$/, requirements: [ADMIN_PERMISSION.userAddressCreateAll] },
   { pattern: /^\/user-addresses\/[^/]+\/[^/]+$/, requirements: [ADMIN_PERMISSION.userAddressUpdateAll] },
@@ -145,6 +160,19 @@ export const useAdminAuthorization = () => {
   };
 
   const canAll = (requirements: readonly PermissionRequirement[]) => requirements.every((requirement) => can(requirement));
+  const canUpdateAnyInventoryStock = () => can(inventoryStockUpdateRequirements);
+  const canUpdateInventoryStockForWarehouseCode = (warehouseCode?: number | null) => {
+    if (can(ADMIN_PERMISSION.inventoryUpdateAll)) {
+      return true;
+    }
+
+    if (warehouseCode === null || warehouseCode === undefined) {
+      return canUpdateAnyInventoryStock();
+    }
+
+    const warehousePolicy = inventoryWarehouseUpdatePermissionByCode.get(Number(warehouseCode));
+    return warehousePolicy ? can(warehousePolicy) : canUpdateAnyInventoryStock();
+  };
 
   const canAccessPath = (path: string) => {
     const normalizedPath = path.split("?")[0] ?? path;
@@ -167,7 +195,7 @@ export const useAdminAuthorization = () => {
     }
 
     const fallbacks = ["/", "/profile", "/settings"];
-    const preferred = ["/users", "/roles", "/permissions", "/categories", "/products", "/inventory", "/orders", "/coupons", "/payments", "/shipments", "/reviews", "/system-events", "/sessions"];
+    const preferred = ["/users", "/roles", "/permissions", "/categories", "/products", "/inventory", "/warehouses", "/orders", "/coupons", "/payments", "/shipments", "/reviews", "/system-events", "/sessions"];
 
     const preferredPath = preferred.find((path) => canAccessPath(path));
     return preferredPath ?? fallbacks.find((path) => canAccessPath(path)) ?? "/";
@@ -177,6 +205,8 @@ export const useAdminAuthorization = () => {
     can,
     canAll,
     canAccessPath,
+    canUpdateAnyInventoryStock,
+    canUpdateInventoryStockForWarehouseCode,
     firstAccessiblePath,
   };
 };

@@ -258,7 +258,7 @@ export const getProblemMessage = (error: unknown, fallback = "Request failed."):
   }
 
   if (status === 403) {
-    return "Your access for this workspace has changed. Please sign in again.";
+    return "You do not have permission to perform this action.";
   }
 
   if (status === 404) {

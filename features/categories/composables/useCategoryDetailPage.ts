@@ -61,11 +61,79 @@ export const useCategoryDetailPage = async () => {
   });
 
   const canEditCategory = computed(() => canEditCategoryPermission.value && !data.value?.category.isDeleted);
+  const canCreateCategoryPermission = computed(() => authz.can(ADMIN_PERMISSION.categoryCreateAll));
 
   const canHaveChildren = computed(() =>
     data.value?.category.level !== undefined
     && data.value.category.level < 2
     && !data.value.category.isDeleted);
+
+  const canAddChildCategory = computed(() =>
+    Boolean(
+      canCreateCategoryPermission.value
+      && data.value?.category
+      && !data.value.category.isDeleted
+      && data.value.category.isActive,
+    ),
+  );
+
+  const addChildDisabledReason = computed(() => {
+    if (!canCreateCategoryPermission.value) {
+      return "";
+    }
+
+    if (data.value?.category && !data.value.category.isActive) {
+      return "Activate this category before adding child categories.";
+    }
+
+    return "";
+  });
+
+  const childStateGuardReason = computed(() => {
+    if (data.value?.category.isDeleted) {
+      return "Restore this parent category before activating or restoring child categories.";
+    }
+
+    if (data.value?.category && !data.value.category.isActive) {
+      return "Some child state actions stay unavailable until this parent category is active.";
+    }
+
+    return "";
+  });
+
+  const getChildToggleDisabledReason = (child: CategoryTreeNodeResponse) => {
+    const category = data.value?.category;
+    if (!category || child.isActive) {
+      return "";
+    }
+
+    if (category.isDeleted) {
+      return "Restore the parent category before activating child categories.";
+    }
+
+    if (!category.isActive) {
+      return "Activate the parent category before activating child categories.";
+    }
+
+    return "";
+  };
+
+  const getChildRestoreDisabledReason = (child: CategoryTreeNodeResponse) => {
+    const category = data.value?.category;
+    if (!category) {
+      return "";
+    }
+
+    if (category.isDeleted) {
+      return "Restore the parent category before restoring child categories.";
+    }
+
+    if (!category.isActive && child.isActive) {
+      return "Activate the parent category before restoring active child categories.";
+    }
+
+    return "";
+  };
 
   const categoryTabs = computed<Array<{ label: string; value: CategoryTab }>>(() => [
     { label: "Overview", value: "overview" },
@@ -111,7 +179,7 @@ export const useCategoryDetailPage = async () => {
   );
 
   const confirmChildHasChildren = computed(() =>
-    Boolean(confirmChildCategory.value?.children.length),
+    Boolean(confirmChildCategory.value?.children.some((child) => !child.isDeleted)),
   );
 
   const childCategoryHasChildrenMessage = (categoryName: string) =>
@@ -206,6 +274,10 @@ export const useCategoryDetailPage = async () => {
       return;
     }
 
+    if (!child.isActive && getChildToggleDisabledReason(child)) {
+      return;
+    }
+
     actionPending.value = "toggle";
     actionTargetId.value = child.id;
     actionError.value = "";
@@ -227,6 +299,10 @@ export const useCategoryDetailPage = async () => {
   };
 
   const restoreChildCategory = async (child: CategoryTreeNodeResponse) => {
+    if (getChildRestoreDisabledReason(child)) {
+      return;
+    }
+
     actionPending.value = "remove";
     actionTargetId.value = child.id;
     actionError.value = "";
@@ -346,9 +422,14 @@ export const useCategoryDetailPage = async () => {
     actionError,
     categoryTabs,
     activeTab,
+    addChildDisabledReason,
+    canAddChildCategory,
+    childStateGuardReason,
     selectTab,
     childCategories,
     actionTargetId,
+    getChildToggleDisabledReason,
+    getChildRestoreDisabledReason,
     requestChildReorder,
     toggleChildCategory,
     requestChildRemove,

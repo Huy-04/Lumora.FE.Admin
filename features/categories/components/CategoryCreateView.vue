@@ -5,7 +5,17 @@ const props = defineProps<{
   page: CategoryCreatePage;
 }>();
 
-const { form, pending, errorMessage, categoryCatalogError, canReadCategories, activeParentOptions, submit } = props.page;
+const {
+  form,
+  pending,
+  errorMessage,
+  parentValidationMessage,
+  categoryCatalogError,
+  canReadCategories,
+  activeParentOptions,
+  isChildParentSelectionValid,
+  submit,
+} = props.page;
 </script>
 
 <template>
@@ -39,7 +49,11 @@ const { form, pending, errorMessage, categoryCatalogError, canReadCategories, ac
             />
 
             <AppNotice v-if="categoryCatalogError" tone="warning" title="Parent catalog unavailable">
-              {{ getProblemMessage(categoryCatalogError, "Parent category options could not be loaded. You can still enter a parent ID manually if needed.") }}
+              {{ getProblemMessage(categoryCatalogError, "Parent category options could not be loaded. Try again later or create a root category instead.") }}
+            </AppNotice>
+
+            <AppNotice v-if="parentValidationMessage" tone="warning" title="Parent category unavailable">
+              {{ parentValidationMessage }}
             </AppNotice>
           </div>
 
@@ -69,7 +83,14 @@ const { form, pending, errorMessage, categoryCatalogError, canReadCategories, ac
             <NuxtLink class="secondary-link min-w-[9rem]" to="/categories">
               Cancel
             </NuxtLink>
-            <AppButton :loading="pending" type="submit" class="min-w-[12rem]">Create category</AppButton>
+            <AppButton
+              :loading="pending"
+              :disabled="form.mode === 'child' && canReadCategories && !isChildParentSelectionValid"
+              type="submit"
+              class="min-w-[12rem]"
+            >
+              Create category
+            </AppButton>
           </div>
         </form>
       </AppPanel>

@@ -6,7 +6,7 @@ export const friendlyErrorMessages: Record<string, string> = {
   EmailNotVerified: "This email address has not been verified yet.",
   TokenRevoked: "Your previous session is no longer valid. Please sign in again.",
   TOKEN_REVOKED: "Your previous session is no longer valid. Please sign in again.",
-  AccessDenied: "Your access for this workspace has changed. Please sign in again.",
+  AccessDenied: "You do not have permission to perform this action.",
   RateLimitExceeded: "Too many attempts. Please wait a moment and try again.",
 
   // Validation
@@ -20,8 +20,11 @@ export const friendlyErrorMessages: Record<string, string> = {
   DuplicateEntry: "A duplicate entry was found.",
   NotPositive: "The value must be positive.",
   ExceedsMaximum: "The value exceeds the maximum allowed.",
+  BelowMinimum: "The value is below the minimum allowed.",
   Unauthorized: "You are not authorized to perform this action.",
   InvalidExternalToken: "The external authentication token is invalid.",
+  SessionExpired: "Your session has expired. Please sign in again.",
+  InvalidOtp: "This verification code is invalid. Please try again.",
 };
 
 export const friendlyFieldLabels: Record<string, string> = {
@@ -62,6 +65,20 @@ export const friendlyFieldLabels: Record<string, string> = {
   ExpiresAt: "Expires at",
   RevokedAt: "Revoked at",
   TokenStatus: "Session status",
+
+  // Inventory / Warehouse
+  InventoryId: "Inventory",
+  InventoryStockId: "Inventory stock",
+  WarehouseId: "Warehouse",
+  WarehouseCode: "Warehouse code",
+  Code: "Warehouse code",
+  Name: "Name",
+  Address: "Address",
+  PhoneNational: "Phone number",
+  Status: "Status",
+  ReorderPoint: "Reorder point",
+  Quantity: "Quantity",
+  Delta: "Quantity change",
 
   // Category
   CategoryId: "Category",

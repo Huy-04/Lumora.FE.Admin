@@ -46,13 +46,17 @@ export const useProductCreatePage = async () => {
     },
   );
 
+  const canUseCategoryCatalog = computed(() =>
+    canReadCategories.value && !categoryCatalogError.value,
+  );
+
   const categoryOptions = computed(() => [
     { label: "Select product category", value: "" },
-    ...toOptions(categoryCatalog.value ?? [], true),
+    ...toOptions(categoryCatalog.value ?? []),
   ]);
 
   watchEffect(() => {
-    if (!form.categoryId && categoryOptions.value[1]) {
+    if (canUseCategoryCatalog.value && !form.categoryId && categoryOptions.value[1]) {
       form.categoryId = categoryOptions.value[1].value;
     }
   });
@@ -98,6 +102,7 @@ export const useProductCreatePage = async () => {
   return {
     form,
     canReadCategories,
+    canUseCategoryCatalog,
     categoryOptions,
     genderTargetValueOptions,
     categoryCatalogError,

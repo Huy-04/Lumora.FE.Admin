@@ -8,8 +8,8 @@ defineProps<{
 
 <template>
   <AppIndexPage
-    eyebrow="RefreshToken API"
-    search-label="Active sessions"
+    eyebrow="Active refresh sessions"
+    search-label="Current session list"
     :total-items="page.summaryStats.value[0]?.value ?? 0"
     item-label="sessions"
     :pending="page.pending.value"
@@ -18,7 +18,7 @@ defineProps<{
     :action-error="page.actionError.value"
     action-error-title="Session action failed"
     :items-length="page.data.value?.length ?? 0"
-    empty-title="No sessions found"
+    empty-title="No active sessions found"
     empty-detail="There are no active sessions at this time."
   >
     <template #modals>

@@ -88,8 +88,23 @@ export const useDashboardPage = async () => {
       revenue: { total: 0, today: 0, thisMonth: 0, averageOrderValue: 0, paidOrders: 0 },
     };
 
+    const visibleOrderStatusTotal =
+      summary.orders.pending +
+      summary.orders.confirmed +
+      summary.orders.processing +
+      summary.orders.inTransit +
+      summary.orders.delivered +
+      summary.orders.completed +
+      summary.orders.cancelled;
+
+    const returnedToSender = Math.max(0, summary.orders.total - visibleOrderStatusTotal);
+
     return {
       ...summary,
+      orders: {
+        ...summary.orders,
+        returnedToSender,
+      },
       orderTrend: orderTrend.value ?? [],
     };
   });

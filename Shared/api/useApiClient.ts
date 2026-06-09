@@ -59,20 +59,18 @@ export const useApiClient = () => {
       return false;
     }
 
-    if (status === 403) {
-      return true;
-    }
-
-    if (status !== 401) {
-      return false;
-    }
-
     const problemCodes = getProblemCodes(error);
-    return problemCodes.size === 0
-      || problemCodes.has("TOKEN_REVOKED")
+    const hasRevokedOrUnauthorizedCode = problemCodes.has("TOKEN_REVOKED")
       || problemCodes.has("TokenRevoked")
       || problemCodes.has("Unauthorized")
       || problemCodes.has("UNAUTHORIZED");
+
+    if (status !== 401) {
+      return status === 403 && hasRevokedOrUnauthorizedCode;
+    }
+
+    return problemCodes.size === 0
+      || hasRevokedOrUnauthorizedCode;
   };
 
   const handleAuthFailureAsExpired = async () => {

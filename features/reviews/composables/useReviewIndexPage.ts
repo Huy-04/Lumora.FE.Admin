@@ -63,14 +63,14 @@ export const useReviewIndexPage = async () => {
       detail: "Reviews matching the current admin search.",
     },
     {
-      label: "Published",
+      label: "Published on page",
       value: `${reviews.value.filter((review) => review.status === "Published").length}`,
-      detail: "Published reviews visible on the storefront.",
+      detail: "Published reviews in the current result page.",
     },
     {
-      label: "Hidden",
+      label: "Hidden on page",
       value: `${reviews.value.filter((review) => review.status === "Hidden").length}`,
-      detail: "Reviews hidden from the storefront by admin.",
+      detail: "Hidden reviews in the current result page.",
     },
   ]);
 

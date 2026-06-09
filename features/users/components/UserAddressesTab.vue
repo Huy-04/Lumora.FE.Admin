@@ -10,50 +10,20 @@ const emit = defineEmits<{
   refresh: [];
 }>();
 
-const usersApi = useUsersAdminApi();
-const authz = useAdminAuthorization();
-const { enumLabel } = useAuthPresentation();
-const canCreateAddress = computed(() => authz.can(ADMIN_PERMISSION.userAddressCreateAll));
-const canUpdateAddress = computed(() => authz.can(ADMIN_PERMISSION.userAddressUpdateAll));
-const canRemoveAddress = computed(() => authz.can(ADMIN_PERMISSION.userAddressRemoveAll));
-
-const actionPending = ref<"" | "remove">("");
-const actionError = ref("");
-
-const actionErrorOpen = computed(() => actionError.value.length > 0);
-
-const closeActionError = () => {
-  actionError.value = "";
-};
-
-// ── Confirm dialog ────────────────────────────────────────────────────────
-const confirmAddressId = ref("");
-const confirmOpen = ref(false);
-
-const openConfirm = (addressId: string) => {
-  confirmAddressId.value = addressId;
-  confirmOpen.value = true;
-};
-
-const closeConfirm = () => {
-  confirmAddressId.value = "";
-  confirmOpen.value = false;
-};
-
-const executeConfirm = async () => {
-  actionPending.value = "remove";
-  actionError.value = "";
-
-  try {
-    await usersApi.deleteUserAddress(props.userId, confirmAddressId.value);
-    closeConfirm();
-    emit("refresh");
-  } catch (err) {
-    actionError.value = getProblemMessage(err, "Unable to remove the address.");
-  } finally {
-    actionPending.value = "";
-  }
-};
+const {
+  actionError,
+  actionErrorOpen,
+  actionPending,
+  canCreateAddress,
+  canRemoveAddress,
+  canUpdateAddress,
+  closeActionError,
+  closeConfirm,
+  confirmOpen,
+  enumLabel,
+  executeConfirm,
+  openConfirm,
+} = useUserAddressesTab(props, () => emit("refresh"));
 </script>
 
 <template>

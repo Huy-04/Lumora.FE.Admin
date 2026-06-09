@@ -33,10 +33,6 @@ const {
             />
           </div>
 
-          <AppNotice v-if="!canCreateShipment" tone="warning" title="Shipment access required">
-            Your account can read shipments, but it cannot create shipment drafts.
-          </AppNotice>
-
           <AppNotice v-if="errorMessage" tone="danger" title="Create shipment failed">
             {{ errorMessage }}
           </AppNotice>

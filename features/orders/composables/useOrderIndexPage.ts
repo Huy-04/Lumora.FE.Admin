@@ -1,4 +1,5 @@
 import type { OrderPaymentStatus, OrderStatus } from "~/features/orders/types";
+import { toUtcDateFilter } from "~/features/orders/utils/dateTime";
 
 export const useOrderIndexPage = async () => {
   // 1. Dependency injection
@@ -37,8 +38,8 @@ export const useOrderIndexPage = async () => {
       warehouseId: appliedFilters.warehouseId.value || undefined,
       status: appliedFilters.status.value || undefined,
       paymentStatus: appliedFilters.paymentStatus.value || undefined,
-      createdFrom: appliedFilters.createdFrom.value || undefined,
-      createdTo: appliedFilters.createdTo.value || undefined,
+      createdFrom: toUtcDateFilter(appliedFilters.createdFrom.value, "start"),
+      createdTo: toUtcDateFilter(appliedFilters.createdTo.value, "end"),
       page: pagination.page.value,
       size: Number(pagination.pageSize.value),
     }),

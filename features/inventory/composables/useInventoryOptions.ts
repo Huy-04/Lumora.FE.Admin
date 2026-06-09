@@ -13,9 +13,9 @@ export const useInventoryOptions = () => {
   ];
 
   const warehouseCodeOptions = [
-    { label: "HN", value: "1" },
-    { label: "HCM", value: "2" },
-    { label: "DN", value: "3" },
+    { label: "HN", value: "0" },
+    { label: "HCM", value: "1" },
+    { label: "DN", value: "2" },
   ];
 
   return {

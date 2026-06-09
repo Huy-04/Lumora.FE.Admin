@@ -8,17 +8,19 @@ const props = defineProps<{
 }>();
 
 const {
+  addressDirectoryError,
+  canUseAddressDirectory,
+  districts,
+  districtsLoading,
+  errorMessage,
   form,
   pending,
-  errorMessage,
   warehouseCodeOptions,
   provinces,
-  districts,
-  wards,
   provincesLoading,
-  districtsLoading,
-  wardsLoading,
   submit,
+  wards,
+  wardsLoading,
 } = props.page;
 
 const phoneError = computed(() => {
@@ -53,35 +55,51 @@ const phoneError = computed(() => {
             />
           </div>
 
-          <div class="grid gap-4 md:grid-cols-2">
-            <AppSearchSelect
-              v-model="form.provinceId"
-              label="Province"
-              :options="provinces"
-              :loading="provincesLoading"
-              placeholder="Type to search province"
-            />
-            <AppSearchSelect
-              v-model="form.districtId"
-              label="District"
-              :options="districts"
-              :disabled="!form.provinceId"
-              :loading="districtsLoading"
-              placeholder="Type to search district"
-            />
-          </div>
+          <AppNotice
+            v-if="addressDirectoryError"
+            tone="warning"
+            title="Address directory unavailable"
+          >
+            {{ addressDirectoryError }}
+          </AppNotice>
 
-          <div class="grid gap-4 md:grid-cols-2">
-            <AppSearchSelect
-              v-model="form.wardCode"
-              label="Ward"
-              :options="wards"
-              :disabled="!form.districtId"
-              :loading="wardsLoading"
-              placeholder="Type to search ward"
-            />
-            <AppInput v-model="form.street" label="Street" placeholder="House number, street name" />
-          </div>
+          <template v-if="canUseAddressDirectory">
+            <div class="grid gap-4 md:grid-cols-2">
+              <AppSearchSelect
+                v-model="form.provinceId"
+                label="Province"
+                :options="provinces"
+                :loading="provincesLoading"
+                placeholder="Type to search province"
+              />
+              <AppSearchSelect
+                v-model="form.districtId"
+                label="District"
+                :options="districts"
+                :disabled="!form.provinceId"
+                :loading="districtsLoading"
+                placeholder="Type to search district"
+              />
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <AppSearchSelect
+                v-model="form.wardCode"
+                label="Ward"
+                :options="wards"
+                :disabled="!form.districtId"
+                :loading="wardsLoading"
+                placeholder="Type to search ward"
+              />
+              <AppInput v-model="form.street" label="Street" placeholder="House number, street name" />
+            </div>
+          </template>
+          <AppInput
+            v-else
+            v-model="form.manualAddress"
+            label="Warehouse address"
+            placeholder="Enter the full warehouse address"
+          />
 
           <AppNotice v-if="errorMessage" tone="danger" title="Create warehouse failed">
             {{ errorMessage }}

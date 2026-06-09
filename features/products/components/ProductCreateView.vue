@@ -5,7 +5,7 @@ const props = defineProps<{
   page: ProductCreatePage;
 }>();
 
-const { form, canReadCategories, categoryOptions, genderTargetValueOptions, categoryCatalogError, errorMessage, pending, submit } = props.page;
+const { form, canReadCategories, canUseCategoryCatalog, categoryOptions, genderTargetValueOptions, categoryCatalogError, errorMessage, pending, submit } = props.page;
 </script>
 
 <template>
@@ -15,7 +15,7 @@ const { form, canReadCategories, categoryOptions, genderTargetValueOptions, cate
         <form class="form-stack" @submit.prevent="submit">
           <div class="grid gap-4 md:grid-cols-2">
             <AppSelect
-              v-if="canReadCategories"
+              v-if="canUseCategoryCatalog"
               v-model="form.categoryId"
               label="Category"
               :options="categoryOptions"

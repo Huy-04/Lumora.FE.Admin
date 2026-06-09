@@ -8,9 +8,12 @@ const props = defineProps<{
 }>();
 
 const {
+  addressDirectoryError,
   actionError,
   actionPending,
   activeTab,
+  canRemoveWarehouse,
+  canUseAddressDirectory,
   canUpdateWarehouse,
   districts,
   districtsLoading,
@@ -191,7 +194,7 @@ const removeConfirmOpen = ref(false);
             </div>
             <div class="flex shrink-0 items-center gap-3">
               <AppButton
-                v-if="canUpdateWarehouse && warehouse.status === 'Inactive'"
+                v-if="canRemoveWarehouse && warehouse.status === 'Inactive'"
                 variant="danger"
                 :loading="actionPending === 'remove'"
                 @click="removeConfirmOpen = true"
@@ -212,6 +215,15 @@ const removeConfirmOpen = ref(false);
 
         <AppPanel eyebrow="Edit warehouse">
           <form class="grid divide-y divide-line/60" @submit.prevent="updateWarehouse">
+            <AppNotice
+              v-if="addressDirectoryError"
+              class="py-3"
+              tone="warning"
+              title="Address directory unavailable"
+            >
+              {{ addressDirectoryError }}
+            </AppNotice>
+
             <div class="grid gap-4 py-3 md:grid-cols-2">
               <AppInput v-model="form.name" label="Name" />
               <AppInput v-model="form.phoneNational" label="Phone" />
@@ -223,34 +235,43 @@ const removeConfirmOpen = ref(false);
               </p>
             </div>
 
-            <div class="grid gap-4 py-3 md:grid-cols-2">
-              <AppSearchSelect
-                v-model="form.provinceId"
-                label="Province"
-                :options="provinces"
-                :loading="provincesLoading"
-                placeholder="Type to search province"
-              />
-              <AppSearchSelect
-                v-model="form.districtId"
-                label="District"
-                :options="districts"
-                :disabled="!form.provinceId"
-                :loading="districtsLoading"
-                placeholder="Type to search district"
-              />
-            </div>
+            <template v-if="canUseAddressDirectory">
+              <div class="grid gap-4 py-3 md:grid-cols-2">
+                <AppSearchSelect
+                  v-model="form.provinceId"
+                  label="Province"
+                  :options="provinces"
+                  :loading="provincesLoading"
+                  placeholder="Type to search province"
+                />
+                <AppSearchSelect
+                  v-model="form.districtId"
+                  label="District"
+                  :options="districts"
+                  :disabled="!form.provinceId"
+                  :loading="districtsLoading"
+                  placeholder="Type to search district"
+                />
+              </div>
 
-            <div class="grid gap-4 py-3 md:grid-cols-2">
-              <AppSearchSelect
-                v-model="form.wardCode"
-                label="Ward"
-                :options="wards"
-                :disabled="!form.districtId"
-                :loading="wardsLoading"
-                placeholder="Type to search ward"
+              <div class="grid gap-4 py-3 md:grid-cols-2">
+                <AppSearchSelect
+                  v-model="form.wardCode"
+                  label="Ward"
+                  :options="wards"
+                  :disabled="!form.districtId"
+                  :loading="wardsLoading"
+                  placeholder="Type to search ward"
+                />
+                <AppInput v-model="form.street" label="Street" placeholder="House number, street name" />
+              </div>
+            </template>
+            <div v-else class="grid gap-4 py-3">
+              <AppInput
+                v-model="form.manualAddress"
+                label="Warehouse address"
+                placeholder="Enter the full warehouse address"
               />
-              <AppInput v-model="form.street" label="Street" placeholder="House number, street name" />
             </div>
 
             <div class="flex justify-end pt-4">

@@ -9,7 +9,8 @@ const props = defineProps<{
 
 const {
   canAddStock,
-  canReadWarehouses,
+  canUpdateSelectedWarehouse,
+  canUseWarehouseCatalog,
   canUpdateInventory,
   errorMessage,
   form,
@@ -21,6 +22,7 @@ const {
   pending,
   selectedWarehouseActive,
   submit,
+  warehouseCatalogWarning,
   warehouseOptions,
 } = props.page;
 
@@ -59,11 +61,15 @@ useScopedPageBreadcrumbs(() =>
             Inventory update permission is required to {{ isExistingStockMode ? "adjust stock" : "add stock" }}.
           </AppNotice>
 
-          <AppNotice v-else-if="!canReadWarehouses" tone="warning" title="Warehouse access required">
-            Warehouse read permission is required to select a warehouse.
+          <AppNotice v-else-if="form.warehouseId && !canUpdateSelectedWarehouse" tone="warning" title="Warehouse access required">
+            Inventory update permission for this warehouse is required.
           </AppNotice>
 
-          <AppNotice v-else-if="!warehouseOptions.length" tone="warning" title="No warehouses available">
+          <AppNotice v-else-if="warehouseCatalogWarning" tone="warning" title="Warehouse catalog unavailable">
+            {{ warehouseCatalogWarning }}
+          </AppNotice>
+
+          <AppNotice v-else-if="canUseWarehouseCatalog && !warehouseOptions.length" tone="warning" title="No warehouses available">
             Every available warehouse already has a stock row for this inventory.
           </AppNotice>
 
@@ -80,11 +86,19 @@ useScopedPageBreadcrumbs(() =>
 
           <div class="grid gap-4 md:grid-cols-2">
             <AppSelect
+              v-if="canUseWarehouseCatalog"
               v-model="form.warehouseId"
               label="Warehouse"
               placeholder="Select warehouse"
               :disabled="isExistingStockMode || !warehouseOptions.length"
               :options="warehouseOptions"
+            />
+            <AppInput
+              v-else
+              v-model="form.warehouseId"
+              label="Warehouse ID"
+              placeholder="Enter warehouse ID"
+              :readonly="isExistingStockMode"
             />
             <div v-if="isExistingStockMode" class="grid gap-2">
               <span class="app-label">Quantity</span>

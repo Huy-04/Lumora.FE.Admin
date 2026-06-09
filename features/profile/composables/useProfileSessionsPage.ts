@@ -162,7 +162,7 @@ export const useProfileSessionsPage = async () => {
     actionPending.value = "all";
     try {
       await sessionsApi.revokeAllUserTokens(currentUser.value.id);
-      await authSession.logout();
+      authSession.clear();
       await navigateTo("/auth/login");
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to revoke every device session.");

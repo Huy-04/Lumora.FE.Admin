@@ -17,18 +17,16 @@ export const useWarehouseIndexPage = async () => {
     { label: "Inactive", value: "Inactive" },
   ];
 
-  // 4. Data fetching
-  const { data, pending, error, refresh } = await useAsyncData(
-    "warehouse-admin:index",
-    async () => {
-      if (!canReadWarehouse.value) return [];
-      return await inventoryApi.getWarehouses();
-    },
-  );
+  // 4. Pagination
+  const totalItems = ref(0);
+  const pagination = usePagination(totalItems);
 
-  const allWarehouses = computed(() => data.value ?? []);
+  const initialPage = Number(route.query.page) || 1;
+  const initialPageSize = (route.query.pageSize as string) || "20";
+  if (initialPage > 1) pagination.page.value = initialPage;
+  if (initialPageSize !== "20") pagination.pageSize.value = initialPageSize;
 
-  // 5. Filters (client-side filtering with URL persistence)
+  // 5. Filters with URL persistence
   const initialKeyword = (route.query.keyword as string) || "";
   const initialStatus = (route.query.status as string) || "";
 
@@ -58,59 +56,54 @@ export const useWarehouseIndexPage = async () => {
     syncFiltersToUrl();
   };
 
-  // 6. Filtered results
-  const warehouses = computed(() => {
-    let result = allWarehouses.value;
+  // 6. Data fetching
+  const { data, pending, error, refresh } = await useAsyncData(
+    () => `warehouse-admin:index:${appliedFilters.keyword.value || "all"}:${appliedFilters.statusFilter.value || "all"}:${pagination.page.value}:${pagination.pageSize.value}`,
+    async () => {
+      if (!canReadWarehouse.value) {
+        return {
+          items: [],
+          totalCount: 0,
+          page: pagination.page.value,
+          size: Number(pagination.pageSize.value),
+          totalPages: 1,
+        };
+      }
 
-    const kw = appliedFilters.keyword.value.trim().toLowerCase();
-    if (kw) {
-      result = result.filter(
-        (w) =>
-          w.name.toLowerCase().includes(kw) ||
-          w.address.toLowerCase().includes(kw),
-      );
-    }
+      return await inventoryApi.searchWarehouses({
+        keyword: appliedFilters.keyword.value || undefined,
+        status: appliedFilters.statusFilter.value || undefined,
+        page: pagination.page.value,
+        size: Number(pagination.pageSize.value),
+      });
+    },
+  );
 
-    if (appliedFilters.statusFilter.value) {
-      result = result.filter((w) => w.status === appliedFilters.statusFilter.value);
-    }
+  watch(() => data.value?.totalCount, (count) => {
+    totalItems.value = count ?? 0;
+  }, { immediate: true });
 
-    return result;
-  });
-
-  // 7. Pagination (client-side with URL persistence)
-  const totalItems = computed(() => warehouses.value.length);
-  const pagination = usePagination(totalItems);
-
-  // Initialize pagination from URL
-  const initialPage = Number(route.query.page) || 1;
-  const initialPageSize = (route.query.pageSize as string) || "20";
-  if (initialPage > 1) pagination.page.value = initialPage;
-  if (initialPageSize !== "20") pagination.pageSize.value = initialPageSize;
+  const warehouses = computed(() => data.value?.items ?? []);
 
   // Sync pagination changes to URL
   watch([() => pagination.page.value, () => pagination.pageSize.value], () => {
     syncFiltersToUrl();
   });
 
-  const pagedWarehouses = computed(() => {
-    const start = (pagination.page.value - 1) * Number(pagination.pageSize.value);
-    const end = start + Number(pagination.pageSize.value);
-    return warehouses.value.slice(start, end);
-  });
-
-  // 8. Computed derivations
+  // 7. Computed derivations
   const loadErrorMessage = computed(() => getProblemMessage(error.value, "Warehouse data is not available right now."));
 
   const summaryStats = computed(() => [
     {
       label: "Total warehouses",
-      value: `${allWarehouses.value.length}`,
-      detail: "Admin-managed warehouse records.",
+      value: `${totalItems.value}`,
+      detail: hasActiveFilters.value
+        ? "Warehouse records matching the current backend search."
+        : "Admin-managed warehouse records.",
     },
   ]);
 
-  // 9. Actions
+  // 8. Actions
   const actionError = ref("");
   const actionPending = ref("");
 
@@ -127,7 +120,7 @@ export const useWarehouseIndexPage = async () => {
     }
   };
 
-  // 10. Return
+  // 9. Return
   return {
     actionError,
     actionPending,
@@ -140,7 +133,7 @@ export const useWarehouseIndexPage = async () => {
     hasActiveFilters,
     loadErrorMessage,
     localFilters,
-    pagedWarehouses,
+    pagedWarehouses: warehouses,
     pending,
     refresh,
     removeWarehouse,

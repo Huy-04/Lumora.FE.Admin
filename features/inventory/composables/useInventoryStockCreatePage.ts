@@ -13,7 +13,7 @@ export const useInventoryStockCreatePage = async () => {
   const QUANTITY_MAX = 999_999;
 
   // 2. Permissions
-  const canUpdateInventory = computed(() => authz.can(ADMIN_PERMISSION.inventoryUpdateAll));
+  const canUpdateInventory = computed(() => authz.canUpdateAnyInventoryStock());
   const canReadWarehouses = computed(() => authz.can(ADMIN_PERMISSION.warehouseReadAll));
 
   // 3. Form state
@@ -27,18 +27,34 @@ export const useInventoryStockCreatePage = async () => {
   const reorderPointPending = ref(false);
   const errorMessage = ref("");
   const reorderPointErrorMessage = ref("");
+  const warehouseCatalogWarning = ref("");
 
   // 4. Data fetching
   const { data, pending: inventoryPending, error: inventoryError } = await useAsyncData(
     () => `inventory-stock-create:${inventoryId.value}`,
     async () => {
-      const [inventory, warehouses] = await Promise.all([
-        inventoryApi.getInventoryById(inventoryId.value),
-        canReadWarehouses.value ? inventoryApi.getWarehouses() : Promise.resolve([]),
-      ]);
+      const inventory = await inventoryApi.getInventoryById(inventoryId.value);
+      let warehouses = [] as Awaited<ReturnType<typeof inventoryApi.getWarehouses>>;
+      let nextWarehouseCatalogWarning = "";
+
+      if (canReadWarehouses.value) {
+        try {
+          warehouses = await inventoryApi.getWarehouses();
+        } catch (requestError) {
+          nextWarehouseCatalogWarning = getProblemMessage(
+            requestError,
+            "Warehouse catalog is unavailable right now. Enter a warehouse ID manually or continue with the requested warehouse.",
+          );
+        }
+      } else {
+        nextWarehouseCatalogWarning = requestedWarehouseId.value
+          ? "Warehouse catalog access is unavailable for this account. Continuing with the requested warehouse."
+          : "Warehouse catalog access is unavailable for this account. Enter a warehouse ID manually.";
+      }
 
       return {
         inventory,
+        warehouseCatalogWarning: nextWarehouseCatalogWarning,
         warehouses,
       };
     },
@@ -46,6 +62,9 @@ export const useInventoryStockCreatePage = async () => {
 
   const inventory = computed(() => data.value?.inventory ?? null);
   const warehouses = computed(() => data.value?.warehouses ?? []);
+  const canUseWarehouseCatalog = computed(() =>
+    canReadWarehouses.value && warehouseCatalogWarning.value.length === 0,
+  );
   const attachedWarehouseIds = computed(() =>
     new Set(inventory.value?.stocks.map((stock) => stock.warehouseId) ?? []),
   );
@@ -55,7 +74,13 @@ export const useInventoryStockCreatePage = async () => {
   const selectedWarehouse = computed(() =>
     warehouses.value.find((warehouse) => warehouse.id === form.warehouseId) ?? null,
   );
-  const selectedWarehouseActive = computed(() => selectedWarehouse.value?.status === "Active");
+  const selectedWarehouseCode = computed(() => selectedWarehouse.value?.code ?? null);
+  const canUpdateSelectedWarehouse = computed(() =>
+    authz.canUpdateInventoryStockForWarehouseCode(selectedWarehouseCode.value),
+  );
+  const selectedWarehouseActive = computed(() =>
+    selectedWarehouse.value ? selectedWarehouse.value.status === "Active" : true,
+  );
   const isExistingStockMode = computed(() => selectedStock.value !== null);
   const warehouseOptions = computed(() =>
     warehouses.value
@@ -69,11 +94,14 @@ export const useInventoryStockCreatePage = async () => {
       })),
   );
   const canAddStock = computed(() =>
-    canUpdateInventory.value
-    && canReadWarehouses.value
+    canUpdateSelectedWarehouse.value
     && form.warehouseId.length > 0
-    && selectedWarehouse.value !== null,
+    && (!isExistingStockMode.value || selectedStock.value !== null),
   );
+
+  watchEffect(() => {
+    warehouseCatalogWarning.value = data.value?.warehouseCatalogWarning ?? "";
+  });
 
   // 5. Actions/mutations
   const parsePositiveInt = (value: string, label: string) => {
@@ -201,6 +229,8 @@ export const useInventoryStockCreatePage = async () => {
   return {
     canAddStock,
     canReadWarehouses,
+    canUpdateSelectedWarehouse,
+    canUseWarehouseCatalog,
     canUpdateInventory,
     errorMessage,
     form,
@@ -216,6 +246,7 @@ export const useInventoryStockCreatePage = async () => {
     submit,
     reorderPointErrorMessage,
     reorderPointPending,
+    warehouseCatalogWarning,
     warehouseOptions,
   };
 };

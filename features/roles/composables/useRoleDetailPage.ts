@@ -4,8 +4,6 @@ export const useRoleDetailPage = async () => {
   const rolesApi = useRolesAdminApi();
   const permissionsApi = usePermissionsAdminApi();
   const authz = useAdminAuthorization();
-  const { permissionModuleOptions } = useAuthOptions();
-  const permissionModules = permissionModuleOptions.map((option) => option.value);
 
   // 2. Route & permissions
   type RoleTab = "overview" | "edit" | "permissions";
@@ -107,18 +105,11 @@ export const useRoleDetailPage = async () => {
     // Fetch permissions and catalog in parallel ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â failures here should not break the role view.
     const [permissionsResult, catalogResult] = await Promise.allSettled([
       rolesApi.getRolePermissions(roleId.value),
-      Promise.allSettled(
-        permissionModules.map((module) => permissionsApi.getPermissionsByModule(module, 1, 50)),
-      ),
+      permissionsApi.getPermissions(1, 100),
     ]);
 
     const permissions = permissionsResult.status === "fulfilled" ? permissionsResult.value : [];
-    const catalogModuleResults = catalogResult.status === "fulfilled" ? catalogResult.value : [];
-    const rawCatalog = Array.isArray(catalogModuleResults)
-      ? catalogModuleResults.flatMap((result: PromiseSettledResult<{ items: unknown[] }>) =>
-          result.status === "fulfilled" ? result.value.items : [],
-        )
-      : [];
+    const rawCatalog = catalogResult.status === "fulfilled" ? catalogResult.value : [];
 
     data.value = {
       role: role!,

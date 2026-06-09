@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const {
   canAddStock,
-  canReadWarehouses,
+  canUpdateSelectedWarehouse,
   canUpdateInventory,
   form,
   inventory,
@@ -19,6 +19,7 @@ const {
   reorderPointErrorMessage,
   reorderPointPending,
   setReorderPoint,
+  warehouseCatalogWarning,
   warehouseOptions,
 } = props.page;
 
@@ -59,8 +60,12 @@ useScopedPageBreadcrumbs(() =>
             Inventory update permission is required to set a reorder point.
           </AppNotice>
 
-          <AppNotice v-else-if="!canReadWarehouses" tone="warning" title="Warehouse access required">
-            Warehouse read permission is required to load this stock row.
+          <AppNotice v-else-if="form.warehouseId && !canUpdateSelectedWarehouse" tone="warning" title="Warehouse access required">
+            Inventory update permission for this warehouse is required.
+          </AppNotice>
+
+          <AppNotice v-else-if="warehouseCatalogWarning" tone="warning" title="Warehouse catalog unavailable">
+            {{ warehouseCatalogWarning }}
           </AppNotice>
 
           <AppNotice v-else-if="!selectedStock" tone="warning" title="Stock row unavailable">

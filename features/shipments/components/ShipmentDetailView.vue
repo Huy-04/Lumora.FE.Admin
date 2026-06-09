@@ -143,12 +143,15 @@ const closeActionError = () => {
             <div class="flex flex-wrap items-center gap-2">
               <AppBadge tone="warning">{{ shipment.status }}</AppBadge>
               <AppBadge>{{ shipment.carrier }}</AppBadge>
-              <span class="text-sm text-smoke">Carrier submission pending</span>
+              <span class="text-sm text-smoke">Carrier submission is still pending.</span>
             </div>
             <AppButton :loading="actionPending === 'submit'" variant="secondary" @click="submitShipment">
-              Retry submit
+              Retry carrier submission
             </AppButton>
           </div>
+          <p class="text-sm text-smoke">
+            Background processing may also retry carrier submission automatically.
+          </p>
         </AppPanel>
 
         <AppDetailMetaPanel eyebrow="Carrier timeline">

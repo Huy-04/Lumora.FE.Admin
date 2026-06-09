@@ -319,6 +319,13 @@ const manageCards = [
                 <span class="dashboard-bar-value">{{ stats.orders.completed }}</span>
               </div>
               <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Returned to Sender</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-warning" :style="{ width: barWidth(stats.orders.returnedToSender, stats.orders.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.orders.returnedToSender }}</span>
+              </div>
+              <div class="dashboard-bar-row">
                 <span class="dashboard-bar-label">Cancelled</span>
                 <div class="dashboard-bar-track">
                   <div class="dashboard-bar-fill bg-danger" :style="{ width: barWidth(stats.orders.cancelled, stats.orders.total) }" />

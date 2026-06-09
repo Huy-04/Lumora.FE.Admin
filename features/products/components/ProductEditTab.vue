@@ -6,6 +6,7 @@ const props = defineProps<{
   product: ProductResponse;
   categoryOptions: CategoryCatalogOption[];
   canReadCategories: boolean;
+  canUseCategoryCatalog: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -111,7 +112,7 @@ const saveProduct = async () => {
       <form class="form-stack" @submit.prevent="saveProduct">
         <div class="grid gap-4 md:grid-cols-2">
           <AppSelect
-            v-if="canReadCategories"
+            v-if="canUseCategoryCatalog"
             v-model="form.categoryId"
             label="Category"
             :options="categoryOptions"
@@ -161,6 +162,15 @@ const saveProduct = async () => {
 
         <AppNotice v-if="actionSuccess" tone="success" title="Product updated">
           {{ actionSuccess }}
+        </AppNotice>
+
+        <AppNotice
+          v-if="canReadCategories && !canUseCategoryCatalog"
+          tone="warning"
+          title="Category catalog unavailable"
+        >
+          Category options could not be loaded. You can still update the product
+          by entering a category ID manually.
         </AppNotice>
 
         <AppNotice v-if="actionError" tone="danger" title="Product update failed">

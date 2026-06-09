@@ -7,7 +7,7 @@ const props = defineProps<{
   page: CategoryDetailPage;
 }>();
 
-const { confirmReorderOpen, pendingReorder, actionPending, confirmChildReorder, cancelChildReorder, confirmChildCategory, confirmChildHasChildren, childCategoryHasChildrenMessage, confirmChildRemoveAction, cancelChildRemove, error, pending, data, parentCategory, actionError, categoryTabs, activeTab, selectTab, childCategories, actionTargetId, requestChildReorder, toggleChildCategory, requestChildRemove, restoreChildCategory, refresh } = props.page;
+const { confirmReorderOpen, pendingReorder, actionPending, confirmChildReorder, cancelChildReorder, confirmChildCategory, confirmChildHasChildren, childCategoryHasChildrenMessage, confirmChildRemoveAction, cancelChildRemove, error, pending, data, parentCategory, actionError, categoryTabs, activeTab, selectTab, childCategories, actionTargetId, requestChildReorder, toggleChildCategory, requestChildRemove, restoreChildCategory, refresh, canAddChildCategory, addChildDisabledReason, childStateGuardReason, getChildToggleDisabledReason, getChildRestoreDisabledReason } = props.page;
 
 const selectCategoryTab = (tab: string) => {
   selectTab(tab as typeof activeTab.value);
@@ -130,6 +130,11 @@ useScopedPageBreadcrumbs(() => {
         :children="childCategories"
         :action-pending="actionPending === 'toggle' || actionPending === 'remove'"
         :action-target-id="actionTargetId"
+        :can-add-child="canAddChildCategory"
+        :add-child-disabled-reason="addChildDisabledReason"
+        :child-state-guard-reason="childStateGuardReason"
+        :get-child-toggle-disabled-reason="getChildToggleDisabledReason"
+        :get-child-restore-disabled-reason="getChildRestoreDisabledReason"
         @request-reorder="requestChildReorder"
         @request-toggle="toggleChildCategory"
         @request-remove="requestChildRemove"

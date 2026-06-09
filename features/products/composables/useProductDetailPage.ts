@@ -1,16 +1,13 @@
 import type { CategoryTreeNodeResponse } from "~/features/categories/types";
 
 export const useProductDetailPage = async () => {
-  // 1. Dependency injection
   const route = useRoute();
   const categoryApi = useCategoryAdminApi();
   const productApi = useProductAdminApi();
   const authz = useAdminAuthorization();
   const { findNode, toOptions } = useCategoryTreeCatalog();
+  const emptyCategoryTree: CategoryTreeNodeResponse[] = [];
 
-  type ProductTab = "overview" | "edit" | "variants" | "assets" | "gallery" | "attributes";
-
-  // 2. Permissions
   const productId = computed(() => route.params.id as string);
   const canReadCategories = computed(() => authz.can(ADMIN_PERMISSION.categoryReadAll));
   const canUpdateProduct = computed(() => authz.can(ADMIN_PERMISSION.productUpdateAll));
@@ -29,7 +26,6 @@ export const useProductDetailPage = async () => {
     }
   };
 
-  // 3. Data fetching
   const { data, pending, error, refresh } = await useAsyncData(
     () => `product-detail:${productId.value}`,
     async () => {
@@ -37,7 +33,9 @@ export const useProductDetailPage = async () => {
 
       const [product, categoryTree, variants, assets, gallery, attributes] = await Promise.all([
         productApi.getProductById(productId.value),
-        canReadCategories.value ? categoryApi.getCategoryTree() : Promise.resolve([]),
+        canReadCategories.value
+          ? resolveSection("category catalog", categoryApi.getCategoryTree())
+          : Promise.resolve(emptyCategoryTree),
         productApi.getProductVariants(productId.value),
         resolveSection("assets", productApi.getProductAssets(productId.value)),
         resolveSection("gallery", productApi.getProductGallery(productId.value)),
@@ -46,7 +44,7 @@ export const useProductDetailPage = async () => {
 
       return {
         product,
-        categoryTree,
+        categoryTree: categoryTree ?? emptyCategoryTree,
         variants,
         assets,
         gallery,
@@ -62,62 +60,12 @@ export const useProductDetailPage = async () => {
     }
   });
 
-  // 4. Computed derivations
   const canEditProduct = computed(() => canUpdateProduct.value && !data.value?.product?.isDeleted);
   const canManageProductContent = computed(() => canUpdateProduct.value && !data.value?.product?.isDeleted);
-
-  const productTabs = computed<Array<{ label: string; value: ProductTab }>>(() => [
-    { label: "Overview", value: "overview" },
-    { label: "Variants", value: "variants" },
-    { label: "Assets", value: "assets" },
-    { label: "Gallery", value: "gallery" },
-    { label: "Attributes", value: "attributes" },
-    ...(canEditProduct.value ? [{ label: "Edit", value: "edit" as const }] : []),
-  ]);
-
-  const normalizeTab = (value: unknown): ProductTab => {
-    const resolved = value === "edit"
-      ? "edit"
-      : value === "variants"
-        ? "variants"
-        : value === "assets"
-          ? "assets"
-          : value === "gallery"
-            ? "gallery"
-            : value === "attributes"
-              ? "attributes"
-              : "overview";
-
-    return productTabs.value.some((tab) => tab.value === resolved) ? resolved : "overview";
-  };
-
-  const activeTab = ref<ProductTab>("overview");
-
-  // 6. Watchers
-  watch(
-    () => route.query.tab,
-    (value) => {
-      activeTab.value = normalizeTab(value);
-    },
-    { immediate: true },
+  const tabState = useProductDetailTabs(route, productId, canEditProduct);
+  const canUseCategoryCatalog = computed(() =>
+    canReadCategories.value && !productSectionWarnings.value.includes("category catalog"),
   );
-
-  watchEffect(() => {
-    activeTab.value = normalizeTab(activeTab.value);
-  });
-
-  // 5. Actions/mutations
-  const selectTab = async (tab: ProductTab) => {
-    activeTab.value = normalizeTab(tab);
-
-    await navigateTo(
-      {
-        path: `/products/${productId.value}`,
-        query: { tab },
-      },
-      { replace: true },
-    );
-  };
 
   const categoryLabel = computed(() => {
     if (!data.value?.product) {
@@ -128,18 +76,15 @@ export const useProductDetailPage = async () => {
       ?? data.value.product.categoryId;
   });
 
-  const categoryOptions = computed(() => toOptions((data.value?.categoryTree ?? []) as CategoryTreeNodeResponse[], true));
+  const categoryOptions = computed(() => toOptions((data.value?.categoryTree ?? []) as CategoryTreeNodeResponse[]));
 
-  // 7. Return statement
   return {
     error,
     pending,
     data,
+    canUseCategoryCatalog,
     categoryLabel,
     productSectionWarnings,
-    productTabs,
-    activeTab,
-    selectTab,
     canRestoreProduct,
     productId,
     canManageProductContent,
@@ -149,6 +94,7 @@ export const useProductDetailPage = async () => {
     canDiscontinueProduct,
     categoryOptions,
     refresh,
+    ...tabState,
   };
 };
 

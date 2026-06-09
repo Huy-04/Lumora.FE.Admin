@@ -12,6 +12,7 @@ const {
   actionPending,
   activeTab,
   canRemoveInventory,
+  canUpdateStockWarehouse,
   canUpdateInventory,
   error,
   inventory,
@@ -25,6 +26,7 @@ const {
   setStockStatus,
   stockActionForm,
   stockStatusOptions,
+  warehouseCatalogWarning,
   warehouseNameById,
   warehouseStatusById,
 } = props.page;
@@ -124,6 +126,14 @@ useScopedPageBreadcrumbs(() =>
       <InventoryOverviewTab v-if="activeTab === 'overview'" :inventory="inventory" />
 
       <div v-else-if="activeTab === 'stock'" class="grid gap-4 content-start max-w-6xl">
+        <AppNotice
+          v-if="warehouseCatalogWarning"
+          tone="warning"
+          title="Warehouse catalog unavailable"
+        >
+          {{ warehouseCatalogWarning }}
+        </AppNotice>
+
         <AppPanel
           eyebrow="Current stock"
         >
@@ -167,13 +177,23 @@ useScopedPageBreadcrumbs(() =>
 
         <AppPanel eyebrow="Stock rows">
           <template #actions>
-            <NuxtLink
-              v-if="canUpdateInventory"
-              class="secondary-link"
-              :to="`/inventory-stocks/${inventory.id}/create`"
-            >
-              Add warehouse stock
-            </NuxtLink>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <NuxtLink
+                v-if="canUpdateInventory"
+                class="secondary-link"
+                :to="`/inventory-stocks/${inventory.id}/create`"
+              >
+                Add warehouse stock
+              </NuxtLink>
+              <AppButton
+                v-if="canRemoveInventory"
+                variant="danger"
+                :loading="actionPending === 'remove-inventory'"
+                @click="removeConfirmOpen = true"
+              >
+                Remove inventory
+              </AppButton>
+            </div>
           </template>
 
           <div class="table-shell overflow-x-auto">
@@ -190,7 +210,6 @@ useScopedPageBreadcrumbs(() =>
                   <th v-if="canUpdateInventory" class="w-[220px] text-center">Set status</th>
                   <th v-if="canUpdateInventory" class="w-[130px] text-center">Adjust stock</th>
                   <th v-if="canUpdateInventory" class="w-[150px] text-center">Reorder point</th>
-                  <th v-if="canRemoveInventory" class="w-[96px] text-center">Remove</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,7 +224,7 @@ useScopedPageBreadcrumbs(() =>
                   <td>{{ stock.availableQuantity }}</td>
                   <td>{{ stock.reorderPoint ?? "None" }}</td>
                   <td v-if="canUpdateInventory" class="text-center">
-                    <div class="grid min-w-[200px] grid-cols-[minmax(0,1fr)_auto] gap-2">
+                    <div v-if="canUpdateStockWarehouse(stock.warehouseId)" class="grid min-w-[200px] grid-cols-[minmax(0,1fr)_auto] gap-2">
                       <AppSelect
                         :model-value="stockActionForm.warehouseId === stock.warehouseId ? stockActionForm.status : stockStatusOptions.find((entry) => entry.label === stock.status)?.value ?? '0'"
                         label=""
@@ -227,36 +246,31 @@ useScopedPageBreadcrumbs(() =>
                         Save
                       </AppButton>
                     </div>
+                    <span v-else class="text-xs text-smoke">No access</span>
                   </td>
                   <td v-if="canUpdateInventory" class="text-center">
                     <NuxtLink
+                      v-if="canUpdateStockWarehouse(stock.warehouseId)"
                       class="secondary-link table-action min-w-[92px]"
                       :to="`/inventory-stocks/${inventory.id}/warehouses/${stock.warehouseId}/add`"
                     >
                       Adjust
                     </NuxtLink>
+                    <span v-else class="text-xs text-smoke">No access</span>
                   </td>
                   <td v-if="canUpdateInventory" class="text-center">
                     <NuxtLink
+                      v-if="canUpdateStockWarehouse(stock.warehouseId)"
                       class="secondary-link table-action min-w-[104px]"
                       :to="`/inventory-stocks/${inventory.id}/warehouses/${stock.warehouseId}/reorder-point`"
                     >
                       Set point
                     </NuxtLink>
-                  </td>
-                  <td v-if="canRemoveInventory" class="text-center">
-                    <AppButton
-                      class="table-action"
-                      variant="danger"
-                      :loading="actionPending === 'remove-inventory'"
-                      @click="removeConfirmOpen = true"
-                    >
-                      Remove
-                    </AppButton>
+                    <span v-else class="text-xs text-smoke">No access</span>
                   </td>
                 </tr>
                 <tr v-if="!inventory.stocks.length">
-                  <td :colspan="(canUpdateInventory ? 10 : 7) + (canRemoveInventory ? 1 : 0)" class="py-10 text-center text-sm text-smoke">
+                  <td :colspan="canUpdateInventory ? 10 : 7" class="py-10 text-center text-sm text-smoke">
                     No stock rows yet.
                   </td>
                 </tr>

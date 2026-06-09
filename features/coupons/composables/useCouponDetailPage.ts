@@ -1,4 +1,5 @@
 import type { CouponResponse, UpdateCouponRequest } from "~/features/coupons/types";
+import { getCouponFieldErrors } from "~/features/coupons/utils/problemMapping";
 import { hasAtMostDecimalPlaces, isAtLeastHoursApart, toDateTimeLocalValue, toUtcIsoFromDateTimeLocal } from "~/features/coupons/utils/dateTime";
 
 export const useCouponDetailPage = async () => {
@@ -155,13 +156,17 @@ export const useCouponDetailPage = async () => {
       data.value = await couponApi.updateCoupon(couponId.value, payload);
       await refresh();
     } catch (requestError) {
+      const fieldErrors = getCouponFieldErrors(requestError);
       const status = getProblemStatus(requestError);
-      if (status === 404) {
+
+      if (Object.keys(fieldErrors).length > 0) {
+        editErrors.value = fieldErrors;
+      } else if (status === 404) {
         actionError.value = "Coupon not found.";
       } else if (status === 409) {
         actionError.value = "A coupon with this code already exists.";
       } else {
-        actionError.value = getProblemMessage(requestError, "Unable to update coupon.");
+        actionError.value = getProblemMessage(requestError, "We couldn't update this coupon right now. Please try again.");
       }
     } finally {
       actionPending.value = "";

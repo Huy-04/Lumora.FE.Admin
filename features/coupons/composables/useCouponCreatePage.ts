@@ -1,5 +1,6 @@
-import { getProblemDetails, getProblemMessage, getProblemStatus } from "~/Shared/api/apiErrors";
+import { getProblemMessage, getProblemStatus } from "~/Shared/api/apiErrors";
 import type { CreateCouponRequest } from "~/features/coupons/types";
+import { getCouponFieldErrors } from "~/features/coupons/utils/problemMapping";
 import { hasAtMostDecimalPlaces, isAtLeastHoursApart, toUtcIsoFromDateTimeLocal } from "~/features/coupons/utils/dateTime";
 
 export const useCouponCreatePage = async () => {
@@ -92,45 +93,15 @@ export const useCouponCreatePage = async () => {
 
       await navigateTo(`/coupons/${created.id}`);
     } catch (requestError) {
+      const fieldErrors = getCouponFieldErrors(requestError);
       const status = getProblemStatus(requestError);
 
-      if (status === 409) {
+      if (Object.keys(fieldErrors).length > 0) {
+        errors.value = fieldErrors;
+      } else if (status === 409) {
         errorMessage.value = "A coupon with this code already exists.";
-      } else if (status === 400) {
-        const problem = getProblemDetails(requestError);
-        const problemErrors = problem?.errors;
-
-        if (problemErrors) {
-          const fieldErrors: Record<string, string> = {};
-
-          if (Array.isArray(problemErrors)) {
-            for (const entry of problemErrors) {
-              if (entry.field) {
-                const fieldKey = entry.field.replace(/^\$\./, "").replace(/^request\./i, "");
-                const key = fieldKey.charAt(0).toLowerCase() + fieldKey.slice(1);
-                fieldErrors[key] = entry.errorCode;
-              }
-            }
-          } else {
-            for (const [field, messages] of Object.entries(problemErrors)) {
-              const key = field.charAt(0).toLowerCase() + field.slice(1);
-              const value = Array.isArray(messages) ? messages[0] : messages;
-              if (value) {
-                fieldErrors[key] = value;
-              }
-            }
-          }
-
-          if (Object.keys(fieldErrors).length > 0) {
-            errors.value = fieldErrors;
-          } else {
-            errorMessage.value = getProblemMessage(requestError, "Unable to create the coupon.");
-          }
-        } else {
-          errorMessage.value = getProblemMessage(requestError, "Unable to create the coupon.");
-        }
       } else {
-        errorMessage.value = getProblemMessage(requestError, "Unable to create the coupon.");
+        errorMessage.value = getProblemMessage(requestError, "We couldn't create the coupon right now. Please try again.");
       }
     } finally {
       pending.value = false;

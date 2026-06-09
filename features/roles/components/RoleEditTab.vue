@@ -9,42 +9,13 @@ const emit = defineEmits<{
   refresh: [];
 }>();
 
-const rolesApi = useRolesAdminApi();
-
-const form = reactive({
-  roleName: "",
-  description: "",
-});
-
-const actionPending = ref(false);
-const actionError = ref("");
-const actionSuccess = ref("");
-
-watchEffect(() => {
-  if (!props.role) return;
-
-  form.roleName = props.role.roleName;
-  form.description = props.role.description || "";
-});
-
-const saveRole = async () => {
-  actionPending.value = true;
-  actionError.value = "";
-  actionSuccess.value = "";
-
-  try {
-    await rolesApi.updateRole(props.role.id, {
-      roleName: form.roleName,
-      description: form.description || null,
-    });
-    actionSuccess.value = "Role updated.";
-    emit("refresh");
-  } catch (requestError) {
-    actionError.value = getProblemMessage(requestError, "Unable to update the role.");
-  } finally {
-    actionPending.value = false;
-  }
-};
+const {
+  actionError,
+  actionPending,
+  actionSuccess,
+  form,
+  saveRole,
+} = useRoleEditTab(() => props.role, () => emit("refresh"));
 </script>
 
 <template>
