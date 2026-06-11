@@ -46,7 +46,8 @@ export const useReviewDetailPage = async () => {
     actionSuccess.value = "";
 
     try {
-      data.value = await reviewApi.hideReview(review.value.id, reason);
+      await reviewApi.hideReview(review.value.id, reason);
+      await refresh();
       actionSuccess.value = "Review hidden successfully.";
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to hide this review.");
@@ -63,7 +64,8 @@ export const useReviewDetailPage = async () => {
     actionSuccess.value = "";
 
     try {
-      data.value = await reviewApi.showReview(review.value.id);
+      await reviewApi.showReview(review.value.id);
+      await refresh();
       actionSuccess.value = "Review is now visible.";
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to show this review.");

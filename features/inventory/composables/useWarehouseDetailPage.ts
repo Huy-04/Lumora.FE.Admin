@@ -194,7 +194,8 @@ export const useWarehouseDetailPage = async () => {
         payload.address = normalizedManualAddress;
       }
 
-      data.value = await inventoryApi.updateWarehouse(warehouseId.value, payload);
+      await inventoryApi.updateWarehouse(warehouseId.value, payload);
+      await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to update warehouse.");
     } finally {
@@ -211,9 +212,12 @@ export const useWarehouseDetailPage = async () => {
     actionError.value = "";
 
     try {
-      data.value = warehouse.value.status === "Active"
-        ? await inventoryApi.deactivateWarehouse(warehouseId.value)
-        : await inventoryApi.activateWarehouse(warehouseId.value);
+      if (warehouse.value.status === "Active") {
+        await inventoryApi.deactivateWarehouse(warehouseId.value);
+      } else {
+        await inventoryApi.activateWarehouse(warehouseId.value);
+      }
+      await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to update warehouse status.");
     } finally {
@@ -251,7 +255,8 @@ export const useWarehouseDetailPage = async () => {
     actionError.value = "";
 
     try {
-      data.value = await inventoryApi.syncWarehouseGhnStore(warehouseId.value, { ghnShopId: Number(normalizedGhnShopId) });
+      await inventoryApi.syncWarehouseGhnStore(warehouseId.value, { ghnShopId: Number(normalizedGhnShopId) });
+      await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to sync GHN store.");
     } finally {
