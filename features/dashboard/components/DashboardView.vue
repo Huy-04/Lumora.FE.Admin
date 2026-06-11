@@ -176,75 +176,108 @@ const manageCards = [
       </div>
 
       <div v-if="!pending" class="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-        <div class="dashboard-chart-card">
-          <div class="dashboard-card-heading">
-            <div>
-              <h3 class="dashboard-chart-title">Orders Trend</h3>
-              <p class="dashboard-chart-subtitle">{{ trendTotal }} orders in {{ selectedTrendRangeLabel }}</p>
+        <!-- Left Column -->
+        <div class="grid gap-5 self-start">
+          <div class="dashboard-chart-card">
+            <div class="dashboard-card-heading">
+              <div>
+                <h3 class="dashboard-chart-title">Orders Trend</h3>
+                <p class="dashboard-chart-subtitle">{{ trendTotal }} orders in {{ selectedTrendRangeLabel }}</p>
+              </div>
+              <div class="dashboard-range-control items-end" aria-label="Order trend range">
+                <AppInput v-model="fromDate" label="From" type="date" />
+                <AppInput v-model="toDate" label="To" type="date" />
+                <AppButton variant="primary" :disabled="trendPending || Boolean(trendFilterError)" @click="applyTrendFilter">
+                  Apply
+                </AppButton>
+              </div>
             </div>
-            <div class="dashboard-range-control items-end" aria-label="Order trend range">
-              <AppInput v-model="fromDate" label="From" type="date" />
-              <AppInput v-model="toDate" label="To" type="date" />
-              <AppButton variant="primary" :disabled="trendPending || Boolean(trendFilterError)" @click="applyTrendFilter">
-                Apply
-              </AppButton>
+            <p v-if="trendFilterError" class="text-sm text-danger">{{ trendFilterError }}</p>
+            <div class="dashboard-line-chart mt-4">
+              <!-- 7.1: Trend error state with retry -->
+              <div v-if="trendError" class="grid place-items-center gap-3 py-10 text-center">
+                <PhWarning :size="28" weight="duotone" class="text-danger" />
+                <p class="text-sm text-smoke">Failed to load order trends</p>
+                <button type="button" class="text-sm font-medium text-brass hover:underline" @click="loadOrderTrends()">
+                  Retry
+                </button>
+              </div>
+              <svg v-else class="dashboard-line-svg" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" role="img" :aria-label="`Orders trend for ${selectedTrendRangeLabel}`">
+                <defs>
+                  <linearGradient id="orders-trend-area" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="rgb(var(--brass-rgb))" stop-opacity="0.28" />
+                    <stop offset="72%" stop-color="rgb(var(--brass-rgb))" stop-opacity="0.04" />
+                    <stop offset="100%" stop-color="rgb(var(--brass-rgb))" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+
+                <g v-for="line in trendGridLines" :key="line.y">
+                  <line
+                    class="dashboard-line-grid"
+                    :x1="chartPadding.left"
+                    :x2="chartWidth - chartPadding.right"
+                    :y1="line.y"
+                    :y2="line.y"
+                  />
+                  <text class="dashboard-line-axis" x="0" :y="line.y + 4">{{ line.value }}</text>
+                </g>
+
+                <path v-if="hasTrendData" class="dashboard-line-area" :d="trendAreaPath" />
+                <path v-if="hasTrendData" class="dashboard-line-path" :d="trendLinePath" />
+
+                <g v-for="point in trendPoints" :key="point.date">
+                  <circle v-if="hasTrendData" class="dashboard-line-point" :cx="point.x" :cy="point.y" r="4" />
+                  <text v-if="point.showLabel" class="dashboard-line-label" :x="point.x" :y="chartHeight - 10">
+                    {{ formatTrendLabel(point) }}
+                  </text>
+                </g>
+
+                <g v-if="!hasTrendData" class="dashboard-line-empty">
+                  <line
+                    class="dashboard-line-empty-baseline"
+                    :x1="chartPadding.left"
+                    :x2="chartWidth - chartPadding.right"
+                    :y1="chartHeight - chartPadding.bottom"
+                    :y2="chartHeight - chartPadding.bottom"
+                  />
+                  <text :x="chartWidth / 2" :y="chartHeight / 2 - 4">No orders in this range</text>
+                </g>
+              </svg>
             </div>
           </div>
-          <p v-if="trendFilterError" class="text-sm text-danger">{{ trendFilterError }}</p>
-          <div class="dashboard-line-chart mt-4">
-            <!-- 7.1: Trend error state with retry -->
-            <div v-if="trendError" class="grid place-items-center gap-3 py-10 text-center">
-              <PhWarning :size="28" weight="duotone" class="text-danger" />
-              <p class="text-sm text-smoke">Failed to load order trends</p>
-              <button type="button" class="text-sm font-medium text-brass hover:underline" @click="loadOrderTrends()">
-                Retry
-              </button>
+
+          <!-- Product Status Card -->
+          <div class="dashboard-chart-card">
+            <div class="dashboard-card-heading">
+              <h3 class="dashboard-chart-title">Product Status</h3>
+              <span class="dashboard-card-meta">{{ stats.products.total }} total</span>
             </div>
-            <svg v-else class="dashboard-line-svg" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" role="img" :aria-label="`Orders trend for ${selectedTrendRangeLabel}`">
-              <defs>
-                <linearGradient id="orders-trend-area" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stop-color="rgb(var(--brass-rgb))" stop-opacity="0.28" />
-                  <stop offset="72%" stop-color="rgb(var(--brass-rgb))" stop-opacity="0.04" />
-                  <stop offset="100%" stop-color="rgb(var(--brass-rgb))" stop-opacity="0" />
-                </linearGradient>
-              </defs>
-
-              <g v-for="line in trendGridLines" :key="line.y">
-                <line
-                  class="dashboard-line-grid"
-                  :x1="chartPadding.left"
-                  :x2="chartWidth - chartPadding.right"
-                  :y1="line.y"
-                  :y2="line.y"
-                />
-                <text class="dashboard-line-axis" x="0" :y="line.y + 4">{{ line.value }}</text>
-              </g>
-
-              <path v-if="hasTrendData" class="dashboard-line-area" :d="trendAreaPath" />
-              <path v-if="hasTrendData" class="dashboard-line-path" :d="trendLinePath" />
-
-              <g v-for="point in trendPoints" :key="point.date">
-                <circle v-if="hasTrendData" class="dashboard-line-point" :cx="point.x" :cy="point.y" r="4" />
-                <text v-if="point.showLabel" class="dashboard-line-label" :x="point.x" :y="chartHeight - 10">
-                  {{ formatTrendLabel(point) }}
-                </text>
-              </g>
-
-              <g v-if="!hasTrendData" class="dashboard-line-empty">
-                <line
-                  class="dashboard-line-empty-baseline"
-                  :x1="chartPadding.left"
-                  :x2="chartWidth - chartPadding.right"
-                  :y1="chartHeight - chartPadding.bottom"
-                  :y2="chartHeight - chartPadding.bottom"
-                />
-                <text :x="chartWidth / 2" :y="chartHeight / 2 - 4">No orders in this range</text>
-              </g>
-            </svg>
+            <div class="grid gap-3 mt-4">
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Published</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-success" :style="{ width: barWidth(stats.products.published, stats.products.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.products.published }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Draft</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-smoke" :style="{ width: barWidth(stats.products.draft, stats.products.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.products.draft }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Discontinued</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-danger" :style="{ width: barWidth(stats.products.discontinued, stats.products.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.products.discontinued }}</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="grid gap-5">
+          <!-- Revenue Snapshot Card -->
           <div class="dashboard-chart-card">
             <div class="dashboard-card-heading">
               <h3 class="dashboard-chart-title">Revenue Snapshot</h3>
@@ -269,7 +302,77 @@ const manageCards = [
               </div>
             </dl>
           </div>
+        </div>
 
+        <!-- Right Column -->
+        <div class="grid gap-5 self-start">
+          <!-- Shipment Status Card -->
+          <div class="dashboard-chart-card">
+            <div class="dashboard-card-heading">
+              <h3 class="dashboard-chart-title">Shipment Status</h3>
+              <span class="dashboard-card-meta">{{ stats.shipments.total }} total</span>
+            </div>
+            <div class="grid gap-3 mt-4">
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Draft</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-smoke" :style="{ width: barWidth(stats.shipments.draft, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.draft }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Submitted</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-brass" :style="{ width: barWidth(stats.shipments.submitted, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.submitted }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Picked Up</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-brass" :style="{ width: barWidth(stats.shipments.pickedUp, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.pickedUp }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">In Transit</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-ember" :style="{ width: barWidth(stats.shipments.inTransit, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.inTransit }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Delivered</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-success" :style="{ width: barWidth(stats.shipments.delivered, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.delivered }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Returned</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-warning" :style="{ width: barWidth(stats.shipments.returned, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.returned }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Cancelled</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-danger" :style="{ width: barWidth(stats.shipments.cancelled, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.cancelled }}</span>
+              </div>
+              <div class="dashboard-bar-row">
+                <span class="dashboard-bar-label">Failed</span>
+                <div class="dashboard-bar-track">
+                  <div class="dashboard-bar-fill bg-danger" :style="{ width: barWidth(stats.shipments.failed, stats.shipments.total) }" />
+                </div>
+                <span class="dashboard-bar-value">{{ stats.shipments.failed }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Order Status Card -->
           <div class="dashboard-chart-card">
             <div class="dashboard-card-heading">
               <h3 class="dashboard-chart-title">Order Status</h3>
@@ -335,6 +438,7 @@ const manageCards = [
             </div>
           </div>
 
+          <!-- Payment Status Card -->
           <div class="dashboard-chart-card">
             <div class="dashboard-card-heading">
               <h3 class="dashboard-chart-title">Payment Status</h3>
@@ -369,103 +473,6 @@ const manageCards = [
                 </div>
                 <span class="dashboard-bar-value">{{ stats.payments.failed }}</span>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="!pending" class="grid gap-5 sm:grid-cols-2">
-        <div class="dashboard-chart-card">
-          <div class="dashboard-card-heading">
-            <h3 class="dashboard-chart-title">Shipment Status</h3>
-            <span class="dashboard-card-meta">{{ stats.shipments.total }} total</span>
-          </div>
-          <div class="grid gap-3 mt-4">
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Draft</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-smoke" :style="{ width: barWidth(stats.shipments.draft, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.draft }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Submitted</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-brass" :style="{ width: barWidth(stats.shipments.submitted, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.submitted }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Picked Up</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-brass" :style="{ width: barWidth(stats.shipments.pickedUp, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.pickedUp }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">In Transit</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-ember" :style="{ width: barWidth(stats.shipments.inTransit, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.inTransit }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Delivered</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-success" :style="{ width: barWidth(stats.shipments.delivered, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.delivered }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Returned</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-warning" :style="{ width: barWidth(stats.shipments.returned, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.returned }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Cancelled</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-danger" :style="{ width: barWidth(stats.shipments.cancelled, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.cancelled }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Failed</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-danger" :style="{ width: barWidth(stats.shipments.failed, stats.shipments.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.shipments.failed }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="dashboard-chart-card">
-          <div class="dashboard-card-heading">
-            <h3 class="dashboard-chart-title">Product Status</h3>
-            <span class="dashboard-card-meta">{{ stats.products.total }} total</span>
-          </div>
-          <div class="grid gap-3 mt-4">
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Published</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-success" :style="{ width: barWidth(stats.products.published, stats.products.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.products.published }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Draft</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-smoke" :style="{ width: barWidth(stats.products.draft, stats.products.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.products.draft }}</span>
-            </div>
-            <div class="dashboard-bar-row">
-              <span class="dashboard-bar-label">Discontinued</span>
-              <div class="dashboard-bar-track">
-                <div class="dashboard-bar-fill bg-danger" :style="{ width: barWidth(stats.products.discontinued, stats.products.total) }" />
-              </div>
-              <span class="dashboard-bar-value">{{ stats.products.discontinued }}</span>
             </div>
           </div>
         </div>

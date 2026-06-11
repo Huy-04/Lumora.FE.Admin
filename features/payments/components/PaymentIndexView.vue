@@ -88,7 +88,6 @@ const statusTone = (status: string) => {
           <tr v-for="payment in payments" :key="payment.id">
             <td>
               <p class="table-title">{{ payment.id }}</p>
-              <p class="table-copy">{{ payment.userId }}</p>
             </td>
             <td class="break-all">{{ payment.orderId }}</td>
             <td><AppBadge :tone="statusTone(payment.status)">{{ payment.status }}</AppBadge></td>
