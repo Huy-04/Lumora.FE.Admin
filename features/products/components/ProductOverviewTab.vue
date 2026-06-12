@@ -103,31 +103,31 @@ const {
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Short description</dt>
-          <dd class="text-sm text-smoke">{{ product.content?.shortDescription || "Not set" }}</dd>
+          <dd class="text-sm text-smoke whitespace-pre-line">{{ product.content?.shortDescription || "Not set" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Description</dt>
-          <dd class="text-sm text-smoke">{{ product.content?.description || "Not set" }}</dd>
+          <dd class="text-sm text-smoke whitespace-pre-line">{{ product.content?.description || "Not set" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Highlights</dt>
-          <dd class="text-sm text-smoke">{{ product.content?.highlights || "Not set" }}</dd>
+          <dd class="text-sm text-smoke whitespace-pre-line">{{ product.content?.highlights || "Not set" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Ingredients</dt>
-          <dd class="text-sm text-smoke">{{ product.content?.ingredients || "Not set" }}</dd>
+          <dd class="text-sm text-smoke whitespace-pre-line">{{ product.content?.ingredients || "Not set" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">How to use</dt>
-          <dd class="text-sm text-smoke">{{ product.content?.howToUse || "Not set" }}</dd>
+          <dd class="text-sm text-smoke whitespace-pre-line">{{ product.content?.howToUse || "Not set" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Storage guide</dt>
-          <dd class="text-sm text-smoke">{{ product.content?.storageGuide || "Not set" }}</dd>
+          <dd class="text-sm text-smoke whitespace-pre-line">{{ product.content?.storageGuide || "Not set" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Caution</dt>
-          <dd class="text-sm text-smoke">{{ product.content?.caution || "Not set" }}</dd>
+          <dd class="text-sm text-smoke whitespace-pre-line">{{ product.content?.caution || "Not set" }}</dd>
         </div>
         <div class="flex items-baseline gap-4 py-3">
           <dt class="meta-label w-40 shrink-0">Brand origin</dt>
