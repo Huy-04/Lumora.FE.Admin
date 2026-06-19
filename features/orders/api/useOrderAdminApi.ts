@@ -4,7 +4,7 @@ import type {
   OrderSearchResponse,
   ReturnOrderToSenderRequest,
   SearchOrdersRequest,
-} from "~/features/orders/types";
+} from "~/features/orders/types/orders";
 
 const orderRoute = (path = "") => `/orders${path}`;
 

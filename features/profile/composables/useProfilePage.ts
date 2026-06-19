@@ -24,7 +24,7 @@ export const useProfilePage = async () => {
   };
 
   // 3. Data fetching
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
 
   const { data: payload, pending, error, refresh } = await useAsyncData("profile-current", async () => {
     const [user, addresses] = await Promise.all([

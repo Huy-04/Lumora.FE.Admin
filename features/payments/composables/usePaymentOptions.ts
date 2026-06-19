@@ -1,4 +1,4 @@
-import type { PaymentMethod, PaymentProvider, PaymentStatus } from "~/features/payments/types";
+import type { PaymentMethod, PaymentProvider, PaymentStatus } from "~/features/payments/types/payments";
 
 export const usePaymentOptions = () => {
   const paymentStatusOptions: Array<{ label: string; value: PaymentStatus | "" }> = [

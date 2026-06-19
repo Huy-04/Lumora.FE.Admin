@@ -2,7 +2,7 @@ import type { GhnDistrictResponse, GhnProvinceResponse, GhnWardResponse } from "
 
 export const useProfileAddressCreatePage = async () => {
   // 1. Dependency injection
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
   const ghnApi = useGhnApi();
   const { userAddressTypeOptions } = useAuthOptions();
 

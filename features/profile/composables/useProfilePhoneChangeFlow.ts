@@ -1,4 +1,4 @@
-import type { UserResponse } from "~/features/users/types";
+import type { UserResponse } from "~/features/users/types/users";
 
 type PhoneStep = "idle" | "verify-current" | "enter-new" | "confirm-new" | "done";
 
@@ -9,7 +9,7 @@ export const useProfilePhoneChangeFlow = (
   },
   onClose: () => void,
 ) => {
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
   const authSession = useAuthSession();
   const otpCooldown = useOtpResendCooldown();
   const { phoneRegionOptions } = useAuthOptions();

@@ -1,5 +1,5 @@
 import type { PaginatedResponse } from "~/Shared/types/api";
-import type { PasswordRequest } from "~/features/auth/types";
+import type { PasswordRequest } from "~/features/users/types/users";
 import type {
   AddRoleRequest,
   CreateUserRequest,
@@ -9,7 +9,7 @@ import type {
   UserAddressResponse,
   UserResponse,
   UserRoleResponse,
-} from "~/features/users/types";
+} from "~/features/users/types/users";
 
 const userRoute = (path = "") => `/Users${path}`;
 const userChildRoute = (userId: string, childPath = "") =>

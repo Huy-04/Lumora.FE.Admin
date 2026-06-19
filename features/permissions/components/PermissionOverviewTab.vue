@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
-import type { PermissionResponse } from "~/features/permissions/types";
+import type { PermissionResponse } from "~/features/permissions/types/permissions";
 
 defineProps<{
   permission: PermissionResponse;

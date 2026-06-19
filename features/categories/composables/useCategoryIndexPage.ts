@@ -1,5 +1,5 @@
-import type { CategoryTreeNodeResponse } from "~/features/categories/types";
-import type { CategoryResponse } from "~/features/categories/types";
+import type { CategoryTreeNodeResponse } from "~/features/categories/types/categories";
+import type { CategoryResponse } from "~/features/categories/types/categories";
 
 type CategoryRootRow = CategoryResponse & {
   children: CategoryTreeNodeResponse[];

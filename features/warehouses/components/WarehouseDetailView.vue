@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
 import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
-import type { WarehouseDetailPageState } from "~/features/inventory/composables/useWarehouseDetailPage";
+import type { WarehouseDetailPageState } from "~/features/warehouses/composables/useWarehouseDetailPage";
 
 const props = defineProps<{
   page: WarehouseDetailPageState;

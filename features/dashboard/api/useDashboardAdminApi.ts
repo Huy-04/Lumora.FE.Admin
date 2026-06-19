@@ -1,7 +1,7 @@
 import type {
   DashboardOrderTrendsResponse,
   DashboardSummaryResponse,
-} from "~/features/dashboard/types";
+} from "~/features/dashboard/types/dashboard";
 
 const dashboardRoute = (path = "") => `/dashboard${path}`;
 

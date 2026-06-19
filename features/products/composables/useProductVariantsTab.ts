@@ -1,4 +1,4 @@
-import type { ProductStatus, ProductVariantResponse } from "~/features/products/types";
+import type { ProductStatus, ProductVariantResponse } from "~/features/products/types/products";
 
 export const useProductVariantsTab = (
   props: {

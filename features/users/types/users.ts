@@ -85,3 +85,8 @@ export interface UserAddressRequest {
   ghnDistrictId: number;
   ghnWardCode: string;
 }
+
+
+export interface PasswordRequest {
+  password: string;
+}

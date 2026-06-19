@@ -1,4 +1,4 @@
-import type { SessionResponse } from "~/features/sessions/types";
+import type { SessionResponse } from "~/features/sessions/types/sessions";
 
 export const useProfileSessionsPage = async () => {
   // 1. Dependency injection

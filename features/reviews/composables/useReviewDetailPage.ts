@@ -1,4 +1,4 @@
-import type { ReviewResponse } from "~/features/reviews/types";
+import type { ReviewResponse } from "~/features/reviews/types/reviews";
 
 type ReviewActionKey = "hide" | "show" | "delete";
 

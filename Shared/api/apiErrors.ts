@@ -1,4 +1,4 @@
-import { friendlyErrorMessages, friendlyFieldLabels } from "~/lib/apiErrorMessages";
+import { friendlyErrorMessages, friendlyFieldLabels } from "./apiErrorMessages";
 import type {
   ProblemDetails,
   ProblemErrorDetail,

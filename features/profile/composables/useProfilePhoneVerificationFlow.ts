@@ -1,4 +1,4 @@
-import type { UserResponse } from "~/features/users/types";
+import type { UserResponse } from "~/features/users/types/users";
 
 type VerificationStep = "idle" | "verify" | "done";
 
@@ -10,7 +10,7 @@ export const useProfilePhoneVerificationFlow = (
   onClose: () => void,
   onUpdated: () => void,
 ) => {
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
   const otpCooldown = useOtpResendCooldown();
 
   const createOtpCode = () => Array.from({ length: 6 }, () => "");

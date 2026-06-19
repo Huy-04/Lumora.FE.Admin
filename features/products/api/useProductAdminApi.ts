@@ -17,7 +17,7 @@ import type {
   UpdateImageAltRequest,
   UpdateProductRequest,
   UpdateVariantRequest,
-} from "~/features/products/types";
+} from "~/features/products/types/products";
 
 const productRoute = (path = "") => `/Products${path}`;
 const productChildRoute = (productId: string, childPath = "") => `/Products/${productId}${childPath}`;

@@ -1,4 +1,4 @@
-import type { PaymentMethod, PaymentProvider, PaymentStatus, PaymentSearchResponse } from "~/features/payments/types";
+import type { PaymentMethod, PaymentProvider, PaymentStatus, PaymentSearchResponse } from "~/features/payments/types/payments";
 import { toUtcDateFilter } from "~/features/payments/utils/dateTime";
 
 export const usePaymentIndexPage = async () => {

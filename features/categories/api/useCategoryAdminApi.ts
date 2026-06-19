@@ -6,7 +6,7 @@ import type {
   CategoryUpdateRequest,
   MoveCategoryRequest,
   ReorderCategoryRequest,
-} from "~/features/categories/types";
+} from "~/features/categories/types/categories";
 
 const categoryRoute = (path = "") => `/categories${path}`;
 const categoryChildRoute = (categoryId: string, childPath = "") =>

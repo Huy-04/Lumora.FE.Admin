@@ -1,4 +1,4 @@
-import type { CategoryTreeNodeResponse } from "~/features/categories/types";
+import type { CategoryTreeNodeResponse } from "~/features/categories/types/categories";
 
 export interface CategoryCatalogOption {
   label: string;

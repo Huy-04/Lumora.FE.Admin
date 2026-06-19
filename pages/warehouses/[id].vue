@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useWarehouseDetailPage } from "~/features/inventory/composables/useWarehouseDetailPage";
-import WarehouseDetailView from "~/features/inventory/components/WarehouseDetailView.vue";
+import { useWarehouseDetailPage } from "~/features/warehouses/composables/useWarehouseDetailPage";
+import WarehouseDetailView from "~/features/warehouses/components/WarehouseDetailView.vue";
 
 const page = await useWarehouseDetailPage();
 </script>

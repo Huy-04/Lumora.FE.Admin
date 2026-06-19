@@ -4,7 +4,7 @@ import type {
   LoginRequest,
   LoginResponse,
 } from "~/features/auth/types";
-import type { UserResponse } from "~/features/users/types";
+import type { UserResponse } from "~/features/users/types/users";
 
 interface SessionState {
   session: Ref<CurrentUserResponse | null>;

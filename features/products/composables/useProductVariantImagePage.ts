@@ -1,4 +1,4 @@
-import type { ProductAssetResponse, ProductVariantResponse } from "~/features/products/types";
+import type { ProductAssetResponse, ProductVariantResponse } from "~/features/products/types/products";
 
 export const useProductVariantImagePage = async () => {
   // 1. Dependency injection

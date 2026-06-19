@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ReviewResponse } from "~/features/reviews/types";
+import type { ReviewResponse } from "~/features/reviews/types/reviews";
 
 const props = defineProps<{
   review: ReviewResponse;

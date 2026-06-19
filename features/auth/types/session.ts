@@ -1,4 +1,4 @@
-import type { UserResponse } from "~/features/users/types";
+import type { UserResponse } from "~/features/users/types/users";
 
 export interface LoginRequest {
   email: string;

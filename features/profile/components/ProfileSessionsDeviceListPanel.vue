@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SessionResponse } from "~/features/sessions/types";
+import type { SessionResponse } from "~/features/sessions/types/sessions";
 
 const props = defineProps<{
   pending: boolean;

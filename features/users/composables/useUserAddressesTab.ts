@@ -1,4 +1,4 @@
-import type { UserAddressResponse } from "~/features/users/types";
+import type { UserAddressResponse } from "~/features/users/types/users";
 
 export const useUserAddressesTab = (
   props: {

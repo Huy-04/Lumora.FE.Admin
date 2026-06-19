@@ -1,4 +1,4 @@
-import type { PaymentResponse } from "~/features/payments/types";
+import type { PaymentResponse } from "~/features/payments/types/payments";
 
 type PaymentActionKey = "manual-success" | "manual-failed";
 

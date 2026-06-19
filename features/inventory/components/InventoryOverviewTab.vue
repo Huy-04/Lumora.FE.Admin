@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
-import type { InventoryResponse } from "~/features/inventory/types";
+import type { InventoryResponse } from "~/features/inventory/types/inventory";
 
 defineProps<{
   inventory: InventoryResponse;

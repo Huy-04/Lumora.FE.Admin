@@ -21,9 +21,12 @@ export default defineNuxtConfig({
   imports: {
     dirs: [
       "features/**/composables",
+      "features/**/api",
       "Shared/api",
       "Shared/composables",
       "Shared/composables/**",
+      "Shared/realtime",
+      "Shared/realtime/**",
     ],
   },
   css: ["~/assets/css/main.css"],

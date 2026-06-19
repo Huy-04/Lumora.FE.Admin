@@ -1,4 +1,4 @@
-import type { RoleResponse } from "~/features/roles/types";
+import type { RoleResponse } from "~/features/roles/types/roles";
 
 export const useRoleEditTab = (
   role: MaybeRefOrGetter<RoleResponse>,

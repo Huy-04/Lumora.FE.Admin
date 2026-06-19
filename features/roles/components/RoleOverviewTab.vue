@@ -3,7 +3,7 @@ import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPane
 import type {
   RoleResponse,
   RolePermissionResponse,
-} from "~/features/roles/types";
+} from "~/features/roles/types/roles";
 
 defineProps<{
   role: RoleResponse;

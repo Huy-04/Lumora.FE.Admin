@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useScopedPageBreadcrumbs } from "~/Shared/composables/usePageBreadcrumbs";
 import type { CategoryDetailPage } from "~/features/categories/composables/useCategoryDetailPage";
-import type { CategoryTreeNodeResponse } from "~/features/categories/types";
+import type { CategoryTreeNodeResponse } from "~/features/categories/types/categories";
 
 const props = defineProps<{
   page: CategoryDetailPage;

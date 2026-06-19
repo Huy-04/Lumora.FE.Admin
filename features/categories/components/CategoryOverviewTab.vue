@@ -3,7 +3,7 @@ import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPane
 import type {
   CategoryResponse,
   CategoryTreeNodeResponse,
-} from "~/features/categories/types";
+} from "~/features/categories/types/categories";
 
 const props = defineProps<{
   category: CategoryResponse;

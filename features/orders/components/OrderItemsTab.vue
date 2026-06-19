@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { OrderResponse } from "~/features/orders/types";
+import type { OrderResponse } from "~/features/orders/types/orders";
 
 defineProps<{
   order: OrderResponse;

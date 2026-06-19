@@ -1,6 +1,6 @@
 export const useWarehouseIndexPage = async () => {
   // 1. Dependency injection
-  const inventoryApi = useInventoryAdminApi();
+  const warehouseApi = useWarehouseAdminApi();
   const authz = useAdminAuthorization();
   const route = useRoute();
   const router = useRouter();
@@ -70,7 +70,7 @@ export const useWarehouseIndexPage = async () => {
         };
       }
 
-      return await inventoryApi.searchWarehouses({
+      return await warehouseApi.searchWarehouses({
         keyword: appliedFilters.keyword.value || undefined,
         status: appliedFilters.statusFilter.value || undefined,
         page: pagination.page.value,
@@ -111,7 +111,7 @@ export const useWarehouseIndexPage = async () => {
     actionError.value = "";
     actionPending.value = warehouseId;
     try {
-      await inventoryApi.removeWarehouse(warehouseId);
+      await warehouseApi.removeWarehouse(warehouseId);
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Could not remove warehouse. Please try again.");

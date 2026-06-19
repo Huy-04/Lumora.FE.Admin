@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RoleResponse } from "~/features/roles/types";
+import type { RoleResponse } from "~/features/roles/types/roles";
 
 const props = defineProps<{
   role: RoleResponse;

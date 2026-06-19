@@ -1,4 +1,4 @@
-import type { OrderPaymentStatus, OrderStatus } from "~/features/orders/types";
+import type { OrderPaymentStatus, OrderStatus } from "~/features/orders/types/orders";
 
 export const useOrderOptions = () => {
   const orderStatusOptions: Array<{ label: string; value: OrderStatus | "" }> = [

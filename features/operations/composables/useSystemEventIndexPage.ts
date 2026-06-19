@@ -1,4 +1,4 @@
-import type { SystemEventSearchResponse, SystemEventStatus } from "~/features/operations/types";
+import type { SystemEventSearchResponse, SystemEventStatus } from "~/features/operations/types/operations";
 
 export const useSystemEventIndexPage = async () => {
   // 1. Dependency injection

@@ -1,4 +1,4 @@
-import type { ProductResponse } from "~/features/products/types";
+import type { ProductResponse } from "~/features/products/types/products";
 
 type ProductIndexActionKey =
   | ""

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PermissionResponse } from "~/features/permissions/types";
+import type { PermissionResponse } from "~/features/permissions/types/permissions";
 
 const props = defineProps<{
   permission: PermissionResponse;

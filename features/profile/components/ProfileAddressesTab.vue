@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UserAddressResponse } from "~/features/users/types";
+import type { UserAddressResponse } from "~/features/users/types/users";
 
 defineProps<{
   addresses: UserAddressResponse[];

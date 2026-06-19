@@ -3,7 +3,7 @@ import type {
   ReviewResponse,
   ReviewSearchResponse,
   SearchReviewsRequest,
-} from "~/features/reviews/types";
+} from "~/features/reviews/types/reviews";
 
 const reviewRoute = (path = "") => `/admin/reviews${path}`;
 

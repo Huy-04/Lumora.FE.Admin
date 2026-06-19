@@ -1,7 +1,7 @@
 export const useProfileAddressesTab = (
   onUpdated: () => void,
 ) => {
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
 
   const actionPending = ref<"" | "remove">("");
   const actionError = ref("");

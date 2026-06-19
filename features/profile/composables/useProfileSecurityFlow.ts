@@ -1,7 +1,7 @@
 export const useProfileSecurityFlow = (
   onUpdated: () => void,
 ) => {
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
   const authSession = useAuthSession();
 
   const passwordForm = reactive({

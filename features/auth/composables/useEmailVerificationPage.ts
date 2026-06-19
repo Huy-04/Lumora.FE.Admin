@@ -1,6 +1,6 @@
 export const useEmailVerificationPage = async () => {
   // 1. Dependency injection
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
   const route = useRoute();
   const nuxtApp = useNuxtApp();
   const session = useAuthSession();

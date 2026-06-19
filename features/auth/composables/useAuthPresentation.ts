@@ -1,4 +1,4 @@
-import type { UserRoleResponse } from "~/features/users/types";
+import type { UserRoleResponse } from "~/features/users/types/users";
 
 export const useAuthPresentation = () => {
   const formatDateTime = (value?: string | null) => {

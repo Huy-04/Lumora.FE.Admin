@@ -1,6 +1,6 @@
 export const useProfileAvatarPage = async () => {
   // 1. Dependency injection
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
   const session = useAuthSession();
 
   // 2. Static data

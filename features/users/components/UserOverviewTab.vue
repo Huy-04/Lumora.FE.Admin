@@ -2,7 +2,7 @@
 import type {
   UserResponse,
   UserRoleResponse,
-} from "~/features/users/types";
+} from "~/features/users/types/users";
 
 const props = defineProps<{
   user: UserResponse;

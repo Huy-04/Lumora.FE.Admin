@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhShieldCheck } from "@phosphor-icons/vue";
-import type { UserResponse } from "~/features/users/types";
+import type { UserResponse } from "~/features/users/types/users";
 
 const props = defineProps<{
   user: UserResponse;

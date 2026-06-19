@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UserResponse } from "~/features/users/types";
+import type { UserResponse } from "~/features/users/types/users";
 
 const props = defineProps<{
   open: boolean;

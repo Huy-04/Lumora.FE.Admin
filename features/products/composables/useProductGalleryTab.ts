@@ -1,4 +1,4 @@
-import type { ProductGalleryResponse, ProductStatus } from "~/features/products/types";
+import type { ProductGalleryResponse, ProductStatus } from "~/features/products/types/products";
 
 export const useProductGalleryTab = (
   props: {

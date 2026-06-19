@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhShieldCheck, PhSignOut } from "@phosphor-icons/vue";
-import type { SessionResponse } from "~/features/sessions/types";
+import type { SessionResponse } from "~/features/sessions/types/sessions";
 
 const props = defineProps<{
   pending: boolean;

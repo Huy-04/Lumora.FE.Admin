@@ -1,4 +1,4 @@
-import type { CategoryTreeNodeResponse } from "~/features/categories/types";
+import type { CategoryTreeNodeResponse } from "~/features/categories/types/categories";
 import { CATEGORY_MAX_LEVEL } from "~/features/categories/constants";
 
 const flattenTree = (nodes: CategoryTreeNodeResponse[]): CategoryTreeNodeResponse[] =>

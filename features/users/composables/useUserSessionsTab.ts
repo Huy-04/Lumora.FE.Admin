@@ -1,4 +1,4 @@
-import type { SessionResponse } from "~/features/sessions/types";
+import type { SessionResponse } from "~/features/sessions/types/sessions";
 
 type ConfirmAction = "revoke-device" | "revoke-all" | null;
 

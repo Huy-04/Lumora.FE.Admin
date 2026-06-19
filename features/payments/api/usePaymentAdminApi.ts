@@ -4,7 +4,7 @@ import type {
   PaymentSearchResponse,
   PaymentSummaryResponse,
   SearchPaymentsRequest,
-} from "~/features/payments/types";
+} from "~/features/payments/types/payments";
 
 const paymentRoute = (path = "") => `/admin/payments${path}`;
 

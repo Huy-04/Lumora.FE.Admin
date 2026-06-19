@@ -1,4 +1,4 @@
-import type { OrderResponse } from "~/features/orders/types";
+import type { OrderResponse } from "~/features/orders/types/orders";
 
 type OrderActionKey =
   | "confirm"

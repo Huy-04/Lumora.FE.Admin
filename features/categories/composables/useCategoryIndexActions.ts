@@ -1,4 +1,4 @@
-import type { CategoryTreeNodeResponse } from "~/features/categories/types";
+import type { CategoryTreeNodeResponse } from "~/features/categories/types/categories";
 
 type ReorderItem = {
   categoryId: string;

@@ -1,4 +1,4 @@
-import type { CouponResponse } from "~/features/coupons/types";
+import type { CouponResponse } from "~/features/coupons/types/coupons";
 import { toUtcDateFilter } from "~/features/coupons/utils/dateTime";
 
 export const useCouponIndexPage = async () => {

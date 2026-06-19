@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { RolePermissionResponse } from "~/features/roles/types";
-import type { PermissionResponse } from "~/features/permissions/types";
+import type { RolePermissionResponse } from "~/features/roles/types/roles";
+import type { PermissionResponse } from "~/features/permissions/types/permissions";
 
 const props = defineProps<{
   roleId: string;

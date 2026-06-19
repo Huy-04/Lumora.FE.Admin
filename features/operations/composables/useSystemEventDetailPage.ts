@@ -1,4 +1,4 @@
-import type { SystemEventDetailResponse } from "~/features/operations/types";
+import type { SystemEventDetailResponse } from "~/features/operations/types/operations";
 
 export const useSystemEventDetailPage = async () => {
   // 1. Dependency injection

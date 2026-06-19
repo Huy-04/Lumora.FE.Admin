@@ -2,6 +2,7 @@ export const useInventoryStockCreatePage = async () => {
   // 1. Dependency injection
   const route = useRoute();
   const inventoryApi = useInventoryAdminApi();
+  const warehouseApi = useWarehouseAdminApi();
   const authz = useAdminAuthorization();
   const { parseRequiredInt } = useNumericForm();
 
@@ -34,12 +35,12 @@ export const useInventoryStockCreatePage = async () => {
     () => `inventory-stock-create:${inventoryId.value}`,
     async () => {
       const inventory = await inventoryApi.getInventoryById(inventoryId.value);
-      let warehouses = [] as Awaited<ReturnType<typeof inventoryApi.getWarehouses>>;
+      let warehouses = [] as Awaited<ReturnType<typeof warehouseApi.getWarehouses>>;
       let nextWarehouseCatalogWarning = "";
 
       if (canReadWarehouses.value) {
         try {
-          warehouses = await inventoryApi.getWarehouses();
+          warehouses = await warehouseApi.getWarehouses();
         } catch (requestError) {
           nextWarehouseCatalogWarning = getProblemMessage(
             requestError,

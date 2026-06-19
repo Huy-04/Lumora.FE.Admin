@@ -1,9 +1,10 @@
-import type { InventoryResponse } from "~/features/inventory/types";
+import type { InventoryResponse } from "~/features/inventory/types/inventory";
 
 export const useInventoryDetailPage = async () => {
   // 1. Dependency injection
   const route = useRoute();
   const inventoryApi = useInventoryAdminApi();
+  const warehouseApi = useWarehouseAdminApi();
   const authz = useAdminAuthorization();
   const { stockStatusOptions } = useInventoryOptions();
 
@@ -32,12 +33,12 @@ export const useInventoryDetailPage = async () => {
     () => `inventory-detail:${inventoryId.value}`,
     async () => {
       const inventory = await inventoryApi.getInventoryById(inventoryId.value);
-      let warehouses = [] as Awaited<ReturnType<typeof inventoryApi.getWarehouses>>;
+      let warehouses = [] as Awaited<ReturnType<typeof warehouseApi.getWarehouses>>;
       let warehouseCatalogWarning = "";
 
       if (canReadWarehouses.value) {
         try {
-          warehouses = await inventoryApi.getWarehouses();
+          warehouses = await warehouseApi.getWarehouses();
         } catch (requestError) {
           warehouseCatalogWarning = getProblemMessage(
             requestError,

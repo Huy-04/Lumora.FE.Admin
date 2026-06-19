@@ -1,5 +1,5 @@
-import type { CategoryTreeNodeResponse } from "~/features/categories/types";
-import type { ProductResponse } from "~/features/products/types";
+import type { CategoryTreeNodeResponse } from "~/features/categories/types/categories";
+import type { ProductResponse } from "~/features/products/types/products";
 
 export const useProductIndexPage = async () => {
   const productApi = useProductAdminApi();

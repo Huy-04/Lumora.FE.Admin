@@ -1,4 +1,4 @@
-import type { ProductAssetResponse, ProductImageResponse } from "~/features/products/types";
+import type { ProductAssetResponse, ProductImageResponse } from "~/features/products/types/products";
 
 export const useProductGalleryDetailPage = async () => {
   // 1. Dependency injection

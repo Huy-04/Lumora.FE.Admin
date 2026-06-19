@@ -5,7 +5,7 @@ import type {
   ProductGalleryResponse,
   ProductResponse,
   ProductVariantResponse,
-} from "~/features/products/types";
+} from "~/features/products/types/products";
 
 const props = defineProps<{
   product: ProductResponse;

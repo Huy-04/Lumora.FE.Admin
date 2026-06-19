@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ProductImageResponse } from "~/features/products/types";
+import type { ProductImageResponse } from "~/features/products/types/products";
 
 const props = defineProps<{
   image: ProductImageResponse;

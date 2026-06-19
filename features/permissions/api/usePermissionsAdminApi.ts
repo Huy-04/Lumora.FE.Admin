@@ -1,7 +1,7 @@
 import type {
   PermissionRequest,
   PermissionResponse,
-} from "~/features/permissions/types";
+} from "~/features/permissions/types/permissions";
 import type { PaginatedResponse } from "~/Shared/types/api";
 
 const permissionRoute = (path = "") => `/Permissions${path}`;

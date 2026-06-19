@@ -1,7 +1,7 @@
 export const useWarehouseDetailPage = async () => {
   // 1. Dependency injection
   const route = useRoute();
-  const inventoryApi = useInventoryAdminApi();
+  const warehouseApi = useWarehouseAdminApi();
   const ghnApi = useGhnApi();
   const authz = useAdminAuthorization();
 
@@ -21,7 +21,7 @@ export const useWarehouseDetailPage = async () => {
 
   const { data, pending, error, refresh } = await useAsyncData(
     () => `warehouse:${warehouseId.value}`,
-    () => inventoryApi.getWarehouseById(warehouseId.value),
+    () => warehouseApi.getWarehouseById(warehouseId.value),
   );
 
   // 4. Computed derivations
@@ -194,7 +194,7 @@ export const useWarehouseDetailPage = async () => {
         payload.address = normalizedManualAddress;
       }
 
-      await inventoryApi.updateWarehouse(warehouseId.value, payload);
+      await warehouseApi.updateWarehouse(warehouseId.value, payload);
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to update warehouse.");
@@ -213,9 +213,9 @@ export const useWarehouseDetailPage = async () => {
 
     try {
       if (warehouse.value.status === "Active") {
-        await inventoryApi.deactivateWarehouse(warehouseId.value);
+        await warehouseApi.deactivateWarehouse(warehouseId.value);
       } else {
-        await inventoryApi.activateWarehouse(warehouseId.value);
+        await warehouseApi.activateWarehouse(warehouseId.value);
       }
       await refresh();
     } catch (requestError) {
@@ -234,7 +234,7 @@ export const useWarehouseDetailPage = async () => {
     actionError.value = "";
 
     try {
-      await inventoryApi.removeWarehouse(warehouseId.value);
+      await warehouseApi.removeWarehouse(warehouseId.value);
       await navigateTo("/warehouses");
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to remove warehouse.");
@@ -255,7 +255,7 @@ export const useWarehouseDetailPage = async () => {
     actionError.value = "";
 
     try {
-      await inventoryApi.syncWarehouseGhnStore(warehouseId.value, { ghnShopId: Number(normalizedGhnShopId) });
+      await warehouseApi.syncWarehouseGhnStore(warehouseId.value, { ghnShopId: Number(normalizedGhnShopId) });
       await refresh();
     } catch (requestError) {
       actionError.value = getProblemMessage(requestError, "Unable to sync GHN store.");

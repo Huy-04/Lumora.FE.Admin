@@ -1,8 +1,8 @@
 import type {
   UserResponse,
   UserRoleResponse,
-} from "~/features/users/types";
-import type { RoleResponse } from "~/features/roles/types";
+} from "~/features/users/types/users";
+import type { RoleResponse } from "~/features/roles/types/roles";
 
 export const useUserRolesTab = (
   props: {

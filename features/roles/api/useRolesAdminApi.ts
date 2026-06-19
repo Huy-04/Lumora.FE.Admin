@@ -4,7 +4,7 @@ import type {
   RoleRequest,
   RoleResponse,
   SyncRolePermissionsRequest,
-} from "~/features/roles/types";
+} from "~/features/roles/types/roles";
 import type { PaginatedResponse } from "~/Shared/types/api";
 
 const roleRoute = (path = "") => `/Roles${path}`;

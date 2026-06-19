@@ -2,7 +2,7 @@ const PHONE_NATIONAL_PATTERN = /^0\d{9}$/;
 
 export const useWarehouseCreatePage = async () => {
   // 1. Dependency injection
-  const inventoryApi = useInventoryAdminApi();
+  const warehouseApi = useWarehouseAdminApi();
   const ghnApi = useGhnApi();
   const { warehouseCodeOptions } = useInventoryOptions();
 
@@ -140,7 +140,7 @@ export const useWarehouseCreatePage = async () => {
     pending.value = true;
     errorMessage.value = "";
     try {
-      const created = await inventoryApi.createWarehouse({
+      const created = await warehouseApi.createWarehouse({
         code: Number(form.code),
         name: form.name,
         address: fullAddress.value,

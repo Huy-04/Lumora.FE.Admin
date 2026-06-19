@@ -1,5 +1,5 @@
 import { getProblemMessage, getProblemStatus } from "~/Shared/api/apiErrors";
-import type { CreateCouponRequest } from "~/features/coupons/types";
+import type { CreateCouponRequest } from "~/features/coupons/types/coupons";
 import { getCouponFieldErrors } from "~/features/coupons/utils/problemMapping";
 import { hasAtMostDecimalPlaces, isAtLeastHoursApart, toUtcIsoFromDateTimeLocal } from "~/features/coupons/utils/dateTime";
 

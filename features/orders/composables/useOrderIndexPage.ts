@@ -1,10 +1,10 @@
-import type { OrderPaymentStatus, OrderStatus } from "~/features/orders/types";
+import type { OrderPaymentStatus, OrderStatus } from "~/features/orders/types/orders";
 import { toUtcDateFilter } from "~/features/orders/utils/dateTime";
 
 export const useOrderIndexPage = async () => {
   // 1. Dependency injection
   const orderApi = useOrderAdminApi();
-  const inventoryApi = useInventoryAdminApi();
+  const warehouseApi = useWarehouseAdminApi();
   const authz = useAdminAuthorization();
   const { orderStatusOptions, paymentStatusOptions } = useOrderOptions();
 
@@ -52,7 +52,7 @@ export const useOrderIndexPage = async () => {
         return [];
       }
 
-      return await inventoryApi.getWarehouses();
+      return await warehouseApi.getWarehouses();
     },
   );
 

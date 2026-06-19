@@ -1,4 +1,4 @@
-import type { UserResponse } from "~/features/users/types";
+import type { UserResponse } from "~/features/users/types/users";
 
 export const useProfileOverviewTab = (
   props: {
@@ -6,7 +6,7 @@ export const useProfileOverviewTab = (
   },
   onUpdated: () => void,
 ) => {
-  const authApi = useAuthApi();
+  const authApi = useProfileApi();
   const { enumLabel } = useAuthPresentation();
   const { genderOptions } = useAuthOptions();
 

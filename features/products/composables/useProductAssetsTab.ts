@@ -1,4 +1,4 @@
-import type { ProductAssetResponse } from "~/features/products/types";
+import type { ProductAssetResponse } from "~/features/products/types/products";
 
 export const useProductAssetsTab = (
   props: {

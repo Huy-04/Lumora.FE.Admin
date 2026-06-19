@@ -1,7 +1,7 @@
 import type {
   CategoryResponse,
   CategoryTreeNodeResponse,
-} from "~/features/categories/types";
+} from "~/features/categories/types/categories";
 import { CATEGORY_MAX_DEPTH, CATEGORY_MAX_LEVEL } from "~/features/categories/constants";
 
 export const useCategoryEditTab = (

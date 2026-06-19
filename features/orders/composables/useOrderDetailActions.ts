@@ -1,4 +1,4 @@
-import type { OrderResponse } from "~/features/orders/types";
+import type { OrderResponse } from "~/features/orders/types/orders";
 import type { OrderAction, OrderReasonPreset } from "~/features/orders/composables/useOrderDetailPage";
 
 const ORDER_CANCEL_REASON_MIN_LENGTH = 5;

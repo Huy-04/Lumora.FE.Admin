@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
-import type { ProductVariantResponse } from "~/features/products/types";
+import type { ProductVariantResponse } from "~/features/products/types/products";
 
 const props = defineProps<{
   variant: ProductVariantResponse;

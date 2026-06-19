@@ -1,4 +1,4 @@
-import type { PermissionResponse } from "~/features/permissions/types";
+import type { PermissionResponse } from "~/features/permissions/types/permissions";
 
 export const usePermissionEditTab = (
   permission: MaybeRefOrGetter<PermissionResponse>,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CategoryCatalogOption } from "~/features/categories/composables/useCategoryTreeCatalog";
-import type { ProductResponse } from "~/features/products/types";
+import type { ProductResponse } from "~/features/products/types/products";
 
 const props = defineProps<{
   product: ProductResponse;

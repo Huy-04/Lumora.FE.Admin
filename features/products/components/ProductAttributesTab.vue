@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ProductAttributeResponse } from "~/features/products/types";
+import type { ProductAttributeResponse } from "~/features/products/types/products";
 
 const props = defineProps<{
   productId: string;

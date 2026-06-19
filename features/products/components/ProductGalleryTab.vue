@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ProductGalleryResponse, ProductStatus } from "~/features/products/types";
+import type { ProductGalleryResponse, ProductStatus } from "~/features/products/types/products";
 
 const props = defineProps<{
   productId: string;

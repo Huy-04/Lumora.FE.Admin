@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ProductAssetResponse } from "~/features/products/types";
+import type { ProductAssetResponse } from "~/features/products/types/products";
 
 const props = withDefaults(defineProps<{
   assets: ProductAssetResponse[];

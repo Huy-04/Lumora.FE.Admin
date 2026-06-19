@@ -3,10 +3,6 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-export interface PasswordRequest {
-  password: string;
-}
-
 export interface VerifyEmailOtpRequest {
   otp: string;
 }

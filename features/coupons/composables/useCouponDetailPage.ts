@@ -1,4 +1,4 @@
-import type { CouponResponse, UpdateCouponRequest } from "~/features/coupons/types";
+import type { CouponResponse, UpdateCouponRequest } from "~/features/coupons/types/coupons";
 import { getCouponFieldErrors } from "~/features/coupons/utils/problemMapping";
 import { hasAtMostDecimalPlaces, isAtLeastHoursApart, toDateTimeLocalValue, toUtcIsoFromDateTimeLocal } from "~/features/coupons/utils/dateTime";
 

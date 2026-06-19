@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppDetailMetaPanel from "~/Shared/components/ui/pattern/AppDetailMetaPanel.vue";
-import type { OrderResponse } from "~/features/orders/types";
+import type { OrderResponse } from "~/features/orders/types/orders";
 
 defineProps<{
   order: OrderResponse;

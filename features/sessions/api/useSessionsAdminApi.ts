@@ -2,7 +2,7 @@ import type {
   RevokeRefreshTokenRequest,
   RevokeUserDeviceRequest,
   SessionResponse,
-} from "~/features/sessions/types";
+} from "~/features/sessions/types/sessions";
 
 const sessionRoute = (path = "") => `/refresh-tokens${path}`;
 

@@ -2,7 +2,7 @@
 import type {
   CategoryResponse,
   CategoryTreeNodeResponse,
-} from "~/features/categories/types";
+} from "~/features/categories/types/categories";
 
 const props = defineProps<{
   category: CategoryResponse;

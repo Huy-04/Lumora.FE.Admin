@@ -1,4 +1,4 @@
-import type { ProductAttributeResponse } from "~/features/products/types";
+import type { ProductAttributeResponse } from "~/features/products/types/products";
 
 type AttributeGroup = "skin-types" | "skin-concerns";
 

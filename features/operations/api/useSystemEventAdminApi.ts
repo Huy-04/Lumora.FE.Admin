@@ -2,7 +2,7 @@ import type {
   SearchSystemEventsRequest,
   SystemEventDetailResponse,
   SystemEventSearchResponse,
-} from "~/features/operations/types";
+} from "~/features/operations/types/operations";
 
 const systemEventRoute = (path = "") => `/system-events${path}`;
 

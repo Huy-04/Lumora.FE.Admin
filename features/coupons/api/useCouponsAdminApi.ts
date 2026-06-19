@@ -1,5 +1,5 @@
 import type { PaginatedResponse } from "~/Shared/types/api";
-import type { CouponResponse, CreateCouponRequest, UpdateCouponRequest } from "~/features/coupons/types";
+import type { CouponResponse, CreateCouponRequest, UpdateCouponRequest } from "~/features/coupons/types/coupons";
 
 const couponRoute = (path = "") => `/Coupons${path}`;
 

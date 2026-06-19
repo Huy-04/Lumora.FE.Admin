@@ -1,70 +1,22 @@
 import type {
   ChangePasswordRequest,
-  CompletePasswordResetRequest,
   ConfirmEmailChangeRequest,
   ConfirmPhoneChangeRequest,
-  CurrentUserResponse,
-  LoginRequest,
-  LoginResponse,
   RequestEmailChangeRequest,
   RequestPhoneChangeRequest,
-  RequestPasswordResetRequest,
   UpdateProfileRequest,
-  VerifyPasswordResetOtpRequest,
-  VerifyPasswordResetOtpResponse,
   VerifyEmailOtpRequest,
   VerifyPhoneOtpRequest,
-} from "~/features/auth/types";
-import type {
-  RegisterRequest,
-  RegisterResponse,
-  ResendRegistrationOtpRequest,
-  VerifyRegistrationRequest,
-} from "~/features/auth/types/registration";
-import type { UserAddressRequest, UserAddressResponse, UserResponse } from "~/features/users/types";
+} from "~/features/profile/types/profile";
+import type { UserAddressRequest, UserAddressResponse, UserResponse } from "~/features/users/types/users";
 
-const authRoute = (path = "") => `/Authentication${path}`;
 const userCurrentRoute = (path = "") => `/Users/current${path}`;
 const userCurrentAddressRoute = (addressId: string, path = "") => `/Users/current/addresses/${encodeURIComponent(addressId)}${path}`;
 
-export const useAuthApi = () => {
+export const useProfileApi = () => {
   const api = useApiClient();
 
   return {
-    adminLogin: (payload: LoginRequest, headers: Record<string, string>) =>
-      api.request<LoginResponse>(authRoute("/admin-login"), {
-        method: "POST",
-        body: payload,
-        headers,
-      }),
-
-    login: (payload: LoginRequest, headers: Record<string, string>) =>
-      api.request<LoginResponse>(authRoute("/login"), {
-        method: "POST",
-        body: payload,
-        headers,
-      }),
-
-    logout: (deviceId: string) =>
-      api.request<void>(authRoute("/logout"), {
-        method: "POST",
-        headers: {
-          "X-Device-Id": deviceId,
-        },
-      }),
-
-    refreshAccessToken: (deviceId: string) =>
-      api.request<LoginResponse>(authRoute("/refresh-access-token"), {
-        method: "POST",
-        skipAuthRefresh: true,
-        headers: {
-          "X-Device-Id": deviceId,
-        },
-      }),
-
-    getMe: (options?: { skipAuthRefresh?: boolean }) =>
-      api.request<CurrentUserResponse>(authRoute("/me"), options),
-
     verifyEmailOtp: (payload: VerifyEmailOtpRequest) =>
       api.request<void>(userCurrentRoute("/email-verification/verify"), {
         method: "POST",
@@ -85,30 +37,6 @@ export const useAuthApi = () => {
     resendPhoneOtp: () =>
       api.request<void>(userCurrentRoute("/phone-verification/resend"), {
         method: "POST",
-      }),
-
-    requestPasswordReset: (payload: RequestPasswordResetRequest) =>
-      api.request<void>(authRoute("/request-password-reset"), {
-        method: "POST",
-        body: payload,
-      }),
-
-    resendPasswordResetOtp: (payload: RequestPasswordResetRequest) =>
-      api.request<void>(authRoute("/resend-password-reset-otp"), {
-        method: "POST",
-        body: payload,
-      }),
-
-    verifyPasswordResetOtp: (payload: VerifyPasswordResetOtpRequest) =>
-      api.request<VerifyPasswordResetOtpResponse>(authRoute("/verify-password-reset-otp"), {
-        method: "POST",
-        body: payload,
-      }),
-
-    completePasswordReset: (payload: CompletePasswordResetRequest) =>
-      api.request<void>(authRoute("/complete-password-reset"), {
-        method: "POST",
-        body: payload,
       }),
 
     getCurrentUser: () => api.request<UserResponse>(userCurrentRoute()),
@@ -208,24 +136,6 @@ export const useAuthApi = () => {
     deleteCurrentUserAddress: (addressId: string) =>
       api.request<void>(userCurrentAddressRoute(addressId), {
         method: "DELETE",
-      }),
-
-    startRegistration: (payload: RegisterRequest) =>
-      api.request<RegisterResponse>(authRoute("/register/start"), {
-        method: "POST",
-        body: payload,
-      }),
-
-    resendRegistrationOtp: (payload: ResendRegistrationOtpRequest) =>
-      api.request<RegisterResponse>(authRoute("/register/resend-otp"), {
-        method: "POST",
-        body: payload,
-      }),
-
-    verifyRegistration: (payload: VerifyRegistrationRequest) =>
-      api.request<RegisterResponse>(authRoute("/register/verify"), {
-        method: "POST",
-        body: payload,
       }),
   };
 };
