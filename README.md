@@ -1,46 +1,57 @@
-# Lumora.FE.Admin
+# Lumora Admin Dashboard (Lumora.FE.Admin)
 
-Nuxt 3 admin frontend for the Lumora ecommerce system.
+Welcome to **Lumora.FE.Admin**, the administration and merchant dashboard frontend for the Lumora E-commerce Platform. Built on **Nuxt 3**, this dashboard provides full control over products, inventory, orders, and system operations.
 
-## What This Repo Contains
+---
 
-- Admin auth, session, and permission-gated navigation.
-- Operational screens for users, roles, permissions, categories, products,
-  inventory, orders, payments, shipments, reviews, and system events.
-- A Nuxt server proxy for backend API and SignalR hub traffic.
-- Harness docs and CLI state for agent-readable project workflow.
+## 🛠️ Technology Stack
 
-## Stack
+- **Framework**: Nuxt 3 (Vue 3, TypeScript)
+- **Styling**: Tailwind CSS
+- **Real-time**: SignalR Client for live operations and monitoring hubs
+- **Testing**: Playwright for regression and interface verification
 
-- Nuxt 3
-- Vue 3
-- TypeScript
-- Tailwind CSS
-- SignalR client
+---
 
-## Important Local Commands
+## 📦 What This Application Contains
 
-```powershell
-npm run dev
-npm run build
-npx nuxt prepare
-.\scripts\harness.cmd query matrix
+- **Administrative Auth & Security**: Secure admin login, session management, and permission-gated routing.
+- **Operational Management Screens**: Full CRUD and control interfaces for managing:
+  - **Users & Roles**: Role-Based Access Control (RBAC) definitions.
+  - **Catalog**: Products, categories, and attributes.
+  - **Inventory**: Warehouse stocks and dynamic adjustments.
+  - **Sales**: Orders, shipment tracking, and payment gateways status.
+  - **Feedback**: Customer product reviews and approvals.
+  - **System Monitoring**: Live operations, logs, and system events.
+- **API Proxy**: Pre-configured server-side proxying to route backend API requests and SignalR WebSockets securely.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Installation
+Install dependencies:
+```bash
+npm install
 ```
 
-## Important Project Docs
+### 2. Development Server
+Run the application locally:
+```bash
+npm run dev
+```
 
-- `docs/AUTH.md`
-- `docs/web-admin-flow-contracts.md`
-- `docs/HARNESS.md`
-- `docs/FEATURE_INTAKE.md`
-- `docs/ARCHITECTURE.md`
+### 3. Build for Production
+Compile the app for production deployment:
+```bash
+npm run build
+npm run preview
+```
 
-## Backend Pairing
+---
 
-This app is paired with `C:\Code\Project\Lumora.Ecom\Lumora.BE`.
+## 🔗 Backend Connection
 
-- FE route and action assumptions should stay aligned with backend controllers
-  and policies.
-- Flow-contract changes should be reflected in `docs/web-admin-flow-contracts.md`.
-- Harness installation in this repo follows the Windows-friendly pattern already
-  used in `Lumora.BE`.
+This administration client is paired with the **Lumora Backend API** (`Lumora.BE`).
+- Ensure the backend is running to allow the proxy to forward requests.
+- Endpoint authorization actions are bound to the user permissions configured in the admin console.
